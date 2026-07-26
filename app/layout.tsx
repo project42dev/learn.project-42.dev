@@ -5,14 +5,14 @@ import { SiteHeader } from "./components/SiteHeader";
 import { ProgressProvider } from "./components/ProgressProvider";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://project-42.dev"),
+  metadataBase: new URL("https://learn.project-42.dev"),
   title: {
-    default: "Project 42 — Learn AI with confidence",
-    template: "%s · Project 42",
+    default: "Project 42 Learn — Learn AI with confidence",
+    template: "%s · Project 42 Learn",
   },
   description:
-    "Free, open, provider-neutral AI learning paths, knowledge checks, and practical field guides.",
-  applicationName: "Project 42",
+    "Free, open, provider-neutral AI learning paths, knowledge checks, and practical activities.",
+  applicationName: "Project 42 Learn",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -58,10 +58,10 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    siteName: "Project 42",
-    title: "Project 42 — Learn AI with confidence",
+    siteName: "Project 42 Learn",
+    title: "Project 42 Learn — Learn AI with confidence",
     description:
-      "Free learning paths and practical resources from first principles to reliable agents.",
+      "Free learning paths from first principles to reliable agents.",
     images: [
       {
         url: "/og.png",
@@ -73,9 +73,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Project 42 — Learn AI with confidence",
+    title: "Project 42 Learn — Learn AI with confidence",
     description:
-      "Free learning paths and practical resources from first principles to reliable agents.",
+      "Free learning paths from first principles to reliable agents.",
     images: ["/og.png"],
   },
 };

@@ -114,12 +114,21 @@ test("renders the learner-data disclosure and machine-readable policy", async ()
   assert.deepEqual(await endpoint.json(), defaultLearnerDataPolicy);
 });
 
-test("renders academy and field-guide indexes", async () => {
-  const [learn, resources] = await Promise.all([render("/learn"), render("/resources")]);
+test("renders the one-time legacy progress migration experience", async () => {
+  const response = await render("/import-progress");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Keep the progress you already earned/);
+  assert.match(html, /project-42\.dev\/transfer-progress/);
+  assert.match(html, /Import previous progress/);
+});
+
+test("renders the Learn home and academy index", async () => {
+  const [home, learn] = await Promise.all([render("/"), render("/learn")]);
+  assert.equal(home.status, 200);
   assert.equal(learn.status, 200);
-  assert.equal(resources.status, 200);
+  assert.match(await home.text(), /Start curious/);
   assert.match(await learn.text(), /Learning paths with a clear next step/);
-  assert.match(await resources.text(), /Answers for the work in front of you/);
 });
 
 test("renders the complete accessible diagram library", async () => {
@@ -144,67 +153,12 @@ test("renders the complete accessible diagram library", async () => {
   }
 });
 
-test("renders the complete searchable resource catalog and discovery metadata", async () => {
-  const response = await render("/resources");
-  const html = await response.text();
-  const normalizedHtml = html.replaceAll("<!-- -->", "");
-
-  assert.equal(response.status, 200);
-  assert.equal(starterCatalog.resources.length, 50);
-  assert.equal((html.match(/data-resource-id=/g) ?? []).length, 50);
-  for (const label of [
-    "Search the field guide",
-    "Topic",
-    "Provider",
-    "Level",
-    "Format",
-    "Freshness",
-  ]) {
-    assert.ok(html.includes(label));
-  }
-  assert.match(normalizedHtml, /Showing 50 of 50 resources/);
-  assert.match(html, /Audience/);
-  assert.match(html, /Prerequisites/);
-  assert.match(html, /Owner/);
-  assert.match(html, /Reviewed/);
-  assert.match(html, /Current|Review due|Stale/);
-});
-
-test("renders complete resource detail metadata and source provenance", async () => {
-  const resource = starterCatalog.resources.find(
-    (candidate) => candidate.id === "human-controlled-ai-release-gate",
-  );
-  assert.ok(resource);
-  const response = await render(`/resources/${resource.id}`);
-  const html = await response.text();
-
-  assert.equal(response.status, 200);
-  assert.ok(html.includes(resource.title));
-  assert.match(html, /Resource details/);
-  assert.match(html, /Review cadence/);
-  assert.match(html, /Next review due/);
-  assert.match(html, /Primary sources/);
-  assert.match(html, /Source reviewed/);
-  for (const audience of resource.audience) {
-    assert.ok(html.toLowerCase().includes(audience.toLowerCase()));
-  }
-  for (const prerequisite of resource.prerequisites) {
-    assert.ok(html.includes(prerequisite));
-  }
-  for (const source of resource.sources) {
-    assert.ok(html.includes(source.title));
-    assert.ok(html.includes(source.publisher));
-    assert.ok(html.includes(source.lastVerified));
-  }
-});
-
-test("renders stable learning and resource routes", async () => {
+test("renders stable learning routes", async () => {
   const routes = [
     ...starterCatalog.paths.map((path) => `/learn/${path.id}`),
     ...starterCatalog.paths.flatMap((path) =>
       path.moduleIds.map((moduleId) => `/learn/${path.id}/${moduleId}`),
     ),
-    ...starterCatalog.resources.map((resource) => `/resources/${resource.id}`),
   ];
 
   for (const route of routes) {
@@ -429,10 +383,8 @@ test("all rendered internal navigation links resolve", async () => {
   const entryRoutes = [
     "/",
     "/learn",
-    "/resources",
     "/profile",
     "/learner-data",
-    "/about",
   ];
   const internalLinks = new Set(entryRoutes);
 
@@ -440,8 +392,10 @@ test("all rendered internal navigation links resolve", async () => {
     const response = await render(route);
     const html = await response.text();
     for (const match of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)) {
-      const url = new URL(match[1], "https://project-42.dev");
-      if (url.origin === "https://project-42.dev") internalLinks.add(url.pathname);
+      const url = new URL(match[1], "https://learn.project-42.dev");
+      if (url.origin === "https://learn.project-42.dev") {
+        internalLinks.add(url.pathname);
+      }
     }
   }
 
@@ -479,7 +433,7 @@ test("publishes accessible document landmarks and discovery metadata", async () 
   assert.equal(robots.status, 200);
   assert.equal(manifest.status, 200);
   const webManifest = await manifest.json();
-  assert.equal(webManifest.short_name, "Project 42");
+  assert.equal(webManifest.short_name, "Project 42 Learn");
   assert.equal(webManifest.theme_color, "#0b1225");
   assert.deepEqual(
     webManifest.icons.map(({ src, sizes, purpose }) => ({

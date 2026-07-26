@@ -88,7 +88,7 @@ const facts = {
       (total, module) => total + (module.knowledgeCheck?.questions.length ?? 0),
       0,
     ),
-    resources: starterCatalog.resources.length,
+    resources: 0,
     providerScopes: providers.length,
     providerImplementations: providers.filter(
       (provider) => provider.id !== "provider-neutral",
@@ -117,7 +117,7 @@ for (const requiredFact of [
   `${facts.counts.assessedModules} assessed modules`,
   `${facts.counts.evidenceActivities} evidence activities`,
   `${facts.counts.reviewedQuestions} reviewed questions`,
-  `${facts.counts.resources} practical resources`,
+  `${facts.counts.learningPaths} dedicated learning paths`,
   `${facts.counts.providerScopes} provider scopes`,
 ]) {
   assert.ok(

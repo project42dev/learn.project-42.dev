@@ -6,7 +6,7 @@ import { starterCatalog } from "@project42/platform";
 import diagramConfig from "../config/diagrams.json" with { type: "json" };
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const defaultBaseUrl = "https://project-42.dev";
+const defaultBaseUrl = "https://learn.project-42.dev";
 const defaultExceptionsPath = path.join(
   projectRoot,
   "config",
@@ -55,19 +55,16 @@ export function buildRouteInventory(
     "/",
     "/about",
     "/diagrams",
+    "/import-progress",
     "/learn",
     "/learner-data",
     "/profile",
-    "/resources",
   ]);
   for (const learningPath of catalog.paths) {
     htmlRoutes.add(`/learn/${learningPath.id}`);
     for (const moduleId of learningPath.moduleIds) {
       htmlRoutes.add(`/learn/${learningPath.id}/${moduleId}`);
     }
-  }
-  for (const resource of catalog.resources) {
-    htmlRoutes.add(`/resources/${resource.id}`);
   }
   for (const diagram of diagrams) {
     htmlRoutes.add(`/diagrams/${diagram.id}`);
@@ -362,7 +359,7 @@ async function fetchExternal(
           accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.1",
           range: "bytes=0-2047",
           "user-agent":
-            "Project42-LinkChecker/0.1 (+https://github.com/project42dev/project-42.dev)",
+            "Project42-Learn-LinkChecker/0.1 (+https://github.com/project42dev/learn.project-42.dev)",
         },
       });
       try {

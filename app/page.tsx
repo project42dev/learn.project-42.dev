@@ -27,9 +27,9 @@ export default function Home() {
             <Link className="button button-primary" href="/learn/ai-foundations">
               Start AI Foundations
             </Link>
-            <Link className="button button-secondary" href="/resources">
+            <a className="button button-secondary" href="https://guide.project-42.dev">
               Browse the field guide
-            </Link>
+            </a>
             <Link className="button button-secondary" href="/diagrams">
               See visual guides
             </Link>
@@ -97,12 +97,12 @@ export default function Home() {
               verification dates and sources.
             </p>
             <ul>
-              <li>{starterCatalog.resources.length} starter resources</li>
+              <li>Practical references on the dedicated Field Guide site</li>
               <li>{diagramCatalog.length} source-first visual guides</li>
               <li>Anthropic, OpenAI, and Google coverage</li>
               <li>Provider-neutral core concepts</li>
             </ul>
-            <Link href="/resources">Open the field guide →</Link>
+            <a href="https://guide.project-42.dev">Open the field guide →</a>
           </article>
         </div>
       </section>

@@ -1,17 +1,17 @@
 {
   "$schemaVersion": 1,
-  "homepage": "https://project-42.dev",
+  "homepage": "https://learn.project-42.dev",
   "repositories": {
-    "site": "https://github.com/project42dev/project-42.dev",
+    "site": "https://github.com/project42dev/learn.project-42.dev",
     "platform": "https://github.com/project42dev/project42-platform",
-    "issues": "https://github.com/project42dev/project-42.dev/issues",
+    "issues": "https://github.com/project42dev/learn.project-42.dev/issues",
     "roadmap": "https://github.com/project42dev/project-42.dev/issues?q=is%3Aissue%20label%3Aroadmap"
   },
   "licenses": {
     "software": {
       "spdx": "Apache-2.0",
       "label": "Apache License 2.0",
-      "url": "https://github.com/project42dev/project-42.dev/blob/main/LICENSE"
+      "url": "https://github.com/project42dev/learn.project-42.dev/blob/main/LICENSE"
     },
     "curriculum": {
       "spdx": "CC-BY-4.0",

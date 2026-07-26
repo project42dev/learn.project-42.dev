@@ -17,7 +17,7 @@ test("exports every governed route for GitHub Pages", async () => {
     await readFile(path.join(outputRoot, "pages-manifest.json"), "utf8"),
   );
 
-  assert.equal(manifest.canonicalDomain, "project-42.dev");
+  assert.equal(manifest.canonicalDomain, "learn.project-42.dev");
   assert.deepEqual(manifest.htmlRoutes, inventory.htmlRoutes);
   for (const route of inventory.htmlRoutes) {
     const relative = route === "/" ? "index.html" : `${route.slice(1)}/index.html`;
@@ -40,15 +40,15 @@ test("publishes current release facts and learner-data disclosure", async () => 
   assert.ok(normalizedHome.includes(`Site v${releaseFacts.siteVersion}`));
   assert.match(learnerData, /Your learning data, without fine print/);
   assert.match(learnerData, /href="\/learner-data\/policy\.json"/);
-  assert.equal(releaseFacts.siteVersion, "0.17.1");
-  assert.equal(releaseFacts.platformVersion, "0.38.0");
+  assert.equal(releaseFacts.siteVersion, "0.1.0");
+  assert.equal(releaseFacts.platformVersion, "0.39.0");
   assert.deepEqual(policy, defaultLearnerDataPolicy);
 });
 
 test("contains GitHub Pages controls without server or Sites metadata", async () => {
   assert.equal(
     await readFile(path.join(outputRoot, "CNAME"), "utf8"),
-    "project-42.dev\n",
+    "learn.project-42.dev\n",
   );
   await access(path.join(outputRoot, ".nojekyll"));
   await access(path.join(outputRoot, "404.html"));

@@ -10,9 +10,9 @@ export default function NotFound() {
         <Link className="button button-primary" href="/learn">
           Learning paths
         </Link>
-        <Link className="button button-secondary" href="/resources">
+        <a className="button button-secondary" href="https://guide.project-42.dev">
           Field guide
-        </Link>
+        </a>
       </div>
     </main>
   );

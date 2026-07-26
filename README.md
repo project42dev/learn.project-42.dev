@@ -1,7 +1,8 @@
-# Project 42
+# Project 42 Learn
 
-The public Project 42 learning experience: free, provider-neutral AI learning paths,
-knowledge checks, progress, badges, and a practical field guide.
+The dedicated Project 42 learning experience at
+[learn.project-42.dev](https://learn.project-42.dev): free, provider-neutral AI
+learning paths, knowledge checks, progress, badges, and transcripts.
 
 ## Develop
 
@@ -30,7 +31,7 @@ work. The accepted lifecycle, consent, retention, export, deletion, recovery,
 authorization, and hosted/self-host storage contract is now published as an
 accessible learner-data page and machine-readable policy.
 
-The current site also includes eight accessible visual guides for learning evidence,
+The Learn site also includes eight accessible visual guides for learning evidence,
 grounded research, prompting, provider selection, safe tools, bounded agents,
 multi-agent handoffs, and human-gated content freshness. Mermaid files under
 `diagrams/` are the editable source of truth; reviewed SVG and public source
@@ -40,11 +41,11 @@ accessibility, and security contract.
 
 ## Current release facts
 
-- Site release `0.17.1`
-- Platform package `0.38.0`
+- Site release `0.1.0`
+- Platform package `0.39.0`
 - Content release `0.30.0`
 - 6 learning paths, 55 assessed modules, 49 evidence activities, and 257 reviewed questions
-- 50 practical resources and 4 provider scopes
+- 6 dedicated learning paths and 4 provider scopes
 
 These facts are generated from `package.json` and the tagged platform catalog into
 [`public/release-facts.json`](public/release-facts.json). `npm run facts:check`
@@ -53,7 +54,9 @@ drift.
 
 ## Repositories
 
-- `project-42.dev` — hosted public experience and brand
+- `project-42.dev` — public landing experience and brand
+- `learn.project-42.dev` — this learning application
+- `guide.project-42.dev` — practical Field Guide
 - `project42-platform` — reusable Apache-2.0 platform and CC BY 4.0 curriculum
 - `project42dev-ops` — private planning and operations
 - `project42dev.github.io` — transitional public site
@@ -61,7 +64,7 @@ drift.
 ## Deployment
 
 The canonical public instance deploys from this repository to GitHub Pages and is
-served at <https://project-42.dev>. Cloudflare manages DNS only.
+served at <https://learn.project-42.dev>. Cloudflare manages DNS only.
 
 `npm run pages:build` produces the complete static artifact in `dist/pages`. The
 GitHub Pages workflow validates the application and exported artifact before deploying

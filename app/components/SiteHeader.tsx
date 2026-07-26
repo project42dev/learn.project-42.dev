@@ -5,18 +5,18 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="shell header-inner">
-        <Link className="brand" href="/" aria-label="Project 42 home">
+        <a className="brand" href="https://project-42.dev" aria-label="Project 42 home">
           <BrandMark />
           <span>
             Project <strong>42</strong>
           </span>
-        </Link>
+        </a>
         <nav aria-label="Primary navigation">
           <Link href="/learn">Learn</Link>
-          <Link href="/resources">Resources</Link>
+          <a href="https://guide.project-42.dev">Field Guide</a>
           <Link href="/diagrams">Visual guides</Link>
           <Link href="/profile">My progress</Link>
-          <Link href="/about">About</Link>
+          <a href="https://project-42.dev/about">About</a>
         </nav>
         <Link className="header-action" href="/learn/ai-foundations">
           Start learning

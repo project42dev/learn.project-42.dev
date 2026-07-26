@@ -16,17 +16,18 @@ export function SiteFooter() {
         <div>
           <strong>Explore</strong>
           <Link href="/learn">Learning paths</Link>
-          <Link href="/resources">Field guide</Link>
+          <a href="https://guide.project-42.dev">Field Guide</a>
           <Link href="/diagrams">Visual guides</Link>
           <Link href="/profile">Your transcript</Link>
+          <Link href="/import-progress">Import previous progress</Link>
           <Link href="/learner-data">Learner data</Link>
         </div>
         <div>
           <strong>Project</strong>
-          <Link href="/about">About</Link>
+          <a href="https://project-42.dev/about">About</a>
           <a href={siteFacts.repositories.roadmap}>Public roadmap and issues</a>
           <a href={siteFacts.repositories.platform}>Open-source platform</a>
-          <a href={siteFacts.repositories.site}>Public site source</a>
+          <a href={siteFacts.repositories.site}>Learn site source</a>
         </div>
       </div>
       <div className="shell footer-bottom">

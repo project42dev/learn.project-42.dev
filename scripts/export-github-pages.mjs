@@ -8,7 +8,7 @@ const projectRoot = path.resolve(import.meta.dirname, "..");
 const clientRoot = path.join(projectRoot, "dist", "client");
 const workerPath = path.join(projectRoot, "dist", "server", "index.js");
 const outputRoot = path.join(projectRoot, "dist", "pages");
-const canonicalDomain = "project-42.dev";
+const canonicalDomain = "learn.project-42.dev";
 
 const endpointFiles = new Map([
   ["/manifest.webmanifest", "manifest.webmanifest"],
