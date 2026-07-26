@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useProgress } from "./ProgressProvider";
 
 const legacyOrigin = "https://project-42.dev";
+const transferReady = "project42-progress-transfer-ready-v1";
 const transferRequest = "project42-progress-transfer-request-v1";
 const transferResponse = "project42-progress-transfer-response-v1";
 
@@ -40,11 +41,18 @@ export function ProgressMigration() {
     function receive(event: MessageEvent) {
       if (
         event.origin !== legacyOrigin ||
-        event.source !== bridge.current?.contentWindow ||
-        event.data?.type !== transferResponse
+        event.source !== bridge.current?.contentWindow
       ) {
         return;
       }
+      if (event.data?.type === transferReady) {
+        bridge.current?.contentWindow?.postMessage(
+          { type: transferRequest },
+          legacyOrigin,
+        );
+        return;
+      }
+      if (event.data?.type !== transferResponse) return;
       if (event.data.payload === null) {
         setStatus("empty");
         return;
