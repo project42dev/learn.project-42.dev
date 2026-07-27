@@ -17,6 +17,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    env:
+      NEXT_PUBLIC_PROJECT42_API_ORIGIN: ${{ vars.NEXT_PUBLIC_PROJECT42_API_ORIGIN }}
+      NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY: ${{ vars.NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY }}
+      NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID: ${{ vars.NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID }}
+      NEXT_PUBLIC_PROJECT42_OIDC_SCOPE: ${{ vars.NEXT_PUBLIC_PROJECT42_OIDC_SCOPE }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

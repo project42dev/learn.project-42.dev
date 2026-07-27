@@ -4,6 +4,12 @@ import { defaultLearnerDataPolicy, starterCatalog } from "@project42/platform";
 import diagramConfig from "../config/diagrams.json" with { type: "json" };
 import releaseFacts from "../public/release-facts.json" with { type: "json" };
 
+const hostedIdentityConfigured = Boolean(
+  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN &&
+    process.env.NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY &&
+    process.env.NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID,
+);
+
 async function render(pathname) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${pathname}`);
@@ -133,7 +139,12 @@ test("renders account, approval, and cross-device progress surfaces", async () =
   const account = await accountResponse.text();
   const profile = await profileResponse.text();
   assert.match(account, /Account and access/);
-  assert.match(account, /Ready for hosted identity configuration/);
+  assert.match(
+    account,
+    hostedIdentityConfigured
+      ? /Loading your Project 42 account/
+      : /Ready for hosted identity configuration/,
+  );
   assert.match(profile, /browser privately or synchronize an approved account/i);
 });
 

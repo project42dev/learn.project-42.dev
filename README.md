@@ -44,8 +44,8 @@ accessibility, and security contract.
 ## Current release facts
 
 - Site release `0.2.0`
-- Platform package `0.40.0`
-- Content release `0.31.0`
+- Platform package `0.46.0`
+- Content release `0.36.0`
 - 6 learning paths, 55 assessed modules, 49 evidence activities, and 257 reviewed questions
 - 6 dedicated learning paths and 4 provider scopes
 
@@ -79,6 +79,10 @@ listed in [`.env.example`](.env.example). It contains no client secret. The API,
 database, issuer, audience, first owner, and domain rules are deployed separately
 from the open-source platform; omitting the public values keeps Learn in
 browser-local mode.
+
+The production Pages workflow maps repository Actions variables with the same
+`NEXT_PUBLIC_PROJECT42_*` names into the reviewed build. These values are public
+browser configuration; credentials and learner data must never be stored there.
 
 The platform dependency uses a reviewed release tag and the lockfile resolves that
 tag to an exact commit. npm `allowScripts` permits only that release dependency to
