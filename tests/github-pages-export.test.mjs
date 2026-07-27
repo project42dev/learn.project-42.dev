@@ -29,7 +29,7 @@ test("exports every governed route for GitHub Pages", async () => {
 });
 
 test("publishes current release facts and learner-data disclosure", async () => {
-  const [home, learnerData, releaseFacts, policy, installedPlatform] = await Promise.all([
+  const [home, learnerData, releaseFacts, policy, installedPlatform, application] = await Promise.all([
     readFile(path.join(outputRoot, "index.html"), "utf8"),
     readFile(path.join(outputRoot, "learner-data", "index.html"), "utf8"),
     readFile(path.join(outputRoot, "release-facts.json"), "utf8").then(JSON.parse),
@@ -40,6 +40,7 @@ test("publishes current release facts and learner-data disclosure", async () => 
       path.join(projectRoot, "node_modules", "@project42", "platform", "package.json"),
       "utf8",
     ).then(JSON.parse),
+    readFile(path.join(projectRoot, "package.json"), "utf8").then(JSON.parse),
   ]);
 
   const normalizedHome = home.replaceAll("<!-- -->", "");
@@ -47,7 +48,7 @@ test("publishes current release facts and learner-data disclosure", async () => 
   assert.ok(normalizedHome.includes(`Site v${releaseFacts.siteVersion}`));
   assert.match(learnerData, /Your learning data, without fine print/);
   assert.match(learnerData, /href="\/learner-data\/policy\.json"/);
-  assert.equal(releaseFacts.siteVersion, "0.3.1");
+  assert.equal(releaseFacts.siteVersion, application.version);
   assert.equal(releaseFacts.platformVersion, installedPlatform.version);
   assert.equal(releaseFacts.learnerDataPolicy.policyVersion, "2026-07-27");
   assert.equal(
