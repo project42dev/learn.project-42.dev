@@ -1,6 +1,6 @@
 {
   "name": "project-42-learn",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Project 42 Learn: free, provider-neutral AI learning paths and assessments.",
   "private": true,
   "license": "Apache-2.0",
@@ -34,14 +34,15 @@
     "test:links": "node --test tests/link-integrity.test.mjs && npm run links:check",
     "test:rendered": "node --test tests/rendered-html.test.mjs",
     "test:browser": "playwright test",
+    "test:container-contract": "node --test tests/container-distribution.test.mjs",
     "test:pages": "playwright test --config playwright.pages.config.ts",
     "test:pages:artifact": "node --test tests/github-pages-export.test.mjs",
-    "check": "npm run facts:check && npm run brand:check && npm run diagrams:check && npm run lint && npm run typecheck && npm test && npm run pages:export && npm run test:pages:artifact && npm run test:pages",
+    "check": "npm run facts:check && npm run brand:check && npm run diagrams:check && npm run lint && npm run typecheck && npm run test:container-contract && npm test && npm run pages:export && npm run test:pages:artifact && npm run test:pages",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
-    "@project42/platform": "github:project42dev/project42-platform#v0.46.4",
+    "@project42/platform": "github:project42dev/project42-platform#v0.49.0",
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.8"
@@ -69,12 +70,13 @@
     "wrangler": "4.114.0"
   },
   "overrides": {
+    "minimatch": "10.2.5",
     "postcss": "8.5.22",
     "sharp": "0.35.3"
   },
   "type": "module",
   "allowScripts": {
-    "github:project42dev/project42-platform#v0.46.4": true,
+    "github:project42dev/project42-platform#v0.49.0": true,
     "puppeteer": false
   }
 }

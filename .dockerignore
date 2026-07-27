@@ -1,0 +1,10 @@
+.git
+.github
+.next
+.wrangler
+dist
+node_modules
+playwright-report
+test-results
+coverage
+npm-debug.log*

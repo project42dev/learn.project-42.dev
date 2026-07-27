@@ -43,8 +43,8 @@ accessibility, and security contract.
 
 ## Current release facts
 
-- Site release `0.3.1`
-- Platform package `0.46.4`
+- Site release `0.4.0`
+- Platform package `0.49.0`
 - Content release `0.36.0`
 - 6 learning paths, 55 assessed modules, 49 evidence activities, and 257 reviewed questions
 - 6 dedicated learning paths and 4 provider scopes
@@ -83,6 +83,31 @@ browser-local mode.
 The production Pages workflow maps repository Actions variables with the same
 `NEXT_PUBLIC_PROJECT42_*` names into the reviewed build. These values are public
 browser configuration; credentials and learner data must never be stored there.
+
+### Self-hosted image
+
+The repository also builds a non-root OCI image for the independently deployable
+Project 42 stack. Public browser settings are compiled into the static Learn
+artifact at image-build time:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_PROJECT42_API_ORIGIN=http://localhost:8787 \
+  --build-arg NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY=http://localhost:8080/realms/project42 \
+  --build-arg NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID=project42-learn \
+  --build-arg NEXT_PUBLIC_PROJECT42_OIDC_SCOPE="openid profile email" \
+  --tag project42-learn:local .
+
+docker run --rm --publish 3000:8080 project42-learn:local
+```
+
+Open <http://localhost:3000> after the identity and account API services are
+available. The image exposes an unauthenticated `/health` endpoint on port 8080.
+All four build arguments are public browser configuration—not secrets. Rebuild
+the image when those values change. The supported Compose reference installation
+and production-overlay guidance live in the version-matched
+[`project42-platform`](https://github.com/project42dev/project42-platform)
+release.
 
 The platform dependency uses a reviewed release tag and the lockfile resolves that
 tag to an exact commit. npm `allowScripts` permits only that release dependency to

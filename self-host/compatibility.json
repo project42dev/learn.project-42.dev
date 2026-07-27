@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "application": {
+    "name": "project42-learn",
+    "version": "0.4.0"
+  },
+  "platform": {
+    "requiredVersion": "0.49.0"
+  },
+  "runtime": {
+    "containerPort": 8080,
+    "healthPath": "/health",
+    "configurationMode": "build-time"
+  },
+  "identity": {
+    "protocol": "OIDC Authorization Code with PKCE",
+    "requiredClaims": [
+      "sub",
+      "email",
+      "email_verified"
+    ]
+  }
+}
