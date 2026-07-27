@@ -11,6 +11,7 @@ interface DomainRule {
   id: string;
   domain: string;
   enabled: boolean;
+  policyVersion: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -350,7 +351,10 @@ function OwnerAdministration() {
               <article key={rule.id}>
                 <div>
                   <strong>{rule.domain}</strong>
-                  <small>{rule.enabled ? "Auto-approval enabled" : "Disabled"}</small>
+                  <small>
+                    {rule.enabled ? "Auto-approval enabled" : "Disabled"} · policy v
+                    {rule.policyVersion}
+                  </small>
                 </div>
                 <button
                   className="button button-secondary"
