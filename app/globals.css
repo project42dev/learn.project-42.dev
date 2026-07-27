@@ -3189,8 +3189,10 @@ a {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-content: flex-start;
+    min-width: 0;
     overflow-x: auto;
     padding-bottom: 0.8rem;
+    width: 100%;
   }
 
   .header-action {
@@ -3257,6 +3259,7 @@ a {
 
   .header-inner {
     min-height: 66px;
+    min-width: 0;
   }
 
   .site-header nav {

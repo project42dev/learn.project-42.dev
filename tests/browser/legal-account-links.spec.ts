@@ -35,8 +35,23 @@ test("keeps account policy links readable at narrow width", async ({ page }) => 
   await expect(
     page.getByRole("link", { name: "Service and legal expectations" }),
   ).toBeVisible();
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(1);
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    const excess = root.scrollWidth - root.clientWidth;
+    const offenders = [...document.querySelectorAll<HTMLElement>("body *")]
+      .filter((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.right > root.clientWidth + 1 || bounds.left < -1;
+      })
+      .slice(0, 10)
+      .map((element) => ({
+        className: element.className,
+        left: element.getBoundingClientRect().left,
+        right: element.getBoundingClientRect().right,
+        tagName: element.tagName,
+      }));
+
+    return { excess, offenders };
+  });
+  expect(overflow.excess, JSON.stringify(overflow.offenders)).toBeLessThanOrEqual(1);
 });
