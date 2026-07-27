@@ -10,6 +10,16 @@
       "owner": "Project 42 maintainers",
       "verifiedOn": "2026-07-25",
       "expires": "2026-10-31"
+    },
+    {
+      "targetPattern": "https://project-42.dev/legal-transparency*",
+      "expectedStatuses": [
+        404
+      ],
+      "reason": "The canonical cross-site page is implemented in project-42.dev AB#6187 and remains intentionally unpublished until AB#6190 owner fact verification and qualified legal review.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-07-27",
+      "expires": "2026-08-31"
     }
   ]
 }

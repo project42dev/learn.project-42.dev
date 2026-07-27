@@ -3160,6 +3160,25 @@ a {
   color: inherit;
 }
 
+.policy-link-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.account-policy-note {
+  color: var(--ink-soft);
+  line-height: 1.65;
+  margin: -0.5rem 0 1.5rem;
+  max-width: 900px;
+}
+
+.account-policy-note a,
+.account-card a {
+  font-weight: 760;
+}
+
 @media (max-width: 960px) {
   .header-inner {
     gap: 1rem;

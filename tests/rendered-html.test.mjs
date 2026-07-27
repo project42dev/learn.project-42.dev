@@ -114,10 +114,28 @@ test("renders the learner-data disclosure and machine-readable policy", async ()
   assert.match(html, /Visibility is not permission/);
   assert.ok(html.includes(defaultLearnerDataPolicy.policyVersion));
   assert.ok(html.includes("/learner-data/policy"));
+  assert.match(html, /https:\/\/project-42\.dev\/legal-transparency/);
 
   assert.equal(endpoint.status, 200);
   assert.match(endpoint.headers.get("content-type") ?? "", /application\/json/);
   assert.deepEqual(await endpoint.json(), defaultLearnerDataPolicy);
+});
+
+test("links account and profile surfaces to privacy and legal expectations", async () => {
+  for (const route of ["/", "/account", "/profile", "/learner-data"]) {
+    const response = await render(route);
+    assert.equal(response.status, 200, route);
+    assert.match(
+      await response.text(),
+      /https:\/\/project-42\.dev\/legal-transparency/,
+      route,
+    );
+  }
+
+  const account = await render("/account");
+  const accountHtml = await account.text();
+  assert.match(accountHtml, /Learner data and controls/);
+  assert.match(accountHtml, /Hosted sign-in and records may be temporarily unavailable/);
 });
 
 test("renders the one-time legacy progress migration experience", async () => {

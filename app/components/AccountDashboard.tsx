@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { learnerDataPolicy } from "../lib/learnerDataPolicy";
 import {
   useAuth,
@@ -80,6 +81,15 @@ export function AccountDashboard() {
           Account code is installed, but this deployment has not yet been connected
           to its OIDC tenant and API. Browser-local learning remains available.
         </p>
+        <p>
+          Review <Link href="/learner-data">learner-data and recovery controls</Link>
+          {" "}and the{" "}
+          <a href="https://project-42.dev/legal-transparency">
+            Legal &amp; Transparency page
+          </a>
+          . Hosted sign-in and records may be temporarily unavailable even after
+          configuration.
+        </p>
       </section>
     );
   }
@@ -98,6 +108,15 @@ export function AccountDashboard() {
           pending until an owner approves them or a verified email matches an exact
           approved-domain rule.
         </p>
+        <p>
+          Before requesting access, review{" "}
+          <Link href="/learner-data">learner data, consent, retention, and recovery</Link>
+          {" "}and the{" "}
+          <a href="https://project-42.dev/legal-transparency">
+            Legal &amp; Transparency page
+          </a>
+          . Hosted sign-in and records may be temporarily unavailable.
+        </p>
         <button className="button button-primary" onClick={() => void signIn()} type="button">
           Sign in or request access
         </button>
@@ -111,6 +130,15 @@ export function AccountDashboard() {
         <p className="eyebrow">Account service</p>
         <h2>Account sign-in needs attention</h2>
         <p>{error ?? "The account could not be loaded."}</p>
+        <p>
+          Your browser-local record remains available. See{" "}
+          <Link href="/learner-data">learner-data and recovery expectations</Link>
+          {" "}or{" "}
+          <a href="https://project-42.dev/legal-transparency#service-title">
+            service limitations
+          </a>
+          .
+        </p>
         <div className="button-row">
           <button
             className="button button-primary"
@@ -394,6 +422,15 @@ function LearnerDataControls() {
       </div>
       <p className="admin-status" role="status">
         {message}
+      </p>
+      <p className="account-policy-note">
+        These controls follow the current{" "}
+        <Link href="/learner-data">learner-data policy</Link>. Consent is recorded
+        separately from the{" "}
+        <a href="https://project-42.dev/legal-transparency">
+          Legal &amp; Transparency page
+        </a>
+        ; neither is preselected.
       </p>
       <div className="admin-grid">
         <section className="profile-card">

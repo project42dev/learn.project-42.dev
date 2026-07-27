@@ -17,9 +17,17 @@ export default function ProfilePage() {
           Track completed modules, knowledge-check scores, and badges. Use the
           browser privately or synchronize an approved account across devices.
         </p>
-        <Link className="text-link" href="/learner-data">
-          How Project 42 protects learner data →
-        </Link>
+        <div className="policy-link-row" aria-label="Progress policies">
+          <Link className="text-link" href="/learner-data">
+            How Project 42 protects learner data
+          </Link>
+          <a
+            className="text-link"
+            href="https://project-42.dev/legal-transparency"
+          >
+            Service and legal expectations
+          </a>
+        </div>
       </header>
       <ProfileDashboard />
     </main>

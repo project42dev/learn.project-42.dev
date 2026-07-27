@@ -26,6 +26,12 @@ export default function LearnerDataPage() {
           page separates what is available now from the account protections that
           must pass before hosted records turn on.
         </p>
+        <a
+          className="text-link"
+          href="https://project-42.dev/legal-transparency"
+        >
+          Service, licensing, and AI transparency →
+        </a>
       </header>
 
       <section className="policy-status" aria-labelledby="policy-status-title">
