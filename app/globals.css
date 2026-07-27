@@ -3798,6 +3798,144 @@ a {
   width: auto;
 }
 
+.diagram-viewer-trigger {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: zoom-in;
+  display: grid;
+  font: inherit;
+  gap: 0.75rem;
+  justify-items: center;
+  padding: 0;
+}
+
+.diagram-viewer-trigger:focus-visible {
+  border-radius: var(--radius-small);
+  outline: 3px solid var(--violet);
+  outline-offset: 6px;
+}
+
+.diagram-viewer-trigger-label {
+  background: var(--navy);
+  border-radius: 999px;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.55rem 0.8rem;
+}
+
+.diagram-viewer {
+  background: rgba(6, 10, 22, 0.96);
+  color: white;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  inset: 0;
+  max-width: 100vw;
+  overflow: hidden;
+  position: fixed;
+  z-index: 1000;
+}
+
+.diagram-viewer-toolbar {
+  align-items: center;
+  background: var(--navy);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+  padding: 0.8rem clamp(0.8rem, 3vw, 1.5rem);
+}
+
+.diagram-viewer-toolbar h2 {
+  color: white;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  margin: 0.15rem 0 0;
+}
+
+.diagram-viewer-kicker {
+  color: var(--lime);
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.diagram-viewer-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.diagram-viewer-controls button,
+.diagram-viewer-controls output {
+  align-items: center;
+  background: white;
+  border: 2px solid white;
+  border-radius: 999px;
+  color: var(--navy);
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  justify-content: center;
+  min-height: 42px;
+  min-width: 42px;
+  padding: 0.45rem 0.75rem;
+}
+
+.diagram-viewer-controls button {
+  cursor: pointer;
+}
+
+.diagram-viewer-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.diagram-viewer-controls button:focus-visible,
+.diagram-viewer-viewport:focus-visible {
+  outline: 3px solid var(--lime);
+  outline-offset: 2px;
+}
+
+.diagram-viewer-controls .diagram-viewer-close {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+
+.diagram-viewer-viewport {
+  background:
+    linear-gradient(rgba(17, 24, 39, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 24, 39, 0.08) 1px, transparent 1px),
+    #fff;
+  background-size: 28px 28px;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: clamp(0.75rem, 3vw, 2rem);
+  touch-action: pan-x pan-y pinch-zoom;
+  width: 100%;
+}
+
+.diagram-viewer-stage {
+  display: block;
+  min-width: 100%;
+}
+
+.diagram-viewer-image {
+  display: block;
+  height: auto;
+  max-height: none;
+  max-width: none;
+  min-width: 100%;
+  width: 100%;
+}
+
 .diagram-figure figcaption {
   color: var(--ink-soft);
   font-size: 0.76rem;
@@ -3862,6 +4000,19 @@ a {
   .diagram-source-card strong {
     color: CanvasText;
   }
+
+  .diagram-viewer {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .diagram-viewer-toolbar,
+  .diagram-viewer-controls button,
+  .diagram-viewer-controls output {
+    background: Canvas;
+    border-color: CanvasText;
+    color: CanvasText;
+  }
 }
 
 @media (max-width: 760px) {
@@ -3891,5 +4042,21 @@ a {
 
   .diagram-canvas img {
     min-width: 620px;
+  }
+
+  .diagram-viewer-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .diagram-viewer-controls {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .diagram-viewer-controls button,
+  .diagram-viewer-controls output {
+    min-height: 44px;
   }
 }

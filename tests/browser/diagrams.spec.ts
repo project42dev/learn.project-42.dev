@@ -28,6 +28,36 @@ test("discovers and reads accessible source-first visual guides", async ({
   );
   await expect(page.getByRole("heading", { name: "Key takeaways" })).toBeVisible();
 
+  const viewerTrigger = page.getByRole("button", {
+    name: /open full-screen viewer/i,
+  });
+  await viewerTrigger.click();
+  const viewer = page.getByRole("dialog", { name: "The learning evidence loop" });
+  await expect(viewer).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close" })).toBeFocused();
+  await expect(viewer.locator("output")).toHaveText("100%");
+  for (let index = 0; index < 12; index += 1) {
+    await page.getByRole("button", { name: "Zoom in" }).click();
+  }
+  await expect(viewer.locator("output")).toHaveText("400%");
+  await expect(viewer.locator(".diagram-viewer-viewport")).toBeVisible();
+  const canScroll = await viewer.locator(".diagram-viewer-viewport").evaluate(
+    (element) =>
+      element.scrollWidth > element.clientWidth ||
+      element.scrollHeight > element.clientHeight,
+  );
+  expect(canScroll).toBe(true);
+
+  const dialogAccessibility = await new AxeBuilder({ page })
+    .include(".diagram-viewer")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(dialogAccessibility.violations).toEqual([]);
+
+  await page.keyboard.press("Escape");
+  await expect(viewer).toBeHidden();
+  await expect(viewerTrigger).toBeFocused();
+
   const [svg, source] = await Promise.all([
     request.get("/diagrams/learning-evidence-loop.svg"),
     request.get("/diagrams/learning-evidence-loop.mmd"),

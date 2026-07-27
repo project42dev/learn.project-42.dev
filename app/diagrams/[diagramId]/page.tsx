@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DiagramViewer } from "../../components/DiagramViewer";
 import { diagramCatalog, getDiagram } from "../../lib/diagrams";
 
 interface DiagramPageProps {
@@ -58,13 +59,12 @@ export default async function DiagramPage({ params }: DiagramPageProps) {
 
       <figure className="diagram-figure">
         <div className="diagram-canvas">
-          {/* Preserve the reviewed SVG without an image-optimization rewrite. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <DiagramViewer
             alt={diagram.altText}
-            height="900"
+            height={900}
             src={`/diagrams/${diagram.id}.svg`}
-            width="1440"
+            title={diagram.title}
+            width={1440}
           />
         </div>
         <figcaption>{diagram.caption}</figcaption>
