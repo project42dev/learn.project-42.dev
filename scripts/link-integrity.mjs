@@ -55,6 +55,7 @@ export function buildRouteInventory(
     "/",
     "/about",
     "/account",
+    "/admin",
     "/auth/callback",
     "/diagrams",
     "/import-progress",

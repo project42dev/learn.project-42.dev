@@ -130,14 +130,17 @@ test("renders the one-time legacy progress migration experience", async () => {
 });
 
 test("renders account, approval, and cross-device progress surfaces", async () => {
-  const [accountResponse, profileResponse] = await Promise.all([
+  const [accountResponse, profileResponse, adminResponse] = await Promise.all([
     render("/account"),
     render("/profile"),
+    render("/admin"),
   ]);
   assert.equal(accountResponse.status, 200);
   assert.equal(profileResponse.status, 200);
+  assert.equal(adminResponse.status, 200);
   const account = await accountResponse.text();
   const profile = await profileResponse.text();
+  const admin = await adminResponse.text();
   assert.match(account, /Account and access/);
   assert.match(
     account,
@@ -146,6 +149,13 @@ test("renders account, approval, and cross-device progress surfaces", async () =
       : /Ready for hosted identity configuration/,
   );
   assert.match(profile, /browser privately or synchronize an approved account/i);
+  assert.match(admin, /Project 42 administration/);
+  assert.match(
+    admin,
+    hostedIdentityConfigured
+      ? /Checking owner access/
+      : /Hosted identity is not configured/,
+  );
 });
 
 test("renders the Learn home and academy index", async () => {
