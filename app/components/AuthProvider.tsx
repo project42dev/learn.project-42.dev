@@ -10,7 +10,12 @@ import {
   type ReactNode,
 } from "react";
 
-export type AccountState = "pending" | "approved" | "suspended" | "revoked";
+export type AccountState =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "suspended"
+  | "revoked";
 export type AccountRole = "learner" | "owner";
 
 export interface Project42Account {
