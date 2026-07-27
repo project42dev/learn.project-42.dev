@@ -80,6 +80,10 @@ database, issuer, audience, first owner, and domain rules are deployed separatel
 from the open-source platform; omitting the public values keeps Learn in
 browser-local mode.
 
+The production Pages workflow maps repository Actions variables with the same
+`NEXT_PUBLIC_PROJECT42_*` names into the reviewed build. These values are public
+browser configuration; credentials and learner data must never be stored there.
+
 The platform dependency uses a reviewed release tag and the lockfile resolves that
 tag to an exact commit. npm `allowScripts` permits only that release dependency to
 run its `prepare` script, which generates the published `dist` entrypoint by running
