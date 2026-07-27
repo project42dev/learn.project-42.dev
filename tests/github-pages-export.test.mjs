@@ -46,7 +46,7 @@ test("publishes current release facts and learner-data disclosure", async () => 
   assert.ok(normalizedHome.includes(`Site v${releaseFacts.siteVersion}`));
   assert.match(learnerData, /Your learning data, without fine print/);
   assert.match(learnerData, /href="\/learner-data\/policy\.json"/);
-  assert.equal(releaseFacts.siteVersion, "0.2.1");
+  assert.equal(releaseFacts.siteVersion, "0.2.2");
   assert.equal(releaseFacts.platformVersion, installedPlatform.version);
   assert.equal(releaseFacts.learnerDataPolicy.policyVersion, "2026-07-27");
   assert.equal(

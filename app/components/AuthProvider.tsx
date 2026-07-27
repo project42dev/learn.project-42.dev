@@ -72,6 +72,16 @@ const flowKey = "project42.auth.flow.v1";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+export function accountServiceErrorMessage(caught: unknown): string {
+  if (caught instanceof TypeError) {
+    return (
+      "The Project 42 account service could not be reached. Your sign-in was not " +
+      "cleared. Check your connection, then try again."
+    );
+  }
+  return caught instanceof Error ? caught.message : "Sign-in failed.";
+}
+
 function base64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -165,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("signed-in");
     } catch (caught) {
       setAccount(null);
-      setError(caught instanceof Error ? caught.message : "Sign-in failed.");
+      setError(accountServiceErrorMessage(caught));
       setStatus("error");
     }
   }, [apiFetch]);
