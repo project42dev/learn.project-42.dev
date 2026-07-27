@@ -54,6 +54,8 @@ export function buildRouteInventory(
   const htmlRoutes = new Set([
     "/",
     "/about",
+    "/account",
+    "/auth/callback",
     "/diagrams",
     "/import-progress",
     "/learn",

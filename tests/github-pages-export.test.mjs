@@ -19,6 +19,8 @@ test("exports every governed route for GitHub Pages", async () => {
 
   assert.equal(manifest.canonicalDomain, "learn.project-42.dev");
   assert.deepEqual(manifest.htmlRoutes, inventory.htmlRoutes);
+  assert.ok(inventory.htmlRoutes.includes("/account"));
+  assert.ok(inventory.htmlRoutes.includes("/auth/callback"));
   for (const route of inventory.htmlRoutes) {
     const relative = route === "/" ? "index.html" : `${route.slice(1)}/index.html`;
     await access(path.join(outputRoot, relative));
