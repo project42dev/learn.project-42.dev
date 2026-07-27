@@ -24,3 +24,26 @@ jobs:
       # Playwright's headless Chromium launch uses the smaller headless shell.
       - run: npx playwright install --with-deps chromium --only-shell
       - run: npm run check
+
+  self-host-image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Build self-host Learn image
+        run: docker build --tag project42-learn:test .
+      - name: Start image
+        run: docker run --detach --name project42-learn --publish 3000:8080 project42-learn:test
+      - name: Verify health and account route
+        run: |
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:3000/health; then break; fi
+            test "$attempt" -lt 20
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:3000/account/ | grep -q "Account"
+      - name: Capture diagnostics
+        if: failure()
+        run: docker logs project42-learn || true
+      - name: Stop image
+        if: always()
+        run: docker rm --force project42-learn || true
