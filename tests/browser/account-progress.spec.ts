@@ -52,3 +52,43 @@ test("shows the browser-to-account migration boundary on the progress page", asy
     page.getByRole("heading", { name: "Your paths" }),
   ).toBeVisible();
 });
+
+test("explains a temporarily unreachable hosted account service", async ({ page }) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The hosted-account network state requires production OIDC build configuration.",
+  );
+
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem(
+      "project42.auth.token.v1",
+      JSON.stringify({
+        accessToken: "deterministic-browser-test-token",
+        expiresAt: Date.now() + 3_600_000,
+      }),
+    );
+  });
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/session`,
+    async (route) => route.abort("failed"),
+  );
+
+  await page.goto("/account");
+  await expect(
+    page.getByRole("heading", { name: "Account sign-in needs attention" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "The Project 42 account service could not be reached. Your sign-in was not cleared. Check your connection, then try again.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Clear this sign-in" }),
+  ).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+});
