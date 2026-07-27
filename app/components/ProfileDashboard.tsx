@@ -12,13 +12,17 @@ import {
 } from "@project42/platform";
 import Link from "next/link";
 import { useMemo, useState, type ChangeEvent } from "react";
+import { useAuth } from "./AuthProvider";
 import { useProgress } from "./ProgressProvider";
 
 export function ProfileDashboard() {
+  const { account, configured } = useAuth();
   const {
     progress,
     hydrated,
     storageStatus,
+    syncStatus,
+    migrateLocalToAccount,
     replaceProgress,
     rename,
     reset,
@@ -27,6 +31,7 @@ export function ProfileDashboard() {
     kind: "error" | "success";
     message: string;
   } | null>(null);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
   const transcript = useMemo(
     () => buildTranscript(starterCatalog, progress),
     [progress],
@@ -118,12 +123,72 @@ export function ProfileDashboard() {
         </aside>
       ) : null}
 
+      <section className="profile-card account-sync-card" aria-labelledby="account-sync-title">
+        <p className="eyebrow">Cross-device progress</p>
+        <h2 id="account-sync-title">
+          {syncStatus === "synced"
+            ? "Progress is synchronized"
+            : syncStatus === "migration-available"
+              ? "Move this browser record into your account"
+              : "Browser and account status"}
+        </h2>
+        {!configured ? (
+          <p>
+            This deployment has not connected its account service yet. Your record
+            continues to stay privately in this browser.
+          </p>
+        ) : !account ? (
+          <p>
+            <Link href="/account">Sign in</Link> to request access and synchronize
+            progress after approval.
+          </p>
+        ) : account.state !== "approved" ? (
+          <p>
+            Your account is {account.state}. Progress remains in this browser until
+            the account is approved.
+          </p>
+        ) : syncStatus === "migration-available" ? (
+          <>
+            <p>
+              Your account has no server record yet, but this browser has progress.
+              Project 42 will upload it only after you confirm.
+            </p>
+            <button
+              className="button button-primary"
+              onClick={() => {
+                setMigrationError(null);
+                void migrateLocalToAccount().catch((caught) => {
+                  setMigrationError(
+                    caught instanceof Error
+                      ? caught.message
+                      : "Progress could not be moved.",
+                  );
+                });
+              }}
+              type="button"
+            >
+              Save this browser progress to my account
+            </button>
+          </>
+        ) : (
+          <p>
+            {syncStatus === "checking" && "Checking the server record…"}
+            {syncStatus === "syncing" && "Saving your latest progress…"}
+            {syncStatus === "synced" &&
+              "Changes to modules, scores, transcripts, and badges are saved to your account."}
+            {syncStatus === "error" &&
+              "Synchronization failed. Your browser copy remains available; retry by reloading this page."}
+          </p>
+        )}
+        {migrationError ? <p role="alert">{migrationError}</p> : null}
+      </section>
+
       <section className="profile-card profile-identity">
         <p className="eyebrow">Learner profile</p>
         <h2>{progress.displayName}</h2>
         <p>
-          This release stores your record in this browser. Account-based, cross-device
-          progress is planned for a later release.
+          Your browser keeps a local copy. When an approved account is connected,
+          Project 42 also synchronizes the record with the server.
         </p>
         <form
           onSubmit={(event) => {

@@ -92,7 +92,9 @@ export function ProgressMigration() {
       <p>
         Project 42 previously stored learning progress under project-42.dev. This
         check reads that browser-only record through a narrowly scoped,
-        same-project transfer page. Nothing is sent to a server.
+        same-project transfer page. It first lands in this browser; if you already
+        connected an approved account, the normal progress synchronization then
+        saves it to that account.
       </p>
       <iframe
         hidden

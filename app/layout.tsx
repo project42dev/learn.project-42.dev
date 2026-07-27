@@ -3,6 +3,7 @@ import "./globals.css";
 import { SiteFooter } from "./components/SiteFooter";
 import { SiteHeader } from "./components/SiteHeader";
 import { ProgressProvider } from "./components/ProgressProvider";
+import { AuthProvider } from "./components/AuthProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://learn.project-42.dev"),
@@ -92,13 +93,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <a className="skip-link" href="#main-content">
           Skip to content
         </a>
-        <ProgressProvider>
-          <SiteHeader />
-          <div id="main-content" tabIndex={-1}>
-            {children}
-          </div>
-          <SiteFooter />
-        </ProgressProvider>
+        <AuthProvider>
+          <ProgressProvider>
+            <SiteHeader />
+            <div id="main-content" tabIndex={-1}>
+              {children}
+            </div>
+            <SiteFooter />
+          </ProgressProvider>
+        </AuthProvider>
       </body>
     </html>
   );

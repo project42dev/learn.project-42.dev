@@ -14,8 +14,8 @@ export default function ProfilePage() {
         <p className="eyebrow">My progress</p>
         <h1>Your work, made visible.</h1>
         <p>
-          Track completed modules, knowledge-check scores, and badges. This first
-          release keeps the record privately in your browser.
+          Track completed modules, knowledge-check scores, and badges. Use the
+          browser privately or synchronize an approved account across devices.
         </p>
         <Link className="text-link" href="/learner-data">
           How Project 42 protects learner data →

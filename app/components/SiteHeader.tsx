@@ -16,6 +16,7 @@ export function SiteHeader() {
           <a href="https://guide.project-42.dev">Field Guide</a>
           <Link href="/diagrams">Visual guides</Link>
           <Link href="/profile">My progress</Link>
+          <Link href="/account">Account</Link>
           <a href="https://project-42.dev/about">About</a>
         </nav>
         <Link className="header-action" href="/learn/ai-foundations">

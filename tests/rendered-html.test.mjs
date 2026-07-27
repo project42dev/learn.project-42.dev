@@ -123,6 +123,20 @@ test("renders the one-time legacy progress migration experience", async () => {
   assert.match(html, /Import previous progress/);
 });
 
+test("renders account, approval, and cross-device progress surfaces", async () => {
+  const [accountResponse, profileResponse] = await Promise.all([
+    render("/account"),
+    render("/profile"),
+  ]);
+  assert.equal(accountResponse.status, 200);
+  assert.equal(profileResponse.status, 200);
+  const account = await accountResponse.text();
+  const profile = await profileResponse.text();
+  assert.match(account, /Account and access/);
+  assert.match(account, /Ready for hosted identity configuration/);
+  assert.match(profile, /browser privately or synchronize an approved account/i);
+});
+
 test("renders the Learn home and academy index", async () => {
   const [home, learn] = await Promise.all([render("/"), render("/learn")]);
   assert.equal(home.status, 200);
