@@ -1,6 +1,6 @@
 {
   "name": "project-42-learn",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Project 42 Learn: free, provider-neutral AI learning paths and assessments.",
   "private": true,
   "license": "Apache-2.0",
@@ -41,7 +41,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
-    "@project42/platform": "github:project42dev/project42-platform#v0.46.2",
+    "@project42/platform": "github:project42dev/project42-platform#v0.46.3",
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.8"
@@ -74,7 +74,7 @@
   },
   "type": "module",
   "allowScripts": {
-    "github:project42dev/project42-platform#v0.46.2": true,
+    "github:project42dev/project42-platform#v0.46.3": true,
     "puppeteer": false
   }
 }
