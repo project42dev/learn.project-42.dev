@@ -1,8 +1,8 @@
 {
   "$schemaVersion": 1,
-  "siteVersion": "0.1.0",
-  "platformVersion": "0.39.0",
-  "contentVersion": "0.30.0",
+  "siteVersion": "0.2.0",
+  "platformVersion": "0.40.0",
+  "contentVersion": "0.31.0",
   "counts": {
     "learningPaths": 6,
     "assessedModules": 55,
