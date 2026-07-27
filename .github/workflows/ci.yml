@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 
@@ -12,6 +13,17 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     steps:
+      - name: Enforce public tracker boundary
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          PULL_REQUEST_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          if ([string] $env:PULL_REQUEST_BODY -match '(?i)https://dev\.azure\.com/') {
+            throw 'Public pull-request bodies cannot contain private Azure DevOps URLs.'
+          }
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
