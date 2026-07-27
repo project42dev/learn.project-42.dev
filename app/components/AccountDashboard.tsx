@@ -43,6 +43,15 @@ interface OwnerDeletionRequest {
   primaryEmail: string | null;
 }
 
+interface AuditEvent {
+  id: string;
+  action: string;
+  requestId: string;
+  outcome: "success" | "denied" | "failed";
+  reason: string;
+  occurredAt: string;
+}
+
 const nextStates: Record<AccountState, AccountState[]> = {
   pending: ["approved", "rejected", "revoked"],
   approved: ["suspended", "revoked"],
@@ -165,6 +174,11 @@ export function AccountDashboard() {
         <button className="button button-secondary" onClick={signOut} type="button">
           Sign out on this browser
         </button>
+        {account.roles.includes("owner") ? (
+          <a className="button button-primary" href="/admin">
+            Open owner console
+          </a>
+        ) : null}
       </section>
       <LearnerDataControls />
       {account.roles.includes("owner") ? <OwnerAdministration /> : null}
@@ -477,11 +491,100 @@ function LearnerDataControls() {
   );
 }
 
-function OwnerAdministration() {
+export function AdminDashboard() {
+  const {
+    configured,
+    status,
+    account,
+    error,
+    signIn,
+    signOut,
+    refreshAccount,
+  } = useAuth();
+
+  if (!configured) {
+    return (
+      <section className="profile-card account-card">
+        <p className="eyebrow">Owner administration</p>
+        <h2>Hosted identity is not configured</h2>
+        <p>The owner console requires a configured OIDC provider and account API.</p>
+      </section>
+    );
+  }
+
+  if (status === "loading" || status === "signing-in") {
+    return <div className="profile-loading">Checking owner access…</div>;
+  }
+
+  if (status === "signed-out") {
+    return (
+      <section className="profile-card account-card">
+        <p className="eyebrow">Owner administration</p>
+        <h2>Sign in with an approved owner account</h2>
+        <p>
+          Administrative data is loaded only after the account service confirms an
+          approved owner role.
+        </p>
+        <button
+          className="button button-primary"
+          onClick={() => void signIn("/admin")}
+          type="button"
+        >
+          Sign in to owner console
+        </button>
+      </section>
+    );
+  }
+
+  if (status === "error" || !account) {
+    return (
+      <section className="profile-card account-card" role="alert">
+        <p className="eyebrow">Owner administration</p>
+        <h2>Owner access could not be verified</h2>
+        <p>{error ?? "The account could not be loaded."}</p>
+        <div className="button-row">
+          <button
+            className="button button-primary"
+            onClick={() => void refreshAccount()}
+            type="button"
+          >
+            Try again
+          </button>
+          <button className="button button-secondary" onClick={signOut} type="button">
+            Clear this sign-in
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (account.state !== "approved" || !account.roles.includes("owner")) {
+    return (
+      <section className="profile-card account-card" role="alert">
+        <p className="eyebrow">Owner administration</p>
+        <h2>Owner access required</h2>
+        <p>
+          This account is not an approved Project 42 owner. No administrative data
+          has been requested or displayed.
+        </p>
+        <a className="button button-secondary" href="/account">
+          Return to my account
+        </a>
+      </section>
+    );
+  }
+
+  return <OwnerAdministration />;
+}
+
+export function OwnerAdministration() {
   const { apiFetch } = useAuth();
   const [accounts, setAccounts] = useState<Project42Account[]>([]);
   const [domains, setDomains] = useState<DomainRule[]>([]);
+  const [automaticDomainApprovalEnabled, setAutomaticDomainApprovalEnabled] =
+    useState(false);
   const [deletionRequests, setDeletionRequests] = useState<OwnerDeletionRequest[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [loadedAt, setLoadedAt] = useState(0);
   const [message, setMessage] = useState("Loading owner controls…");
   const [busy, setBusy] = useState(false);
@@ -489,10 +592,12 @@ function OwnerAdministration() {
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const [accountResponse, domainResponse, deletionResponse] = await Promise.all([
+      const [accountResponse, domainResponse, deletionResponse, auditResponse] =
+        await Promise.all([
         apiFetch("/v1/admin/accounts"),
         apiFetch("/v1/admin/domains"),
         apiFetch("/v1/admin/deletions"),
+        apiFetch("/v1/admin/audit"),
       ]);
       const accountBody = (await accountResponse.json()) as {
         accounts?: Project42Account[];
@@ -500,23 +605,38 @@ function OwnerAdministration() {
       };
       const domainBody = (await domainResponse.json()) as {
         domains?: DomainRule[];
+        automaticApprovalEnabled?: boolean;
         error?: { message?: string };
       };
       const deletionBody = (await deletionResponse.json()) as {
         requests?: OwnerDeletionRequest[];
         error?: { message?: string };
       };
-      if (!accountResponse.ok || !domainResponse.ok || !deletionResponse.ok) {
+      const auditBody = (await auditResponse.json()) as {
+        events?: AuditEvent[];
+        error?: { message?: string };
+      };
+      if (
+        !accountResponse.ok ||
+        !domainResponse.ok ||
+        !deletionResponse.ok ||
+        !auditResponse.ok
+      ) {
         throw new Error(
           accountBody.error?.message ??
             domainBody.error?.message ??
             deletionBody.error?.message ??
+            auditBody.error?.message ??
             "Owner data could not be loaded.",
         );
       }
       setAccounts(accountBody.accounts ?? []);
       setDomains(domainBody.domains ?? []);
+      setAutomaticDomainApprovalEnabled(
+        domainBody.automaticApprovalEnabled === true,
+      );
       setDeletionRequests(deletionBody.requests ?? []);
+      setAuditEvents(auditBody.events ?? []);
       setLoadedAt(Date.now());
       setMessage("Owner data is current.");
     } catch (caught) {
@@ -728,12 +848,34 @@ function OwnerAdministration() {
             Matching is exact and only applies when the identity provider marks the
             primary email verified.
           </p>
+          {!automaticDomainApprovalEnabled ? (
+            <p role="status">
+              Automatic approval remains locked until the deployment validates real
+              signed verified-email claims.
+            </p>
+          ) : null}
           <form className="domain-form" onSubmit={(event) => void createDomain(event)}>
             <label htmlFor="approved-domain">Exact domain</label>
-            <input id="approved-domain" name="domain" placeholder="example.com" required />
+            <input
+              disabled={!automaticDomainApprovalEnabled}
+              id="approved-domain"
+              name="domain"
+              placeholder="example.com"
+              required
+            />
             <label htmlFor="domain-reason">Reason</label>
-            <input id="domain-reason" minLength={5} name="reason" required />
-            <button className="button button-primary" disabled={busy} type="submit">
+            <input
+              disabled={!automaticDomainApprovalEnabled}
+              id="domain-reason"
+              minLength={5}
+              name="reason"
+              required
+            />
+            <button
+              className="button button-primary"
+              disabled={busy || !automaticDomainApprovalEnabled}
+              type="submit"
+            >
               Add enabled rule
             </button>
           </form>
@@ -749,7 +891,9 @@ function OwnerAdministration() {
                 </div>
                 <button
                   className="button button-secondary"
-                  disabled={busy}
+                  disabled={
+                    busy || (!automaticDomainApprovalEnabled && !rule.enabled)
+                  }
                   onClick={() => void toggleDomain(rule)}
                   type="button"
                 >
@@ -795,6 +939,31 @@ function OwnerAdministration() {
                   </article>
                 );
               })}
+            </div>
+          )}
+        </section>
+
+        <section className="profile-card">
+          <h3>Privileged audit events</h3>
+          <p>
+            The newest request-correlated administrative and data-rights events are
+            shown first.
+          </p>
+          {auditEvents.length === 0 ? (
+            <p>No privileged audit events are recorded.</p>
+          ) : (
+            <div className="audit-event-list">
+              {auditEvents.slice(0, 25).map((event) => (
+                <article key={event.id}>
+                  <div>
+                    <strong>{event.action}</strong>
+                    <small>{new Date(event.occurredAt).toLocaleString()}</small>
+                  </div>
+                  <span className="account-state">{event.outcome}</span>
+                  <p>{event.reason}</p>
+                  <small>Request {event.requestId}</small>
+                </article>
+              ))}
             </div>
           )}
         </section>

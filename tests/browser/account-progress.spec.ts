@@ -92,3 +92,98 @@ test("explains a temporarily unreachable hosted account service", async ({ page 
     .analyze();
   expect(accessibility.violations).toEqual([]);
 });
+
+test("protects the owner route and renders request-correlated audit evidence", async ({
+  page,
+}) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The owner-console journey requires production OIDC build configuration.",
+  );
+
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem(
+      "project42.auth.token.v1",
+      JSON.stringify({
+        accessToken: "deterministic-owner-browser-test-token",
+        expiresAt: Date.now() + 3_600_000,
+      }),
+    );
+  });
+
+  const account = {
+    id: "owner-account",
+    installationId: "test",
+    identity: { issuer: "https://issuer.example", subject: "owner-subject" },
+    displayName: "Test owner",
+    primaryEmail: "owner@example.test",
+    emailVerified: true,
+    state: "approved",
+    roles: ["learner", "owner"],
+    createdAt: "2026-07-27T00:00:00.000Z",
+    updatedAt: "2026-07-27T00:00:00.000Z",
+  };
+
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
+    async (route) => {
+      const origin = route.request().headers().origin ?? "http://localhost";
+      const headers = {
+        "access-control-allow-origin": origin,
+        "access-control-allow-headers": "authorization,content-type,x-request-id",
+        "access-control-allow-methods": "DELETE,GET,POST,PATCH,PUT,OPTIONS",
+        "content-type": "application/json",
+      };
+      if (route.request().method() === "OPTIONS") {
+        await route.fulfill({ status: 204, headers });
+        return;
+      }
+      const pathname = new URL(route.request().url()).pathname;
+      const bodies: Record<string, unknown> = {
+        "/v1/session": { account },
+        "/v1/admin/accounts": { accounts: [account] },
+        "/v1/admin/domains": {
+          domains: [],
+          automaticApprovalEnabled: false,
+        },
+        "/v1/admin/deletions": { requests: [] },
+        "/v1/admin/audit": {
+          events: [
+            {
+              id: "audit-1",
+              action: "account.state.change",
+              requestId: "request-1",
+              outcome: "success",
+              reason: "Approved after review.",
+              occurredAt: "2026-07-27T00:00:00.000Z",
+            },
+          ],
+        },
+      };
+      await route.fulfill({
+        status: pathname in bodies ? 200 : 404,
+        headers,
+        body: JSON.stringify(bodies[pathname] ?? { error: { message: "Not found" } }),
+      });
+    },
+  );
+
+  await page.goto("/admin");
+  await expect(
+    page.getByRole("heading", { name: "Accounts and exact-domain approval" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Privileged audit events" }),
+  ).toBeVisible();
+  await expect(page.getByText("account.state.change")).toBeVisible();
+  await expect(page.getByText("Request request-1")).toBeVisible();
+  await expect(
+    page.getByText(/Automatic approval remains locked/i),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add enabled rule" })).toBeDisabled();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+});
