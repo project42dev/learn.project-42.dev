@@ -1,7 +1,7 @@
 {
   "$schemaVersion": 1,
-  "siteVersion": "0.2.0",
-  "platformVersion": "0.46.0",
+  "siteVersion": "0.2.1",
+  "platformVersion": "0.46.1",
   "contentVersion": "0.36.0",
   "counts": {
     "learningPaths": 6,
@@ -37,9 +37,9 @@
   "learnerDataPolicy": {
     "schemaVersion": 1,
     "policyId": "project42-learner-data",
-    "policyVersion": "2026-07-25",
+    "policyVersion": "2026-07-27",
     "accountBackedRecords": "planned",
-    "hostedRecordStore": "sites-d1",
+    "hostedRecordStore": "cloudflare-d1",
     "referenceRecordStore": "postgresql"
   },
   "homepage": "https://learn.project-42.dev",
