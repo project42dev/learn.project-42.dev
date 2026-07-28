@@ -284,6 +284,19 @@ test("protects the owner route and renders request-correlated audit evidence", a
     createdAt: "2026-07-27T00:00:00.000Z",
     updatedAt: "2026-07-27T00:00:00.000Z",
   };
+  let pendingAccount = {
+    id: "pending-account",
+    installationId: "test",
+    identity: { issuer: "https://issuer.example", subject: "pending-subject" },
+    displayName: "Pending learner",
+    primaryEmail: "pending@example.test",
+    emailVerified: true,
+    state: "pending",
+    roles: ["learner"],
+    createdAt: "2026-07-27T01:00:00.000Z",
+    updatedAt: "2026-07-27T01:00:00.000Z",
+  };
+  const accountStateChanges: Array<Record<string, unknown>> = [];
 
   await page.route(
     `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
@@ -300,6 +313,27 @@ test("protects the owner route and renders request-correlated audit evidence", a
         return;
       }
       const pathname = new URL(route.request().url()).pathname;
+      if (
+        pathname === "/v1/admin/accounts/pending-account/state" &&
+        route.request().method() === "PATCH"
+      ) {
+        const change = route.request().postDataJSON() as {
+          state: string;
+          reason: string;
+        };
+        accountStateChanges.push(change);
+        pendingAccount = {
+          ...pendingAccount,
+          state: change.state,
+          updatedAt: "2026-07-27T02:00:00.000Z",
+        };
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({ account: pendingAccount }),
+        });
+        return;
+      }
       const bodies: Record<string, unknown> = {
         "/v1/session": { account },
         "/v1/me/profile": {
@@ -348,7 +382,7 @@ test("protects the owner route and renders request-correlated audit evidence", a
         },
         "/v1/me/consents": { consents: [] },
         "/v1/me/deletion": { requests: [] },
-        "/v1/admin/accounts": { accounts: [account] },
+        "/v1/admin/accounts": { accounts: [account, pendingAccount] },
         "/v1/admin/domains": {
           domains: [],
           automaticApprovalEnabled: false,
@@ -389,6 +423,69 @@ test("protects the owner route and renders request-correlated audit evidence", a
   await expect(
     page.getByRole("heading", { name: "Accounts and exact-domain approval" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Account approval queue" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".admin-account-list")
+      .first()
+      .getByText("Pending learner", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".admin-account-list").first().getByText("Test owner", { exact: true }),
+  ).toHaveCount(0);
+
+  await page.getByLabel("Search accounts").fill("missing@example.test");
+  await expect(page.getByText("No accounts match this state and search.")).toBeVisible();
+  await page.getByLabel("Search accounts").fill("");
+
+  const pendingRow = page
+    .locator(".admin-account-list article")
+    .filter({ hasText: "pending@example.test" });
+  await pendingRow.getByRole("button", { name: "Approve" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Approve Pending learner" }),
+  ).toBeFocused();
+  await page
+    .locator(".admin-account-action")
+    .getByLabel("Reason")
+    .fill("Verified invited learner registration.");
+  await page.getByRole("button", { name: "Confirm approve" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "changed to approved" }),
+  ).toBeVisible();
+  expect(accountStateChanges).toEqual([
+    {
+      state: "approved",
+      reason: "Verified invited learner registration.",
+    },
+  ]);
+
+  await page.getByLabel("Account state").selectOption("all");
+  const approvedLearnerRow = page
+    .locator(".admin-account-list article")
+    .filter({ hasText: "pending@example.test" });
+  await approvedLearnerRow.getByRole("button", { name: "Revoke" }).click();
+  await page
+    .locator(".admin-account-action")
+    .getByLabel("Reason")
+    .fill("Confirmed permanent security revocation.");
+  await expect(
+    page.getByRole("button", { name: "Confirm revoke" }),
+  ).toBeDisabled();
+  await page.getByLabel("Enter REVOKE to confirm").fill("REVOKE");
+  await expect(
+    page.getByRole("button", { name: "Confirm revoke" }),
+  ).toBeEnabled();
+  const actionAccessibility = await new AxeBuilder({ page })
+    .include(".admin-account-action")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(actionAccessibility.violations).toEqual([]);
+  await page.getByRole("button", { name: "Cancel" }).click();
+  expect(accountStateChanges).toHaveLength(1);
+
   await expect(
     page.getByRole("heading", { name: "Privileged audit events" }),
   ).toBeVisible();

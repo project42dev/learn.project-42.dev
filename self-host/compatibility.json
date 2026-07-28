@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "application": {
     "name": "project42-learn",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "platform": {
     "requiredVersion": "0.51.1"

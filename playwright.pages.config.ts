@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const port = Number(process.env.PAGES_PORT ?? "48142");
+if (!Number.isInteger(port) || port < 1024 || port > 65_535) {
+  throw new Error("PAGES_PORT must be an integer from 1024 to 65535.");
+}
+const serverOrigin = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: "./tests/browser",
   timeout: process.env.CI ? 120_000 : 60_000,
@@ -11,7 +17,7 @@ export default defineConfig({
     ? [["line"], ["html", { open: "never" }]]
     : [["list"]],
   use: {
-    baseURL: "http://127.0.0.1:48142",
+    baseURL: serverOrigin,
     headless: true,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
@@ -24,7 +30,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run pages:serve",
-    url: "http://127.0.0.1:48142",
+    url: serverOrigin,
     reuseExistingServer: false,
     timeout: 60_000,
   },
