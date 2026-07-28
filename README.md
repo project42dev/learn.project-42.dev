@@ -18,6 +18,9 @@ npm run lint
 npm test
 ```
 
+Parallel worktrees can set `PROJECT42_PLAYWRIGHT_PORT` for application browser
+tests and `PAGES_PORT` for exported Pages tests. Both default to `48142`.
+
 The site consumes the versioned open-source learning core from
 [`project42dev/project42-platform`](https://github.com/project42dev/project42-platform).
 The current catalog includes the complete twelve-module Reliable Agent Workflows path
@@ -43,7 +46,7 @@ accessibility, and security contract.
 
 ## Current release facts
 
-- Site release `0.6.0`
+- Site release `0.7.0`
 - Platform package `0.51.1`
 - Content release `0.36.0`
 - 6 learning paths, 55 assessed modules, 49 evidence activities, and 257 reviewed questions
@@ -83,6 +86,9 @@ browser-local mode.
 The production Pages workflow maps repository Actions variables with the same
 `NEXT_PUBLIC_PROJECT42_*` names into the reviewed build. These values are public
 browser configuration; credentials and learner data must never be stored there.
+The protected owner workflow, account-state safeguards, trusted-domain launch
+lock, and evidence boundary are documented in
+[`docs/owner-administration.md`](docs/owner-administration.md).
 
 ### Self-hosted image
 

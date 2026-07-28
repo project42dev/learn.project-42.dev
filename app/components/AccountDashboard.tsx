@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { learnerDataPolicy } from "../lib/learnerDataPolicy";
 import {
   useAuth,
@@ -87,6 +94,37 @@ const nextStates: Record<AccountState, AccountState[]> = {
   suspended: ["approved", "revoked"],
   revoked: [],
 };
+
+type AccountStateFilter = AccountState | "all";
+
+interface AccountStateAction {
+  accountId: string;
+  nextState: AccountState;
+}
+
+const accountStateFilters: AccountStateFilter[] = [
+  "pending",
+  "all",
+  "approved",
+  "rejected",
+  "suspended",
+  "revoked",
+];
+
+function accountLabel(account: Project42Account): string {
+  return account.displayName ?? account.primaryEmail ?? `Account ${account.id.slice(0, 8)}`;
+}
+
+function accountActionLabel(
+  currentState: AccountState,
+  nextState: AccountState,
+): string {
+  if (nextState === "approved" && currentState !== "pending") return "Restore access";
+  if (nextState === "approved") return "Approve";
+  if (nextState === "rejected") return "Reject";
+  if (nextState === "suspended") return "Suspend";
+  return "Revoke";
+}
 
 export function AccountDashboard() {
   const {
@@ -1029,6 +1067,14 @@ export function AdminDashboard() {
 export function OwnerAdministration() {
   const { apiFetch } = useAuth();
   const [accounts, setAccounts] = useState<Project42Account[]>([]);
+  const [accountStateFilter, setAccountStateFilter] =
+    useState<AccountStateFilter>("pending");
+  const [accountSearch, setAccountSearch] = useState("");
+  const [accountAction, setAccountAction] = useState<AccountStateAction | null>(
+    null,
+  );
+  const [accountActionReason, setAccountActionReason] = useState("");
+  const [accountActionConfirmation, setAccountActionConfirmation] = useState("");
   const [domains, setDomains] = useState<DomainRule[]>([]);
   const [automaticDomainApprovalEnabled, setAutomaticDomainApprovalEnabled] =
     useState(false);
@@ -1037,6 +1083,48 @@ export function OwnerAdministration() {
   const [loadedAt, setLoadedAt] = useState(0);
   const [message, setMessage] = useState("Loading owner controls…");
   const [busy, setBusy] = useState(false);
+  const accountActionHeading = useRef<HTMLHeadingElement>(null);
+
+  const filteredAccounts = useMemo(() => {
+    const query = accountSearch.trim().toLocaleLowerCase();
+    return accounts.filter((candidate) => {
+      if (
+        accountStateFilter !== "all" &&
+        candidate.state !== accountStateFilter
+      ) {
+        return false;
+      }
+      if (!query) return true;
+      return [
+        candidate.displayName,
+        candidate.primaryEmail,
+        candidate.id,
+        candidate.state,
+        ...candidate.roles,
+      ].some((value) => value?.toLocaleLowerCase().includes(query));
+    });
+  }, [accountSearch, accountStateFilter, accounts]);
+
+  const accountCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        accountStateFilters.map((state) => [
+          state,
+          state === "all"
+            ? accounts.length
+            : accounts.filter((candidate) => candidate.state === state).length,
+        ]),
+      ) as Record<AccountStateFilter, number>,
+    [accounts],
+  );
+
+  const selectedAccount = accountAction
+    ? accounts.find((candidate) => candidate.id === accountAction.accountId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (accountAction) accountActionHeading.current?.focus();
+  }, [accountAction]);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -1100,18 +1188,37 @@ export function OwnerAdministration() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  async function changeState(target: Project42Account, state: AccountState) {
-    const reason = window.prompt(
-      `Reason for changing ${target.displayName ?? target.id} from ${target.state} to ${state}:`,
-    );
-    if (!reason) return;
+  function beginStateChange(target: Project42Account, state: AccountState) {
+    setAccountAction({ accountId: target.id, nextState: state });
+    setAccountActionReason("");
+    setAccountActionConfirmation("");
+  }
+
+  function cancelStateChange() {
+    setAccountAction(null);
+    setAccountActionReason("");
+    setAccountActionConfirmation("");
+  }
+
+  async function changeState(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accountAction || !selectedAccount) return;
+    const reason = accountActionReason.trim();
+    if (
+      reason.length < 5 ||
+      reason.length > 500 ||
+      (accountAction.nextState === "revoked" &&
+        accountActionConfirmation !== "REVOKE")
+    ) {
+      return;
+    }
     setBusy(true);
     try {
       const response = await apiFetch(
-        `/v1/admin/accounts/${encodeURIComponent(target.id)}/state`,
+        `/v1/admin/accounts/${encodeURIComponent(selectedAccount.id)}/state`,
         {
           method: "PATCH",
-          body: JSON.stringify({ state, reason }),
+          body: JSON.stringify({ state: accountAction.nextState, reason }),
         },
       );
       const body = (await response.json()) as {
@@ -1126,7 +1233,10 @@ export function OwnerAdministration() {
           candidate.id === body.account?.id ? body.account : candidate,
         ),
       );
-      setMessage(`Account changed to ${state}.`);
+      setMessage(
+        `${accountLabel(selectedAccount)} changed to ${accountAction.nextState}.`,
+      );
+      cancelStateChange();
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Account change failed.");
     } finally {
@@ -1302,13 +1412,65 @@ export function OwnerAdministration() {
 
       <div className="admin-grid">
         <section className="profile-card">
-          <h3>Accounts</h3>
+          <div className="admin-account-heading">
+            <div>
+              <h3>Account approval queue</h3>
+              <p>
+                New registrations appear under Pending. Search by name, verified
+                email, role, state, or account identifier.
+              </p>
+            </div>
+            <strong aria-live="polite">
+              {filteredAccounts.length} of {accounts.length} shown
+            </strong>
+          </div>
+          <div className="admin-account-filters">
+            <div>
+              <label htmlFor="admin-account-search">Search accounts</label>
+              <input
+                id="admin-account-search"
+                onChange={(event) => setAccountSearch(event.target.value)}
+                placeholder="Name or verified email"
+                type="search"
+                value={accountSearch}
+              />
+            </div>
+            <div>
+              <label htmlFor="admin-account-state">Account state</label>
+              <select
+                id="admin-account-state"
+                onChange={(event) => {
+                  setAccountStateFilter(event.target.value as AccountStateFilter);
+                  cancelStateChange();
+                }}
+                value={accountStateFilter}
+              >
+                {accountStateFilters.map((state) => (
+                  <option key={state} value={state}>
+                    {state === "all"
+                      ? "All accounts"
+                      : state.charAt(0).toUpperCase() + state.slice(1)}{" "}
+                    ({accountCounts[state]})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="admin-account-list">
-            {accounts.map((candidate) => (
+            {filteredAccounts.length === 0 ? (
+              <p className="admin-empty-state">
+                No accounts match this state and search.
+              </p>
+            ) : null}
+            {filteredAccounts.map((candidate) => (
               <article key={candidate.id}>
                 <div>
-                  <strong>{candidate.displayName ?? candidate.primaryEmail ?? candidate.id}</strong>
+                  <strong>{accountLabel(candidate)}</strong>
                   <small>{candidate.primaryEmail ?? "No verified email"}</small>
+                  <small>
+                    {candidate.emailVerified ? "Verified email" : "Email not verified"} ·{" "}
+                    {candidate.roles.join(", ")}
+                  </small>
                 </div>
                 <span className={`account-state account-state-${candidate.state}`}>
                   {candidate.state}
@@ -1319,13 +1481,97 @@ export function OwnerAdministration() {
                       className="button button-secondary"
                       disabled={busy}
                       key={next}
-                      onClick={() => void changeState(candidate, next)}
+                      onClick={() => beginStateChange(candidate, next)}
                       type="button"
                     >
-                      {next}
+                      {accountActionLabel(candidate.state, next)}
                     </button>
                   ))}
                 </div>
+                {accountAction?.accountId === candidate.id &&
+                selectedAccount ? (
+                  <form
+                    className={`admin-account-action${
+                      accountAction.nextState === "revoked"
+                        ? " admin-account-action-danger"
+                        : ""
+                    }`}
+                    onSubmit={(event) => void changeState(event)}
+                  >
+                    <h4 ref={accountActionHeading} tabIndex={-1}>
+                      {accountActionLabel(
+                        selectedAccount.state,
+                        accountAction.nextState,
+                      )}{" "}
+                      {accountLabel(selectedAccount)}
+                    </h4>
+                    <p>
+                      Change this account from <strong>{selectedAccount.state}</strong>{" "}
+                      to <strong>{accountAction.nextState}</strong>. The reason is
+                      written to the privileged audit record.
+                    </p>
+                    {accountAction.nextState === "revoked" ? (
+                      <p role="alert">
+                        Revocation is permanent for this identity. It cannot be
+                        restored from this console.
+                      </p>
+                    ) : null}
+                    <label htmlFor="admin-account-action-reason">Reason</label>
+                    <textarea
+                      id="admin-account-action-reason"
+                      maxLength={500}
+                      minLength={5}
+                      onChange={(event) =>
+                        setAccountActionReason(event.target.value)
+                      }
+                      required
+                      rows={3}
+                      value={accountActionReason}
+                    />
+                    {accountAction.nextState === "revoked" ? (
+                      <>
+                        <label htmlFor="admin-account-action-confirmation">
+                          Enter REVOKE to confirm
+                        </label>
+                        <input
+                          autoComplete="off"
+                          id="admin-account-action-confirmation"
+                          onChange={(event) =>
+                            setAccountActionConfirmation(event.target.value)
+                          }
+                          required
+                          value={accountActionConfirmation}
+                        />
+                      </>
+                    ) : null}
+                    <div className="button-row">
+                      <button
+                        className="button button-primary"
+                        disabled={
+                          busy ||
+                          accountActionReason.trim().length < 5 ||
+                          (accountAction.nextState === "revoked" &&
+                            accountActionConfirmation !== "REVOKE")
+                        }
+                        type="submit"
+                      >
+                        Confirm{" "}
+                        {accountActionLabel(
+                          selectedAccount.state,
+                          accountAction.nextState,
+                        ).toLocaleLowerCase()}
+                      </button>
+                      <button
+                        className="button button-secondary"
+                        disabled={busy}
+                        onClick={cancelStateChange}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </article>
             ))}
           </div>

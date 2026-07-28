@@ -3545,6 +3545,86 @@ a {
   grid-template-columns: minmax(0, 1fr) auto minmax(160px, auto);
 }
 
+.admin-account-heading {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.admin-account-heading h3,
+.admin-account-heading p {
+  margin-top: 0;
+}
+
+.admin-account-heading strong {
+  white-space: nowrap;
+}
+
+.admin-account-filters {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+  margin-top: 1rem;
+}
+
+.admin-account-filters > div,
+.admin-account-action {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-account-filters label,
+.admin-account-action label {
+  font-weight: 750;
+}
+
+.admin-account-filters input,
+.admin-account-filters select,
+.admin-account-action input,
+.admin-account-action textarea {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.admin-account-action {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  grid-column: 1 / -1;
+  padding: 1rem;
+}
+
+.admin-account-action-danger {
+  border-color: #b42318;
+}
+
+.admin-account-action h4,
+.admin-account-action p {
+  margin: 0;
+}
+
+.admin-account-action h4:focus {
+  outline: 3px solid var(--violet);
+  outline-offset: 4px;
+}
+
+.admin-account-action textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.admin-empty-state {
+  border-top: 1px solid var(--line);
+  margin: 0;
+  padding-top: 0.85rem;
+}
+
 .admin-account-list small,
 .domain-list small,
 .audit-event-list small {
@@ -3833,6 +3913,10 @@ a {
 
 @media (max-width: 860px) {
   .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-account-filters {
     grid-template-columns: 1fr;
   }
 
