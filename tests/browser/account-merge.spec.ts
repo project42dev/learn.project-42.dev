@@ -2,9 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 const hostedIdentityConfigured = Boolean(
-  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN &&
-    process.env.NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY &&
-    process.env.NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID,
+  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
 );
 
 const ownerId = "00000000-0000-4000-8000-000000000001";
@@ -43,18 +41,6 @@ const survivor = {
   roles: ["learner"],
 };
 
-async function installOwnerSession(page: Page) {
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "project42.auth.token.v1",
-      JSON.stringify({
-        accessToken: "deterministic-owner-account-merge-token",
-        expiresAt: Date.now() + 3_600_000,
-      }),
-    );
-  });
-}
-
 async function installOwnerApi(
   page: Page,
   options: {
@@ -73,8 +59,9 @@ async function installOwnerApi(
       const origin = request.headers().origin ?? "http://localhost";
       const headers = {
         "access-control-allow-origin": origin,
+        "access-control-allow-credentials": "true",
         "access-control-allow-headers":
-          "authorization,content-type,x-request-id",
+          "content-type,x-request-id",
         "access-control-allow-methods": "DELETE,GET,POST,PATCH,PUT,OPTIONS",
         "content-type": "application/json",
       };
@@ -84,7 +71,7 @@ async function installOwnerApi(
       }
       const pathname = new URL(request.url()).pathname;
       const commonBodies: Record<string, unknown> = {
-        "/v1/session": { account: owner },
+        "/v1/auth/session": { account: owner },
         "/v1/admin/accounts": { accounts: [owner, source, survivor] },
         "/v1/admin/domains": {
           domains: [],
@@ -271,9 +258,8 @@ test("owner reviews, confirms, and recovers a duplicate-account merge", async ({
 }) => {
   test.skip(
     !hostedIdentityConfigured,
-    "The account-merge journey requires production OIDC build configuration.",
+    "The account-merge journey requires account-API configuration.",
   );
-  await installOwnerSession(page);
   const api = await installOwnerApi(page);
   await page.goto("/admin");
 
@@ -360,9 +346,8 @@ test("owner merge UI fails closed for duplicate, cancelled, expired, and replaye
 }) => {
   test.skip(
     !hostedIdentityConfigured,
-    "The account-merge failure states require production OIDC build configuration.",
+    "The account-merge failure states require account-API configuration.",
   );
-  await installOwnerSession(page);
   await installOwnerApi(page, { previewMode: "expired" });
   await page.goto("/admin");
 

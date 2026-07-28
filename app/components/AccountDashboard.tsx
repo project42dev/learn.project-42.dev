@@ -185,7 +185,11 @@ export function AccountDashboard() {
           >
             Try again
           </button>
-          <button className="button button-secondary" onClick={signOut} type="button">
+          <button
+            className="button button-secondary"
+            onClick={() => void signOut()}
+            type="button"
+          >
             Clear this sign-in
           </button>
         </div>
@@ -237,7 +241,11 @@ export function AccountDashboard() {
             transcript entries, and badges with the server.
           </p>
         ) : null}
-        <button className="button button-secondary" onClick={signOut} type="button">
+        <button
+          className="button button-secondary"
+          onClick={() => void signOut()}
+          type="button"
+        >
           Sign out on this browser
         </button>
         {account.roles.includes("owner") ? (
@@ -674,7 +682,7 @@ function ProfileEditor() {
 }
 
 function LearnerDataControls() {
-  const { apiFetch, signIn, signOut } = useAuth();
+  const { apiFetch, signIn } = useAuth();
   const [consents, setConsents] = useState<ConsentRecord[]>([]);
   const [deletions, setDeletions] = useState<DeletionRequest[]>([]);
   const [confirmation, setConfirmation] = useState("");
@@ -859,7 +867,6 @@ function LearnerDataControls() {
   }
 
   function reauthenticate() {
-    signOut();
     void signIn("/account");
   }
 
@@ -1037,7 +1044,11 @@ export function AdminDashboard() {
           >
             Try again
           </button>
-          <button className="button button-secondary" onClick={signOut} type="button">
+          <button
+            className="button button-secondary"
+            onClick={() => void signOut()}
+            type="button"
+          >
             Clear this sign-in
           </button>
         </div>
