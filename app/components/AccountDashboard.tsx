@@ -7,6 +7,7 @@ import {
   type AccountState,
   type Project42Account,
 } from "./AuthProvider";
+import { AccountMergeAdministration } from "./AccountMergeAdministration";
 
 interface DomainRule {
   id: string;
@@ -1438,6 +1439,11 @@ export function OwnerAdministration() {
             </div>
           )}
         </section>
+
+        <AccountMergeAdministration
+          accounts={accounts}
+          onAccountsChanged={load}
+        />
 
         <section className="profile-card">
           <h3>Privileged audit events</h3>

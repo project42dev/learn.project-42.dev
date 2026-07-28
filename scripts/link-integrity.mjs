@@ -55,6 +55,7 @@ export function buildRouteInventory(
     "/",
     "/about",
     "/account",
+    "/account/github/callback",
     "/admin",
     "/auth/callback",
     "/diagrams",

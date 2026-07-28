@@ -238,7 +238,7 @@ test("completes GitHub linkage without exposing the provider token to Learn", as
   await page.goto(
     "/account/github/callback/?code=temporary-github-code&state=github-state",
   );
-  await expect(page).toHaveURL(/\/account\?linked=github$/);
+  await expect(page).toHaveURL(/\/account\/?\?linked=github$/);
   await expect(page.getByText("@project42-learner")).toBeVisible();
   expect(completionRequest).toMatchObject({
     transactionId: "00000000-0000-4000-8000-000000000042",

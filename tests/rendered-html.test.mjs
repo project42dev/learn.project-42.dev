@@ -150,6 +150,7 @@ test("renders account, approval, and cross-device progress surfaces", async () =
   );
   assert.match(profile, /browser privately or synchronize an approved account/i);
   assert.match(admin, /Project 42 administration/);
+  assert.match(admin, /recover duplicate learner accounts/i);
   assert.match(
     admin,
     hostedIdentityConfigured
