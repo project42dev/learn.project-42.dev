@@ -30,6 +30,20 @@ interface LearnerProfile {
   updatedAt: string;
 }
 
+interface LinkedIdentity {
+  id: string;
+  provider: string;
+  providerLogin: string | null;
+  displayName: string | null;
+  status: "active" | "unlinked";
+  primary: boolean;
+  linkedAt: string;
+  lastVerifiedAt: string;
+  lastSeenAt: string;
+  unlinkedAt: string | null;
+  canUnlink: boolean;
+}
+
 interface ConsentRecord {
   id: string;
   purpose: string;
@@ -196,9 +210,168 @@ export function AccountDashboard() {
       {account.state !== "suspended" && account.state !== "revoked" ? (
         <ProfileEditor />
       ) : null}
+      {account.state === "approved" ? <LinkedIdentityEditor /> : null}
       <LearnerDataControls />
       {account.roles.includes("owner") ? <OwnerAdministration /> : null}
     </div>
+  );
+}
+
+function LinkedIdentityEditor() {
+  const { apiFetch, startGithubLink } = useAuth();
+  const [identities, setIdentities] = useState<LinkedIdentity[]>([]);
+  const [message, setMessage] = useState("Loading linked accounts…");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const response = await apiFetch("/v1/me/identities");
+      const body = (await response.json()) as {
+        identities?: LinkedIdentity[];
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.identities) {
+        throw new Error(
+          body.error?.message ?? "Linked accounts could not be loaded.",
+        );
+      }
+      setIdentities(body.identities);
+      setMessage("Linked accounts are current.");
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Linked accounts could not be loaded.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [apiFetch]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  async function connectGithub() {
+    setBusy(true);
+    setMessage("Opening GitHub’s secure authorization page…");
+    try {
+      await startGithubLink("/account?linked=github");
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "GitHub account linking could not be started.",
+      );
+      setBusy(false);
+    }
+  }
+
+  async function unlink(identity: LinkedIdentity) {
+    const label = identity.providerLogin
+      ? `@${identity.providerLogin}`
+      : identity.displayName ?? identity.provider;
+    if (
+      !window.confirm(
+        `Unlink ${label}? Your Project 42 learning record will remain intact.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await apiFetch(
+        `/v1/me/identities/${encodeURIComponent(identity.id)}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) {
+        const body = (await response.json()) as {
+          error?: { message?: string };
+        };
+        throw new Error(
+          body.error?.message ?? "The linked account could not be removed.",
+        );
+      }
+      await load();
+      setMessage(`${label} was unlinked.`);
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "The linked account could not be removed.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const githubLinked = identities.some(
+    (identity) => identity.provider === "github" && identity.status === "active",
+  );
+
+  return (
+    <section className="profile-card" aria-labelledby="linked-identities-title">
+      <p className="eyebrow">Linked accounts</p>
+      <h3 id="linked-identities-title">Sign-in and contributor identity</h3>
+      <p>
+        Link GitHub to your existing Project 42 learner record without changing
+        your primary sign-in. Repository permissions are never requested.
+      </p>
+      <p className="admin-status" role="status">
+        {message}
+      </p>
+      <div className="linked-identity-list">
+        {identities.map((identity) => (
+          <article key={identity.id}>
+            <div>
+              <strong>
+                {identity.provider === "github"
+                  ? "GitHub"
+                  : identity.provider === "oidc"
+                    ? "Primary identity provider"
+                    : identity.provider}
+              </strong>
+              <span>
+                {identity.providerLogin
+                  ? `@${identity.providerLogin}`
+                  : identity.displayName ?? "Verified identity"}
+              </span>
+              <small>
+                Last verified{" "}
+                {new Date(identity.lastVerifiedAt).toLocaleDateString()}
+              </small>
+            </div>
+            <div className="linked-identity-actions">
+              <span className="account-state">
+                {identity.primary ? "Primary" : "Linked"}
+              </span>
+              {identity.canUnlink ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy}
+                  onClick={() => void unlink(identity)}
+                  type="button"
+                >
+                  Unlink
+                </button>
+              ) : null}
+            </div>
+          </article>
+        ))}
+      </div>
+      {!githubLinked ? (
+        <button
+          className="button button-primary"
+          disabled={busy}
+          onClick={() => void connectGithub()}
+          type="button"
+        >
+          Connect GitHub
+        </button>
+      ) : null}
+    </section>
   );
 }
 

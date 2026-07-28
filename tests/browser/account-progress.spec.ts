@@ -93,6 +93,167 @@ test("explains a temporarily unreachable hosted account service", async ({ page 
   expect(accessibility.violations).toEqual([]);
 });
 
+test("completes GitHub linkage without exposing the provider token to Learn", async ({
+  page,
+}) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The GitHub linkage journey requires production OIDC build configuration.",
+  );
+
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem(
+      "project42.auth.token.v1",
+      JSON.stringify({
+        accessToken: "deterministic-github-link-test-token",
+        expiresAt: Date.now() + 3_600_000,
+      }),
+    );
+    if (window.location.pathname.includes("/account/github/callback")) {
+      window.sessionStorage.setItem(
+        "project42.identity-link.github.v1",
+        JSON.stringify({
+          transactionId: "00000000-0000-4000-8000-000000000042",
+          state: "github-state",
+          verifier: "v".repeat(64),
+          returnPath: "/account?linked=github",
+          expiresAt: new Date(Date.now() + 600_000).toISOString(),
+        }),
+      );
+    }
+  });
+
+  const account = {
+    id: "github-link-account",
+    installationId: "test",
+    identity: { issuer: "https://issuer.example", subject: "github-link-subject" },
+    displayName: "GitHub link learner",
+    primaryEmail: "learner@example.test",
+    emailVerified: true,
+    state: "approved",
+    roles: ["learner"],
+    createdAt: "2026-07-27T00:00:00.000Z",
+    updatedAt: "2026-07-27T00:00:00.000Z",
+  };
+  let completionRequest: Record<string, unknown> | null = null;
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
+    async (route) => {
+      const request = route.request();
+      const origin = request.headers().origin ?? "http://localhost";
+      const headers = {
+        "access-control-allow-origin": origin,
+        "access-control-allow-headers": "authorization,content-type,x-request-id",
+        "access-control-allow-methods": "DELETE,GET,POST,PATCH,PUT,OPTIONS",
+        "content-type": "application/json",
+      };
+      if (request.method() === "OPTIONS") {
+        await route.fulfill({ status: 204, headers });
+        return;
+      }
+      const pathname = new URL(request.url()).pathname;
+      if (pathname === "/v1/me/identity-links/github/complete") {
+        completionRequest = request.postDataJSON() as Record<string, unknown>;
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            linkedIdentity: {
+              id: "identity-github",
+              provider: "github",
+              providerLogin: "project42-learner",
+              displayName: "Project 42 learner",
+              status: "active",
+              primary: false,
+              linkedAt: account.createdAt,
+              lastVerifiedAt: account.updatedAt,
+              lastSeenAt: account.updatedAt,
+              unlinkedAt: null,
+              canUnlink: true,
+            },
+            returnPath: "/account?linked=github",
+          }),
+        });
+        return;
+      }
+      const bodies: Record<string, unknown> = {
+        "/v1/session": { account },
+        "/v1/me/profile": {
+          profile: {
+            userId: account.id,
+            displayName: account.displayName,
+            bio: null,
+            organization: null,
+            location: null,
+            websiteUrl: null,
+            photoAvailable: false,
+            photoUpdatedAt: null,
+            createdAt: account.createdAt,
+            updatedAt: account.updatedAt,
+          },
+        },
+        "/v1/me/identities": {
+          identities: [
+            {
+              id: "identity-primary",
+              provider: "oidc",
+              providerLogin: null,
+              displayName: account.displayName,
+              status: "active",
+              primary: true,
+              linkedAt: account.createdAt,
+              lastVerifiedAt: account.updatedAt,
+              lastSeenAt: account.updatedAt,
+              unlinkedAt: null,
+              canUnlink: false,
+            },
+            {
+              id: "identity-github",
+              provider: "github",
+              providerLogin: "project42-learner",
+              displayName: "Project 42 learner",
+              status: "active",
+              primary: false,
+              linkedAt: account.createdAt,
+              lastVerifiedAt: account.updatedAt,
+              lastSeenAt: account.updatedAt,
+              unlinkedAt: null,
+              canUnlink: true,
+            },
+          ],
+        },
+        "/v1/me/consents": { consents: [] },
+        "/v1/me/deletion": { requests: [] },
+      };
+      await route.fulfill({
+        status: pathname in bodies ? 200 : 404,
+        headers,
+        body: JSON.stringify(
+          bodies[pathname] ?? { error: { message: "Not found" } },
+        ),
+      });
+    },
+  );
+
+  await page.goto(
+    "/account/github/callback/?code=temporary-github-code&state=github-state",
+  );
+  await expect(page).toHaveURL(/\/account\?linked=github$/);
+  await expect(page.getByText("@project42-learner")).toBeVisible();
+  expect(completionRequest).toMatchObject({
+    transactionId: "00000000-0000-4000-8000-000000000042",
+    state: "github-state",
+    code: "temporary-github-code",
+    codeVerifier: "v".repeat(64),
+  });
+  expect(JSON.stringify(completionRequest)).not.toContain("github-token");
+  expect(
+    await page.evaluate(() =>
+      window.sessionStorage.getItem("project42.identity-link.github.v1"),
+    ),
+  ).toBeNull();
+});
+
 test("protects the owner route and renders request-correlated audit evidence", async ({
   page,
 }) => {
@@ -155,6 +316,38 @@ test("protects the owner route and renders request-correlated audit evidence", a
             updatedAt: account.updatedAt,
           },
         },
+        "/v1/me/identities": {
+          identities: [
+            {
+              id: "identity-primary",
+              provider: "oidc",
+              providerLogin: null,
+              displayName: "Test owner",
+              status: "active",
+              primary: true,
+              linkedAt: account.createdAt,
+              lastVerifiedAt: account.updatedAt,
+              lastSeenAt: account.updatedAt,
+              unlinkedAt: null,
+              canUnlink: false,
+            },
+            {
+              id: "identity-github",
+              provider: "github",
+              providerLogin: "project42-owner",
+              displayName: "Project 42 owner",
+              status: "active",
+              primary: false,
+              linkedAt: account.createdAt,
+              lastVerifiedAt: account.updatedAt,
+              lastSeenAt: account.updatedAt,
+              unlinkedAt: null,
+              canUnlink: true,
+            },
+          ],
+        },
+        "/v1/me/consents": { consents: [] },
+        "/v1/me/deletion": { requests: [] },
         "/v1/admin/accounts": { accounts: [account] },
         "/v1/admin/domains": {
           domains: [],
@@ -181,6 +374,16 @@ test("protects the owner route and renders request-correlated audit evidence", a
       });
     },
   );
+
+  await page.goto("/account");
+  await expect(
+    page.getByRole("heading", { name: "Sign-in and contributor identity" }),
+  ).toBeVisible();
+  await expect(page.getByText("@project42-owner")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Unlink" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Connect GitHub" }),
+  ).toHaveCount(0);
 
   await page.goto("/admin");
   await expect(
