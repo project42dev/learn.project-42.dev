@@ -29,7 +29,7 @@ and deliberately flawed calibration packages, eight required operating artifacts
 criterion-level evidence mapping, failed-submission revision, a 100-point rubric,
 and the Reliable Agent Operator badge. Profiles preserve attempts, capstone
 revisions, evidence links, badges, and portable JSON/CSV exports in device-local
-storage. When public OIDC and API settings are supplied at build time, approved
+storage. When the public account-API origin is supplied at build time, approved
 accounts synchronize those records across devices. New accounts are pending by
 default; owners can approve, suspend, or revoke them and maintain exact verified
 email-domain auto-approval rules. The accepted lifecycle, consent, retention,
@@ -46,8 +46,8 @@ accessibility, and security contract.
 
 ## Current release facts
 
-- Site release `0.8.0`
-- Platform package `0.51.1`
+- Site release `0.9.0`
+- Platform package `0.60.0`
 - Content release `0.36.0`
 - 6 learning paths, 55 assessed modules, 49 evidence activities, and 257 reviewed questions
 - 6 dedicated learning paths and 4 provider scopes
@@ -77,33 +77,34 @@ the exact merged `main` commit. OpenAI Sites is not a production or custom-domai
 target for this repository. Production configuration and learner secrets never belong
 in git.
 
-The browser uses OIDC Authorization Code with PKCE and needs the public build values
-listed in [`.env.example`](.env.example). It contains no client secret. The API,
-database, issuer, audience, first owner, and domain rules are deployed separately
-from the open-source platform; omitting the public values keeps Learn in
-browser-local mode.
+The account API owns OIDC Authorization Code with PKCE and issues an opaque,
+secure, HttpOnly session cookie. Learn receives no provider token and stores no
+bearer token in browser storage. The browser needs only the public API origin
+listed in [`.env.example`](.env.example). The API, database, issuer, audience,
+OIDC client, session key, first owner, and domain rules are deployed separately;
+omitting the API origin keeps Learn in browser-local mode.
 
-The production Pages workflow maps repository Actions variables with the same
-`NEXT_PUBLIC_PROJECT42_*` names into the reviewed build. These values are public
-browser configuration; credentials and learner data must never be stored there.
+The production Pages workflow maps `NEXT_PUBLIC_PROJECT42_API_ORIGIN` into the
+reviewed build. It is public browser configuration; OIDC configuration,
+credentials, session keys, and learner data must never be stored there.
 The protected owner workflow, account-state safeguards, trusted-domain launch
 lock, and evidence boundary are documented in
 [`docs/owner-administration.md`](docs/owner-administration.md).
+The [secure browser-session contract](docs/secure-browser-sessions.md) documents
+the API-owned OIDC flow, HttpOnly cookie boundary, renewal, sign-out, and failure
+recovery.
 The [browser-to-account migration contract](docs/progress-migration.md) documents
 preview, deterministic merge, immutable-evidence conflicts, retry, and recovery.
 
 ### Self-hosted image
 
 The repository also builds a non-root OCI image for the independently deployable
-Project 42 stack. Public browser settings are compiled into the static Learn
+Project 42 stack. The public account-API origin is compiled into the static Learn
 artifact at image-build time:
 
 ```bash
 docker build \
   --build-arg NEXT_PUBLIC_PROJECT42_API_ORIGIN=http://localhost:8787 \
-  --build-arg NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY=http://localhost:8080/realms/project42 \
-  --build-arg NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID=project42-learn \
-  --build-arg NEXT_PUBLIC_PROJECT42_OIDC_SCOPE="openid profile email" \
   --tag project42-learn:local .
 
 docker run --rm --publish 3000:8080 project42-learn:local
@@ -111,8 +112,9 @@ docker run --rm --publish 3000:8080 project42-learn:local
 
 Open <http://localhost:3000> after the identity and account API services are
 available. The image exposes an unauthenticated `/health` endpoint on port 8080.
-All four build arguments are public browser configuration—not secrets. Rebuild
-the image when those values change. The supported Compose reference installation
+The API-origin build argument is public browser configuration, not a secret.
+Rebuild the image when it changes. Configure OIDC and session secrets only on the
+account API. The supported Compose reference installation
 and production-overlay guidance live in the version-matched
 [`project42-platform`](https://github.com/project42dev/project42-platform)
 release.

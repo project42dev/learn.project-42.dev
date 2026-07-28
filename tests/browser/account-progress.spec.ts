@@ -1,16 +1,31 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import type { LearnerProgress } from "@project42/platform";
 
 const hostedIdentityConfigured = Boolean(
-  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN &&
-    process.env.NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY &&
-    process.env.NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID,
+  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
 );
 
-test("renders the account state selected by public OIDC configuration", async ({
+async function installSignedOutApi(page: Page) {
+  if (!hostedIdentityConfigured) return;
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/auth/session`,
+    async (route) => {
+      await route.fulfill({
+        status: 401,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          error: { code: "authentication_required", message: "Sign in is required." },
+        }),
+      });
+    },
+  );
+}
+
+test("renders the account state selected by public account-API configuration", async ({
   page,
 }) => {
+  await installSignedOutApi(page);
   await page.goto("/account");
   if (hostedIdentityConfigured) {
     await expect(
@@ -38,6 +53,7 @@ test("renders the account state selected by public OIDC configuration", async ({
 test("shows the browser-to-account migration boundary on the progress page", async ({
   page,
 }) => {
+  await installSignedOutApi(page);
   await page.goto("/profile");
   await expect(
     page.getByRole("heading", { name: "Browser and account status" }),
@@ -52,6 +68,251 @@ test("shows the browser-to-account migration boundary on the progress page", asy
   await expect(
     page.getByRole("heading", { name: "Your paths" }),
   ).toBeVisible();
+});
+
+test("starts API-owned sign-in without storing an identity-provider token", async ({
+  page,
+}) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The secure-session journey requires account-API configuration.",
+  );
+  await installSignedOutApi(page);
+  const startPattern =
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/auth/start**`;
+  await page.route(startPattern, async (route) => route.abort("aborted"));
+  await page.goto("/account");
+  const expectedReturnTo = new URL("/account", page.url()).toString();
+
+  const requestPromise = page.waitForRequest(startPattern);
+  await page
+    .getByRole("button", { name: "Sign in or request access" })
+    .click();
+  const request = await requestPromise;
+  const target = new URL(request.url());
+  expect(target.pathname).toBe("/v1/auth/start");
+  expect(target.searchParams.get("return_to")).toBe(expectedReturnTo);
+  expect(
+    await page.evaluate(() =>
+      Object.keys(window.sessionStorage).filter((key) =>
+        key.startsWith("project42.auth."),
+      ),
+    ),
+  ).toEqual([]);
+});
+
+test("recovers when another browser tab wins secure-session rotation", async ({
+  page,
+}) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The secure-session journey requires account-API configuration.",
+  );
+
+  const account = {
+    id: "rotation-race-account",
+    installationId: "test",
+    identity: {
+      issuer: "https://issuer.example",
+      subject: "rotation-race-subject",
+    },
+    displayName: "Rotation race learner",
+    primaryEmail: "learner@example.test",
+    emailVerified: true,
+    state: "approved",
+    roles: ["learner"],
+    createdAt: "2026-07-28T00:00:00.000Z",
+    updatedAt: "2026-07-28T00:00:00.000Z",
+  };
+  let sessionRequests = 0;
+  let renewalRequests = 0;
+
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
+    async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      const headers = { "content-type": "application/json" };
+      if (pathname === "/v1/auth/session") {
+        sessionRequests += 1;
+        const firstRead = sessionRequests === 1;
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            account,
+            session: {
+              expiresAt: new Date(
+                Date.now() + (firstRead ? 250 : 60 * 60_000),
+              ).toISOString(),
+              absoluteExpiresAt: new Date(
+                Date.now() + 8 * 60 * 60_000,
+              ).toISOString(),
+            },
+          }),
+        });
+        return;
+      }
+      if (pathname === "/v1/auth/renew") {
+        renewalRequests += 1;
+        await route.fulfill({
+          status: 409,
+          headers,
+          body: JSON.stringify({
+            error: {
+              code: "session_rotation_conflict",
+              message: "Another browser tab already rotated this session.",
+            },
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 404,
+        headers,
+        body: JSON.stringify({ error: { message: "Not found" } }),
+      });
+    },
+  );
+
+  await page.goto("/account");
+  await expect(
+    page.getByRole("heading", { name: account.displayName }),
+  ).toBeVisible();
+  await expect.poll(() => renewalRequests).toBe(1);
+  await expect.poll(() => sessionRequests).toBeGreaterThanOrEqual(2);
+  await expect(
+    page.getByRole("heading", { name: "Account sign-in needs attention" }),
+  ).toHaveCount(0);
+});
+
+test("rejects malformed GitHub authorization URLs before storing or navigating", async ({
+  page,
+}) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The GitHub linkage journey requires account-API configuration.",
+  );
+
+  const now = "2026-07-28T00:00:00.000Z";
+  const account = {
+    id: "malformed-github-account",
+    installationId: "test",
+    identity: {
+      issuer: "https://issuer.example",
+      subject: "malformed-github-subject",
+    },
+    displayName: "GitHub safety learner",
+    primaryEmail: "learner@example.test",
+    emailVerified: true,
+    state: "approved",
+    roles: ["learner"],
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
+    async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      const headers = { "content-type": "application/json" };
+      if (
+        pathname === "/v1/me/identity-links/github" &&
+        request.method() === "POST"
+      ) {
+        const input = request.postDataJSON() as {
+          codeChallenge: string;
+          returnPath: string;
+        };
+        const authorization = new URL(
+          "https://github.com/login/oauth/authorize",
+        );
+        authorization.searchParams.set("client_id", "github-client");
+        authorization.searchParams.set(
+          "redirect_uri",
+          new URL("/account/github/callback/", page.url()).toString(),
+        );
+        authorization.searchParams.set("state", "github-state");
+        authorization.searchParams.append("state", "duplicate-state");
+        authorization.searchParams.set(
+          "code_challenge",
+          input.codeChallenge,
+        );
+        authorization.searchParams.set("code_challenge_method", "S256");
+        authorization.searchParams.set("scope", "repo");
+        await route.fulfill({
+          status: 201,
+          headers,
+          body: JSON.stringify({
+            link: {
+              id: "00000000-0000-4000-8000-000000000043",
+              state: "github-state",
+              returnPath: input.returnPath,
+              expiresAt: new Date(Date.now() + 600_000).toISOString(),
+            },
+            authorizationUrl: authorization.toString(),
+          }),
+        });
+        return;
+      }
+      const bodies: Record<string, unknown> = {
+        "/v1/auth/session": { account },
+        "/v1/me/profile": {
+          profile: {
+            userId: account.id,
+            displayName: account.displayName,
+            bio: null,
+            organization: null,
+            location: null,
+            websiteUrl: null,
+            photoAvailable: false,
+            photoUpdatedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+        "/v1/me/identities": {
+          identities: [
+            {
+              id: "identity-primary",
+              provider: "oidc",
+              providerLogin: null,
+              displayName: account.displayName,
+              status: "active",
+              primary: true,
+              linkedAt: now,
+              lastVerifiedAt: now,
+              lastSeenAt: now,
+              unlinkedAt: null,
+              canUnlink: false,
+            },
+          ],
+        },
+        "/v1/me/consents": { consents: [] },
+        "/v1/me/deletion": { requests: [] },
+      };
+      await route.fulfill({
+        status: pathname in bodies ? 200 : 404,
+        headers,
+        body: JSON.stringify(
+          bodies[pathname] ?? { error: { message: "Not found" } },
+        ),
+      });
+    },
+  );
+
+  await page.goto("/account");
+  await page.getByRole("button", { name: "Connect GitHub" }).click();
+  await expect(
+    page.getByText("The GitHub authorization destination was not valid."),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/account\/?$/);
+  expect(
+    await page.evaluate(() =>
+      window.sessionStorage.getItem("project42.identity-link.github.v1"),
+    ),
+  ).toBeNull();
 });
 
 test("handles empty, local-only, and server-only records without overwriting evidence", async ({
@@ -93,22 +354,13 @@ test("handles empty, local-only, and server-only records without overwriting evi
   let revision = 0;
   let writes = 0;
 
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "project42.auth.token.v1",
-      JSON.stringify({
-        accessToken: "deterministic-migration-scenario-token",
-        expiresAt: Date.now() + 3_600_000,
-      }),
-    );
-  });
   await page.route(
     `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
     async (route) => {
       const request = route.request();
       const pathname = new URL(request.url()).pathname;
       const headers = { "content-type": "application/json" };
-      if (pathname === "/v1/session") {
+      if (pathname === "/v1/auth/session") {
         await route.fulfill({
           status: 200,
           headers,
@@ -261,13 +513,6 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
   }> = [];
 
   await page.addInitScript((storedProgress) => {
-    window.sessionStorage.setItem(
-      "project42.auth.token.v1",
-      JSON.stringify({
-        accessToken: "deterministic-progress-migration-token",
-        expiresAt: Date.now() + 3_600_000,
-      }),
-    );
     window.localStorage.setItem(
       "project42.progress.v1",
       JSON.stringify(storedProgress),
@@ -280,7 +525,7 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
       const request = route.request();
       const pathname = new URL(request.url()).pathname;
       const headers = { "content-type": "application/json" };
-      if (pathname === "/v1/session") {
+      if (pathname === "/v1/auth/session") {
         await route.fulfill({
           status: 200,
           headers,
@@ -404,13 +649,6 @@ test("blocks migration when an immutable attempt ID contains different evidence"
   );
 
   await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "project42.auth.token.v1",
-      JSON.stringify({
-        accessToken: "deterministic-conflict-token",
-        expiresAt: Date.now() + 3_600_000,
-      }),
-    );
     window.localStorage.setItem(
       "project42.progress.v1",
       JSON.stringify({
@@ -443,7 +681,7 @@ test("blocks migration when an immutable attempt ID contains different evidence"
       const request = route.request();
       const pathname = new URL(request.url()).pathname;
       const headers = { "content-type": "application/json" };
-      if (pathname === "/v1/session") {
+      if (pathname === "/v1/auth/session") {
         await route.fulfill({
           status: 200,
           headers,
@@ -527,20 +765,11 @@ test("blocks migration when an immutable attempt ID contains different evidence"
 test("explains a temporarily unreachable hosted account service", async ({ page }) => {
   test.skip(
     !hostedIdentityConfigured,
-    "The hosted-account network state requires production OIDC build configuration.",
+    "The hosted-account network state requires account-API configuration.",
   );
 
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "project42.auth.token.v1",
-      JSON.stringify({
-        accessToken: "deterministic-browser-test-token",
-        expiresAt: Date.now() + 3_600_000,
-      }),
-    );
-  });
   await page.route(
-    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/session`,
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/auth/session`,
     async (route) => route.abort("failed"),
   );
 
@@ -569,17 +798,10 @@ test("completes GitHub linkage without exposing the provider token to Learn", as
 }) => {
   test.skip(
     !hostedIdentityConfigured,
-    "The GitHub linkage journey requires production OIDC build configuration.",
+    "The GitHub linkage journey requires account-API configuration.",
   );
 
   await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "project42.auth.token.v1",
-      JSON.stringify({
-        accessToken: "deterministic-github-link-test-token",
-        expiresAt: Date.now() + 3_600_000,
-      }),
-    );
     if (window.location.pathname.includes("/account/github/callback")) {
       window.sessionStorage.setItem(
         "project42.identity-link.github.v1",
@@ -614,7 +836,8 @@ test("completes GitHub linkage without exposing the provider token to Learn", as
       const origin = request.headers().origin ?? "http://localhost";
       const headers = {
         "access-control-allow-origin": origin,
-        "access-control-allow-headers": "authorization,content-type,x-request-id",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-headers": "content-type,x-request-id",
         "access-control-allow-methods": "DELETE,GET,POST,PATCH,PUT,OPTIONS",
         "content-type": "application/json",
       };
@@ -648,7 +871,7 @@ test("completes GitHub linkage without exposing the provider token to Learn", as
         return;
       }
       const bodies: Record<string, unknown> = {
-        "/v1/session": { account },
+        "/v1/auth/session": { account },
         "/v1/me/profile": {
           profile: {
             userId: account.id,
@@ -730,18 +953,8 @@ test("protects the owner route and renders request-correlated audit evidence", a
 }) => {
   test.skip(
     !hostedIdentityConfigured,
-    "The owner-console journey requires production OIDC build configuration.",
+    "The owner-console journey requires account-API configuration.",
   );
-
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "project42.auth.token.v1",
-      JSON.stringify({
-        accessToken: "deterministic-owner-browser-test-token",
-        expiresAt: Date.now() + 3_600_000,
-      }),
-    );
-  });
 
   const account = {
     id: "owner-account",
@@ -775,7 +988,8 @@ test("protects the owner route and renders request-correlated audit evidence", a
       const origin = route.request().headers().origin ?? "http://localhost";
       const headers = {
         "access-control-allow-origin": origin,
-        "access-control-allow-headers": "authorization,content-type,x-request-id",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-headers": "content-type,x-request-id",
         "access-control-allow-methods": "DELETE,GET,POST,PATCH,PUT,OPTIONS",
         "content-type": "application/json",
       };
@@ -806,7 +1020,7 @@ test("protects the owner route and renders request-correlated audit evidence", a
         return;
       }
       const bodies: Record<string, unknown> = {
-        "/v1/session": { account },
+        "/v1/auth/session": { account },
         "/v1/me/profile": {
           profile: {
             userId: account.id,

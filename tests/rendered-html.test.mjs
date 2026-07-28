@@ -5,9 +5,7 @@ import diagramConfig from "../config/diagrams.json" with { type: "json" };
 import releaseFacts from "../public/release-facts.json" with { type: "json" };
 
 const hostedIdentityConfigured = Boolean(
-  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN &&
-    process.env.NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY &&
-    process.env.NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID,
+  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
 );
 
 async function render(pathname) {
