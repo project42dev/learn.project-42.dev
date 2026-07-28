@@ -2502,6 +2502,36 @@ a {
   text-align: right;
 }
 
+.progress-migration-preview {
+  overflow-x: auto;
+}
+
+.progress-migration-preview dl {
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  margin: 1rem 0;
+  min-width: 32rem;
+}
+
+.progress-migration-preview dl > div {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(10rem, 1fr) minmax(13rem, 1fr);
+  padding: 0.75rem 1rem;
+}
+
+.progress-migration-preview dl > div + div {
+  border-top: 1px solid var(--line);
+}
+
+.progress-migration-preview dt {
+  font-weight: 700;
+}
+
+.progress-migration-preview dd {
+  margin: 0;
+}
+
 .import-status {
   border: 1px solid var(--line);
   border-radius: var(--radius-small);

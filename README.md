@@ -46,7 +46,7 @@ accessibility, and security contract.
 
 ## Current release facts
 
-- Site release `0.7.0`
+- Site release `0.8.0`
 - Platform package `0.51.1`
 - Content release `0.36.0`
 - 6 learning paths, 55 assessed modules, 49 evidence activities, and 257 reviewed questions
@@ -89,6 +89,8 @@ browser configuration; credentials and learner data must never be stored there.
 The protected owner workflow, account-state safeguards, trusted-domain launch
 lock, and evidence boundary are documented in
 [`docs/owner-administration.md`](docs/owner-administration.md).
+The [browser-to-account migration contract](docs/progress-migration.md) documents
+preview, deterministic merge, immutable-evidence conflicts, retry, and recovery.
 
 ### Self-hosted image
 

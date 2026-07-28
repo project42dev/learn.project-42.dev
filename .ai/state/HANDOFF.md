@@ -1,8 +1,25 @@
 # Handoff
 
+## 2026-07-28 browser-progress migration candidate
+
+- Branch: `feat/progress-migration-ab5784`.
+- Learn `0.8.0` now previews browser, account, and merged progress before an
+  approved learner confirms an import.
+- The merge preserves immutable assessment and capstone evidence, combines
+  non-conflicting progress deterministically, blocks mismatched immutable IDs,
+  keeps a local recovery envelope, and reuses a content-derived import receipt
+  across interrupted retries.
+- Pull-request CI now supplies non-secret test-only public configuration so hosted
+  account tests execute instead of silently skipping.
+- The exact candidate passed `npm run check`: 18 runtime browser journeys, 18
+  GitHub Pages journeys, rendered routes, link integrity, accessibility, build,
+  type, lint, package, and Pages artifact gates.
+- No infrastructure, identity-provider configuration, database, Worker, or
+  production resource changed.
+
 ## Active branch
 
-`agent/admin-approval-workflow-ab6227`
+`feat/progress-migration-ab5784`
 
 ## Current candidate
 
@@ -26,7 +43,7 @@
 
 ## Delivery state
 
-- Draft pull request: Learn PR #16.
+- Draft pull request: Learn PR #17.
 - No Cloudflare, database, Entra, identity configuration, or deployment change
   was made.
 - The implementation task and parent administration story remain Active pending

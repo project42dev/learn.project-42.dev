@@ -12,6 +12,11 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-24.04
+    env:
+      NEXT_PUBLIC_PROJECT42_API_ORIGIN: https://api.example.test
+      NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY: https://identity.example.test
+      NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID: project42-browser-test
+      NEXT_PUBLIC_PROJECT42_OIDC_SCOPE: openid profile email project42.api
     steps:
       - name: Enforce public tracker boundary
         if: github.event_name == 'pull_request'
