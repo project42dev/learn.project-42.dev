@@ -46,8 +46,10 @@ interface AuthContextValue {
   error: string | null;
   apiFetch: (path: string, init?: RequestInit) => Promise<Response>;
   completeSignIn: () => Promise<void>;
+  completeGithubLink: () => Promise<string>;
   refreshAccount: () => Promise<void>;
   signIn: (returnPath?: string) => Promise<void>;
+  startGithubLink: (returnPath?: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -61,6 +63,14 @@ interface StoredToken {
   expiresAt: number;
 }
 
+interface StoredGithubLinkFlow {
+  transactionId: string;
+  state: string;
+  verifier: string;
+  returnPath: string;
+  expiresAt: string;
+}
+
 const authority = process.env.NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY?.replace(/\/$/, "");
 const clientId = process.env.NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID;
 const apiOrigin = process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN?.replace(/\/$/, "");
@@ -69,6 +79,7 @@ const scope =
 const configured = Boolean(authority && clientId && apiOrigin);
 const tokenKey = "project42.auth.token.v1";
 const flowKey = "project42.auth.flow.v1";
+const githubLinkFlowKey = "project42.identity-link.github.v1";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -129,6 +140,29 @@ function readToken(): StoredToken | null {
     return parsed;
   } catch {
     sessionStorage.removeItem(tokenKey);
+    return null;
+  }
+}
+
+function readGithubLinkFlow(): StoredGithubLinkFlow | null {
+  try {
+    const parsed = JSON.parse(
+      sessionStorage.getItem(githubLinkFlowKey) ?? "null",
+    ) as StoredGithubLinkFlow | null;
+    if (
+      !parsed ||
+      typeof parsed.transactionId !== "string" ||
+      typeof parsed.state !== "string" ||
+      typeof parsed.verifier !== "string" ||
+      typeof parsed.returnPath !== "string" ||
+      typeof parsed.expiresAt !== "string"
+    ) {
+      sessionStorage.removeItem(githubLinkFlowKey);
+      return null;
+    }
+    return parsed;
+  } catch {
+    sessionStorage.removeItem(githubLinkFlowKey);
     return null;
   }
 }
@@ -268,9 +302,123 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.replace(flow.returnPath);
   }, [refreshAccount]);
 
+  const startGithubLink = useCallback(
+    async (returnPath = "/account?linked=github") => {
+      const safeReturnPath =
+        returnPath.startsWith("/") && !returnPath.startsWith("//")
+          ? returnPath
+          : "/account?linked=github";
+      const verifier = randomValue(48);
+      const response = await apiFetch("/v1/me/identity-links/github", {
+        method: "POST",
+        body: JSON.stringify({
+          codeChallenge: await pkceChallenge(verifier),
+          codeChallengeMethod: "S256",
+          returnPath: safeReturnPath,
+        }),
+      });
+      const body = (await response.json()) as {
+        link?: {
+          id: string;
+          state: string;
+          returnPath: string;
+          expiresAt: string;
+        };
+        authorizationUrl?: string;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.link || !body.authorizationUrl) {
+        throw new Error(
+          body.error?.message ?? "GitHub account linking could not be started.",
+        );
+      }
+      const target = new URL(body.authorizationUrl);
+      if (
+        target.origin !== "https://github.com" ||
+        target.pathname !== "/login/oauth/authorize" ||
+        target.searchParams.get("state") !== body.link.state
+      ) {
+        throw new Error("The GitHub authorization destination was not valid.");
+      }
+      sessionStorage.setItem(
+        githubLinkFlowKey,
+        JSON.stringify({
+          transactionId: body.link.id,
+          state: body.link.state,
+          verifier,
+          returnPath: body.link.returnPath,
+          expiresAt: body.link.expiresAt,
+        } satisfies StoredGithubLinkFlow),
+      );
+      window.location.assign(target.toString());
+    },
+    [apiFetch],
+  );
+
+  const completeGithubLink = useCallback(async () => {
+    const query = new URLSearchParams(window.location.search);
+    const flow = readGithubLinkFlow();
+    const providerError = query.get("error");
+    if (providerError) {
+      if (flow) {
+        await apiFetch(
+          `/v1/me/identity-links/${encodeURIComponent(flow.transactionId)}`,
+          { method: "DELETE" },
+        ).catch(() => undefined);
+      }
+      sessionStorage.removeItem(githubLinkFlowKey);
+      throw new Error(
+        query.get("error_description") ??
+          "GitHub authorization was cancelled or rejected.",
+      );
+    }
+    const code = query.get("code");
+    const returnedState = query.get("state");
+    const expiresAt = flow ? Date.parse(flow.expiresAt) : Number.NaN;
+    if (
+      !flow ||
+      !code ||
+      !returnedState ||
+      flow.state !== returnedState ||
+      !Number.isFinite(expiresAt) ||
+      expiresAt <= Date.now()
+    ) {
+      sessionStorage.removeItem(githubLinkFlowKey);
+      throw new Error("The GitHub identity-link response was incomplete or expired.");
+    }
+    const response = await apiFetch("/v1/me/identity-links/github/complete", {
+      method: "POST",
+      body: JSON.stringify({
+        transactionId: flow.transactionId,
+        state: returnedState,
+        code,
+        codeVerifier: flow.verifier,
+      }),
+    });
+    const body = (await response.json()) as {
+      linkedIdentity?: { provider: string };
+      returnPath?: string;
+      error?: { message?: string };
+    };
+    sessionStorage.removeItem(githubLinkFlowKey);
+    if (
+      !response.ok ||
+      body.linkedIdentity?.provider !== "github" ||
+      !body.returnPath
+    ) {
+      throw new Error(
+        body.error?.message ?? "GitHub account linking could not be completed.",
+      );
+    }
+    return body.returnPath.startsWith("/") && !body.returnPath.startsWith("//")
+      ? body.returnPath
+      : "/account?linked=github";
+  }, [apiFetch]);
+
   const signOut = useCallback(() => {
     sessionStorage.removeItem(tokenKey);
     sessionStorage.removeItem(flowKey);
+    sessionStorage.removeItem(githubLinkFlowKey);
     setAccount(null);
     setError(null);
     setStatus(configured ? "signed-out" : "unavailable");
@@ -283,20 +431,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       account,
       error,
       apiFetch,
+      completeGithubLink,
       completeSignIn,
       refreshAccount,
       signIn,
       signOut,
+      startGithubLink,
     }),
     [
       status,
       account,
       error,
       apiFetch,
+      completeGithubLink,
       completeSignIn,
       refreshAccount,
       signIn,
       signOut,
+      startGithubLink,
     ],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
