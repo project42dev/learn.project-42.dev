@@ -141,6 +141,20 @@ test("protects the owner route and renders request-correlated audit evidence", a
       const pathname = new URL(route.request().url()).pathname;
       const bodies: Record<string, unknown> = {
         "/v1/session": { account },
+        "/v1/me/profile": {
+          profile: {
+            userId: account.id,
+            displayName: account.displayName,
+            bio: null,
+            organization: null,
+            location: null,
+            websiteUrl: null,
+            photoAvailable: false,
+            photoUpdatedAt: null,
+            createdAt: account.createdAt,
+            updatedAt: account.updatedAt,
+          },
+        },
         "/v1/admin/accounts": { accounts: [account] },
         "/v1/admin/domains": {
           domains: [],
@@ -180,7 +194,7 @@ test("protects the owner route and renders request-correlated audit evidence", a
   await expect(
     page.getByText(/Automatic approval remains locked/i),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add enabled rule" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Stage disabled rule" })).toBeEnabled();
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])

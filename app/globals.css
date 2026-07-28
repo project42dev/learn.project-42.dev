@@ -3580,6 +3580,68 @@ a {
   padding: 0.75rem;
 }
 
+.account-profile-form {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.account-profile-form input,
+.account-profile-form textarea {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.account-profile-form textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.account-profile-form .button {
+  justify-self: start;
+  margin-top: 0.35rem;
+}
+
+.account-photo-editor {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  margin-top: 1rem;
+}
+
+.account-photo-editor form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.account-photo-editor input[type="file"] {
+  max-width: 100%;
+}
+
+.account-photo-preview {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  display: flex;
+  font-size: 1.8rem;
+  font-weight: 700;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.account-photo-preview img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
 .account-sync-card a {
   font-weight: 800;
   text-decoration: underline;
