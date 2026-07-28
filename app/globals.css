@@ -3681,6 +3681,145 @@ a {
   padding: 0.55rem 0.75rem;
 }
 
+.account-merge-console {
+  grid-column: 1 / -1;
+}
+
+.account-merge-form,
+.account-merge-review,
+.account-merge-receipt {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-merge-account-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-merge-account-grid > fieldset,
+.account-merge-review > form > fieldset,
+.account-merge-conflict {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.account-merge-account-grid legend,
+.account-merge-review legend {
+  font-weight: 800;
+  padding: 0 0.35rem;
+}
+
+.account-merge-account-grid select,
+.account-merge-account-grid input,
+.account-merge-account-grid textarea,
+.account-merge-review input,
+.account-merge-review textarea,
+.account-merge-receipt input,
+.account-merge-receipt textarea {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.account-recovery-details {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+
+.account-recovery-details summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.account-recovery-details[open] {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.recovery-method-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.recovery-method-list label,
+.account-merge-conflict label {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.recovery-method-list input,
+.account-merge-conflict input {
+  margin-top: 0.2rem;
+  width: auto;
+}
+
+.account-merge-proof-status,
+.account-merge-warning,
+.account-merge-consequences,
+.account-merge-receipt {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+}
+
+.account-merge-warning {
+  border-color: #b57c00;
+}
+
+.account-merge-evidence,
+.account-merge-receipt dl {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.account-merge-evidence div,
+.account-merge-receipt dl div {
+  min-width: 0;
+}
+
+.account-merge-evidence dt,
+.account-merge-receipt dt {
+  font-weight: 800;
+}
+
+.account-merge-evidence dd,
+.account-merge-receipt dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.account-merge-records {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.account-merge-records span {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+}
+
+.account-merge-consequences ul {
+  margin-bottom: 0;
+}
+
 .account-sync-card a {
   font-weight: 800;
   text-decoration: underline;
@@ -3694,6 +3833,12 @@ a {
 
 @media (max-width: 860px) {
   .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-merge-account-grid,
+  .account-merge-evidence,
+  .account-merge-receipt dl {
     grid-template-columns: 1fr;
   }
 
