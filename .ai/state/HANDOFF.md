@@ -2,67 +2,68 @@
 
 ## Active branch
 
-`agent/learn-governance-docs-ab6434`
+`feat/authoritative-transcripts-ab5176`
 
-Base: exact `origin/main` commit
-`ea911e8b28f959d6c83eac44343e87d5dd26bf6d`.
+Base: `c52e944ea07442e6d1e56f4fb450de81924df6bc` (`origin/main`)
 
-## Scope
+## Release candidate
 
-Add complete public repository-local contributor, security, support,
-compatibility, and deprecation guidance plus deterministic validation. Do not
-change product content, identity behavior, release or deployment workflows, or
-production.
+Learn `0.11.0` consumes the signed Platform `0.67.1` tag, resolved by the
+lockfile to Platform commit `a06aa6a4d394f3344c0ec2ad6839bb29ba2eadb8`.
 
-## Implemented
+The candidate:
 
-- Adds `CONTRIBUTING.md` with repository ownership, local setup, validation,
-  pull-request, review, privacy, and security-reporting guidance.
-- Adds `SECURITY.md` with supported-version boundaries and the private GitHub
-  Security Advisory reporting path.
-- Adds `SUPPORT.md` with honest hosted, source, self-host, browser,
-  compatibility, deprecation, and help boundaries.
-- Links all three documents from the README and cross-links their related
-  policies.
-- Adds a zero-dependency governance validator to the normal `npm run check`
-  gate.
-- Adds seven deterministic tests that reject missing, empty, private-data-
-  bearing, unlinked, incomplete, and broken-link governance documents.
+- labels portable browser-local records separately from authoritative durable
+  account transcripts;
+- downloads authoritative CSV through the existing HttpOnly-cookie account
+  session for approved learners;
+- provides an accessible recent-authentication retry and safe failure path;
+- distinguishes learning achievements from durable issued credentials; and
+- preserves browser-local JSON/CSV export for signed-out and non-approved
+  learners.
+
+## Prepared
+
+- `package.json`, package-lock root, public release facts, and self-host
+  compatibility identify Learn `0.11.0`.
+- The dependency spec, installed package, lockfile resolution, public release
+  facts, self-host compatibility, and container contract identify Platform
+  `0.67.1`.
+- README release notes document the transcript-authority and
+  achievement-versus-credential boundaries.
+- No identity configuration, token storage, database schema, production
+  configuration, tenant/owner identifier, credential, learner data, or private
+  operational value is included.
 
 ## Verification
 
-- Clean `npm ci` — passed; 732 packages audited, zero vulnerabilities.
-- Complete `npm run check` — passed.
-- Unit tests — 25 passed, including ten governance tests.
-- Rendered route tests — 17 passed.
-- Runtime browser suite — 12 passed and 25 configuration-gated cases skipped.
-- GitHub Pages artifact tests — 3 passed.
-- GitHub Pages browser suite — 12 passed and 25 configuration-gated cases
-  skipped.
-- Link integrity — 99 HTML routes, 4 metadata endpoints, 4,403 internal
-  references, 142 external links.
-- Release facts, repository governance, brand and diagram integrity, lint,
-  typecheck, container contract, builds, exports, and accessibility assertions
-  passed.
-- The changed public file set passes the private-material and diff-hygiene
-  scans.
+- CI-compatible npm 10 `npm ci` passed and audited 738 packages with zero
+  vulnerabilities.
+- Complete `npm run check` passed.
+- Unit tests: 25 passed.
+- Rendered route tests: 17 passed.
+- Runtime browser suite: 39 passed, zero failed.
+- GitHub Pages artifact tests: 3 passed.
+- GitHub Pages browser suite: 39 passed, zero failed.
+- Release facts verified site `0.11.0`, Platform `0.67.1`, content `0.42.0`,
+  eight paths, 72 modules, and four provider scopes.
+- Governance, brand, diagram, lint, typecheck, container, build, link,
+  accessibility, account-authority, and transcript retry assertions passed.
+- `npm audit --audit-level=high` reported zero vulnerabilities.
 
-## Review hardening
+## Outstanding release gates
 
-- Test module paths use `fileURLToPath` and the governance suite validates a
-  repository root containing spaces.
-- README content is included in private-material scanning.
-- Quoted JSON-style secret and resource-identifier assignments fail closed.
-- Public self-hosting is documented as a tagged source build while anonymous
-  registry pulls return `401`.
-- Contributor setup documents Playwright Chromium installation and commands for
-  PowerShell, Command Prompt, macOS, and Linux.
-- GitHub private vulnerability reporting is enabled and was verified through
-  the Project 42 GitHub App.
+- Protected pull-request CI and self-host image verification must pass.
+- Merge must preserve the reviewed commits and use the authorized repository
+  administrator bypass only after all required checks pass.
+- The exact merged commit must be published as the unique remote `v0.11.0` tag;
+  the shared local clone contains an unrelated stale local tag that must not be
+  moved or deleted.
+- The signed release workflow must publish and sign the Pages archive,
+  compatibility manifest, checksums, and OCI image.
+- GitHub Pages must deploy the exact merged main commit and the production
+  profile/transcript surfaces must be validated.
 
-## Delivery boundary
-
-- This branch is a review candidate only. It must not be merged, released, or
-  deployed by this workstream.
-- No product content, identity, session, account, database, Worker, Pages,
-  Cloudflare, Entra, repository-setting, or production mutation is included.
+Do not move related Stories to Resolved until all acceptance criteria, signed
+release, deployment, and production evidence pass. Never close Stories from
+this delivery workflow.

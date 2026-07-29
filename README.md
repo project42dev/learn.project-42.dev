@@ -36,6 +36,10 @@ default; owners can approve, suspend, or revoke them and maintain exact verified
 email-domain auto-approval rules. The accepted lifecycle, consent, retention,
 export, deletion, recovery, authorization, and hosted/self-host storage contract
 is published as an accessible learner-data page and machine-readable policy.
+Profile exports label browser-local records separately from authoritative account
+transcripts. Approved accounts request a recent-authentication-protected, audited
+CSV from the account service, while learning achievements remain clearly
+separate from durable issued credentials.
 
 The Learn site also includes eight accessible visual guides for learning evidence,
 grounded research, prompting, provider selection, safe tools, bounded agents,
@@ -58,10 +62,19 @@ unlinked governance documents.
 Project 42 Learn is available under the
 [Apache License 2.0](LICENSE).
 
+## Release 0.11.0
+
+Learn `0.11.0` consumes the signed Platform `0.67.1` release. Approved learners
+can request an authoritative, recent-authentication-protected account transcript
+while signed-out and non-approved learners retain a clearly labelled
+browser-local export. The profile distinguishes portable local records, durable
+account records, learning achievements, and issued credentials without changing
+the HttpOnly-cookie session boundary or presenting achievements as credentials.
+
 ## Current release facts
 
-- Site release `0.10.1`
-- Platform package `0.65.0`
+- Site release `0.11.0`
+- Platform package `0.67.1`
 - Content release `0.42.0`
 - 8 learning paths, 72 assessed modules, 69 evidence activities, and 363 reviewed questions
 - 8 dedicated learning paths and 4 provider scopes
