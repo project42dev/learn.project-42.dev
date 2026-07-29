@@ -4,52 +4,66 @@
 
 `feat/authoritative-transcripts-ab5176`
 
-Base: exact `origin/main` commit
-`c52e944ea07442e6d1e56f4fb450de81924df6bc`.
+Base: `c52e944ea07442e6d1e56f4fb450de81924df6bc` (`origin/main`)
 
-## Scope
+## Release candidate
 
-Distinguish browser-local progress exports, authoritative durable-account
-transcripts, learning achievements, and issued credentials on the learner
-profile. Do not change identity/session storage, release/deployment workflows,
-schemas, production, or branding/content.
+Learn `0.11.0` consumes the signed Platform `0.67.1` tag, resolved by the
+lockfile to Platform commit `a06aa6a4d394f3344c0ec2ad6839bb29ba2eadb8`.
 
-## Implemented
+The candidate:
 
-- Approved learners download the authoritative CSV directly from
-  `/v1/me/transcript.csv` through the existing cookie-authenticated API client.
-- Signed-out and non-approved learners retain the clearly labelled
-  browser-local CSV fallback.
-- Recent-authentication failures provide an accessible retry path without
-  exposing untrusted API details.
-- Learning achievements are labelled as progress evidence, not issued
-  credentials; the issued-credential surface remains explicitly empty until a
-  server-side credential lifecycle exists.
-- Public documentation and browser tests cover authority, retry, cookie-only
-  requests, downloads, and accessibility.
+- labels portable browser-local records separately from authoritative durable
+  account transcripts;
+- downloads authoritative CSV through the existing HttpOnly-cookie account
+  session for approved learners;
+- provides an accessible recent-authentication retry and safe failure path;
+- distinguishes learning achievements from durable issued credentials; and
+- preserves browser-local JSON/CSV export for signed-out and non-approved
+  learners.
+
+## Prepared
+
+- `package.json`, package-lock root, public release facts, and self-host
+  compatibility identify Learn `0.11.0`.
+- The dependency spec, installed package, lockfile resolution, public release
+  facts, self-host compatibility, and container contract identify Platform
+  `0.67.1`.
+- README release notes document the transcript-authority and
+  achievement-versus-credential boundaries.
+- No identity configuration, token storage, database schema, production
+  configuration, tenant/owner identifier, credential, learner data, or private
+  operational value is included.
 
 ## Verification
 
-- Clean `npm ci` — passed; 732 packages audited, zero vulnerabilities.
-- Complete `npm run check` — passed.
-- Unit tests — 25 passed.
-- Rendered route tests — 17 passed.
-- Runtime browser suite — 39 passed, zero failed.
-- GitHub Pages artifact tests — 3 passed.
-- GitHub Pages browser suite — 39 passed, zero failed.
-- Link integrity — 99 HTML routes, 4 metadata endpoints, 4,403 internal
-  references, 142 external links.
-- Release facts, repository governance, brand and diagram integrity, lint,
-  typecheck, container contract, builds, exports, and accessibility assertions
-  passed.
+- CI-compatible npm 10 `npm ci` passed and audited 738 packages with zero
+  vulnerabilities.
+- Complete `npm run check` passed.
+- Unit tests: 25 passed.
+- Rendered route tests: 17 passed.
+- Runtime browser suite: 39 passed, zero failed.
+- GitHub Pages artifact tests: 3 passed.
+- GitHub Pages browser suite: 39 passed, zero failed.
+- Release facts verified site `0.11.0`, Platform `0.67.1`, content `0.42.0`,
+  eight paths, 72 modules, and four provider scopes.
+- Governance, brand, diagram, lint, typecheck, container, build, link,
+  accessibility, account-authority, and transcript retry assertions passed.
 - `npm audit --audit-level=high` reported zero vulnerabilities.
-- `git diff --check` passed.
 
-## Delivery boundary
+## Outstanding release gates
 
-- This branch is a review candidate only. It must not be merged, released, or
-  deployed by this workstream.
-- No identity, session, account, database, Worker, Pages, Cloudflare, Entra,
-  repository-setting, or production mutation is included.
-- Production deployment and authenticated learner validation remain separate
-  owner/release gates.
+- Protected pull-request CI and self-host image verification must pass.
+- Merge must preserve the reviewed commits and use the authorized repository
+  administrator bypass only after all required checks pass.
+- The exact merged commit must be published as the unique remote `v0.11.0` tag;
+  the shared local clone contains an unrelated stale local tag that must not be
+  moved or deleted.
+- The signed release workflow must publish and sign the Pages archive,
+  compatibility manifest, checksums, and OCI image.
+- GitHub Pages must deploy the exact merged main commit and the production
+  profile/transcript surfaces must be validated.
+
+Do not move related Stories to Resolved until all acceptance criteria, signed
+release, deployment, and production evidence pass. Never close Stories from
+this delivery workflow.
