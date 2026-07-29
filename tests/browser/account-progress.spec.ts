@@ -981,6 +981,37 @@ test("protects the owner route and renders request-correlated audit evidence", a
     updatedAt: "2026-07-27T01:00:00.000Z",
   };
   const accountStateChanges: Array<Record<string, unknown>> = [];
+  const domainChanges: Array<{
+    id: string;
+    method: string;
+    body: Record<string, unknown>;
+  }> = [];
+  const deletionCompletions: Array<Record<string, unknown>> = [];
+  const enabledDomain = {
+    id: "domain-enabled",
+    domain: "enabled.example.test",
+    enabled: true,
+    policyVersion: 2,
+    createdAt: "2026-07-27T00:00:00.000Z",
+    updatedAt: "2026-07-27T00:00:00.000Z",
+  };
+  const disabledDomain = {
+    id: "domain-disabled",
+    domain: "disabled.example.test",
+    enabled: false,
+    policyVersion: 3,
+    createdAt: "2026-07-27T00:00:00.000Z",
+    updatedAt: "2026-07-27T00:00:00.000Z",
+  };
+  const deletionRequest = {
+    id: "deletion-1",
+    userId: "deletion-account",
+    state: "requested",
+    requestedAt: "2026-07-20T00:00:00.000Z",
+    cancellationDeadline: "2026-07-21T00:00:00.000Z",
+    displayName: "Deletion learner",
+    primaryEmail: "deletion@example.test",
+  };
 
   await page.route(
     `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
@@ -1016,6 +1047,62 @@ test("protects the owner route and renders request-correlated audit evidence", a
           status: 200,
           headers,
           body: JSON.stringify({ account: pendingAccount }),
+        });
+        return;
+      }
+      if (
+        pathname === "/v1/admin/domains/domain-enabled" &&
+        route.request().method() === "PATCH"
+      ) {
+        const change = route.request().postDataJSON() as Record<string, unknown>;
+        domainChanges.push({
+          id: enabledDomain.id,
+          method: route.request().method(),
+          body: change,
+        });
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            domain: {
+              ...enabledDomain,
+              enabled: change.enabled,
+              updatedAt: "2026-07-27T02:00:00.000Z",
+            },
+          }),
+        });
+        return;
+      }
+      if (
+        pathname === "/v1/admin/domains/domain-disabled" &&
+        route.request().method() === "DELETE"
+      ) {
+        const change = route.request().postDataJSON() as Record<string, unknown>;
+        domainChanges.push({
+          id: disabledDomain.id,
+          method: route.request().method(),
+          body: change,
+        });
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({ domain: disabledDomain }),
+        });
+        return;
+      }
+      if (
+        pathname === "/v1/admin/deletions/deletion-1/complete" &&
+        route.request().method() === "POST"
+      ) {
+        deletionCompletions.push(
+          route.request().postDataJSON() as Record<string, unknown>,
+        );
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            completion: { deletionRequestId: deletionRequest.id },
+          }),
         });
         return;
       }
@@ -1069,10 +1156,10 @@ test("protects the owner route and renders request-correlated audit evidence", a
         "/v1/me/deletion": { requests: [] },
         "/v1/admin/accounts": { accounts: [account, pendingAccount] },
         "/v1/admin/domains": {
-          domains: [],
+          domains: [enabledDomain, disabledDomain],
           automaticApprovalEnabled: false,
         },
-        "/v1/admin/deletions": { requests: [] },
+        "/v1/admin/deletions": { requests: [deletionRequest] },
         "/v1/admin/audit": {
           events: [
             {
@@ -1180,6 +1267,78 @@ test("protects the owner route and renders request-correlated audit evidence", a
     page.getByText(/Automatic approval remains locked/i),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Stage disabled rule" })).toBeEnabled();
+
+  const enabledDomainRow = page
+    .locator(".domain-list article")
+    .filter({ hasText: enabledDomain.domain });
+  await enabledDomainRow.getByRole("button", { name: "Disable" }).click();
+  await expect(
+    page.getByRole("heading", { name: `Disable ${enabledDomain.domain}` }),
+  ).toBeFocused();
+  const domainReview = enabledDomainRow.locator(".admin-account-action");
+  await domainReview
+    .getByLabel("Reason")
+    .fill("Pause automatic approval during claim validation.");
+  const domainActionAccessibility = await new AxeBuilder({ page })
+    .include(".domain-list .admin-account-action")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(domainActionAccessibility.violations).toEqual([]);
+  await domainReview.getByRole("button", { name: "Confirm disable" }).click();
+
+  const disabledDomainRow = page
+    .locator(".domain-list article")
+    .filter({ hasText: disabledDomain.domain });
+  await disabledDomainRow.getByRole("button", { name: "Remove" }).click();
+  await disabledDomainRow
+    .locator(".admin-account-action")
+    .getByLabel("Reason")
+    .fill("Remove obsolete staged domain policy.");
+  await disabledDomainRow
+    .getByRole("button", { name: "Confirm remove" })
+    .click();
+
+  expect(domainChanges).toEqual([
+    {
+      id: enabledDomain.id,
+      method: "PATCH",
+      body: {
+        enabled: false,
+        reason: "Pause automatic approval during claim validation.",
+      },
+    },
+    {
+      id: disabledDomain.id,
+      method: "DELETE",
+      body: { reason: "Remove obsolete staged domain policy." },
+    },
+  ]);
+
+  const deletionRow = page
+    .locator(".admin-account-list article")
+    .filter({ hasText: deletionRequest.displayName });
+  await deletionRow
+    .getByRole("button", { name: "Complete deletion" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Permanently delete Deletion learner" }),
+  ).toBeFocused();
+  const deletionReview = deletionRow.locator(".admin-account-action");
+  await deletionReview
+    .getByLabel("Reason")
+    .fill("Cancellation period elapsed and request was verified.");
+  await expect(
+    deletionReview.getByRole("button", {
+      name: "Confirm permanent deletion",
+    }),
+  ).toBeDisabled();
+  await deletionReview.getByLabel("Enter DELETE to confirm").fill("DELETE");
+  await deletionReview
+    .getByRole("button", { name: "Confirm permanent deletion" })
+    .click();
+  expect(deletionCompletions).toEqual([
+    { reason: "Cancellation period elapsed and request was verified." },
+  ]);
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
