@@ -2,56 +2,54 @@
 
 ## Active branch
 
-`feat/account-request-status-ab5695`
+`agent/learn-governance-docs-ab6434`
 
 Base: exact `origin/main` commit
-`35391e81e61d18eee7b5d4788f5c581176144b1f`.
+`ea911e8b28f959d6c83eac44343e87d5dd26bf6d`.
 
 ## Scope
 
-Learn now presents the complete learner-facing account-request and private
-registration-status experience published by platform `v0.65.0`.
+Add complete public repository-local contributor, security, support,
+compatibility, and deprecation guidance plus deterministic validation. Do not
+change product content, identity behavior, release or deployment workflows, or
+production.
 
 ## Implemented
 
-- Pins `@project42/platform` and self-host compatibility metadata to immutable
-  `v0.65.0`, peeled commit
-  `5a083de3add80ad6635c6319391cba4f7e34b265`.
-- Adds a provider-neutral public request entry with privacy, learner-data,
-  local-learning, and approval expectations before identity-provider
-  navigation.
-- Distinguishes API-owned authenticated sessions from the separate HttpOnly
-  registration receipt. Pending and rejected requests never become learner
-  sessions.
-- Consumes only the five PII-free `RegistrationStatus` fields from the released
-  platform contract and rejects unsafe, inconsistent, or malformed responses.
-- Handles pending, rejected, approved, expired/replaced receipt,
-  provider-error, account-unavailable, and temporarily unavailable states with
-  accessible fixed copy.
-- Avoids automatic polling and server error-detail rendering; retry controls
-  honor a bounded `Retry-After` window.
-- Preserves browser-local learning and the signed-out deletion-receipt workflow.
-- Documents the account/session/receipt boundary and recovery behavior.
+- Adds `CONTRIBUTING.md` with repository ownership, local setup, validation,
+  pull-request, review, privacy, and security-reporting guidance.
+- Adds `SECURITY.md` with supported-version boundaries and the private GitHub
+  Security Advisory reporting path.
+- Adds `SUPPORT.md` with honest hosted, source, self-host, browser,
+  compatibility, deprecation, and help boundaries.
+- Links all three documents from the README and cross-links their related
+  policies.
+- Adds a zero-dependency governance validator to the normal `npm run check`
+  gate.
+- Adds seven deterministic tests that reject missing, empty, private-data-
+  bearing, unlinked, incomplete, and broken-link governance documents.
 
 ## Verification
 
-- Clean `npm@10.9.4 ci` — passed; 737 packages audited, zero vulnerabilities.
-- Production-configured `npm run check` — passed.
-- Unit tests — 12 passed.
+- Clean `npm ci` — passed; 732 packages audited, zero vulnerabilities.
+- Complete `npm run check` — passed.
+- Unit tests — 22 passed, including seven governance tests.
 - Rendered route tests — 17 passed.
-- Runtime browser tests — 37 passed.
+- Runtime browser suite — 12 passed and 25 configuration-gated cases skipped.
 - GitHub Pages artifact tests — 3 passed.
-- GitHub Pages browser tests — 37 passed.
-- Link integrity — 99 HTML routes, 4 metadata endpoints, 4,402 internal
+- GitHub Pages browser suite — 12 passed and 25 configuration-gated cases
+  skipped.
+- Link integrity — 99 HTML routes, 4 metadata endpoints, 4,403 internal
   references, 142 external links.
-- Release facts, brand integrity, diagram integrity, lint, typecheck, container
-  contract, production build, and Pages export — passed.
-- Changed application/test lines were scanned for private ADO URLs, personal
-  email addresses, GUIDs, credentials, secrets, and local paths; none found.
+- Release facts, repository governance, brand and diagram integrity, lint,
+  typecheck, container contract, builds, exports, and accessibility assertions
+  passed.
+- The changed public file set passes the private-material and diff-hygiene
+  scans.
 
 ## Delivery boundary
 
-- This worktree contains no deployment, ADO state change, push, pull request,
-  merge, production session, Cloudflare, Entra, D1, or other cloud mutation.
-- Production approval-flow validation remains outside this local Learn lane and
-  requires the released platform API to be deployed and configured.
+- This branch is a review candidate only. It must not be merged, released, or
+  deployed by this workstream.
+- No product content, identity, session, account, database, Worker, Pages,
+  Cloudflare, Entra, repository-setting, or production mutation is included.

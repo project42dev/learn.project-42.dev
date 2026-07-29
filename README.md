@@ -14,6 +14,7 @@ npm run dev
 ## Verify
 
 ```bash
+npm run governance:check
 npm run lint
 npm test
 ```
@@ -43,6 +44,19 @@ multi-agent handoffs, and human-gated content freshness. Mermaid files under
 artifacts are generated ahead of deployment. See
 [`docs/diagram-authoring.md`](docs/diagram-authoring.md) for the validation,
 accessibility, and security contract.
+
+## Contributing and support
+
+- [Contributing](CONTRIBUTING.md) covers repository ownership, local setup,
+  validation, pull requests, and review expectations.
+- [Security](SECURITY.md) provides the private vulnerability-reporting process.
+- [Support, compatibility, and deprecation](SUPPORT.md) defines supported
+  surfaces, update compatibility, retirement notices, and public help.
+
+`npm run governance:check` rejects missing, empty, private-data-bearing, or
+unlinked governance documents.
+Project 42 Learn is available under the
+[Apache License 2.0](LICENSE).
 
 ## Current release facts
 
