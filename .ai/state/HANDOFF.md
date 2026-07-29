@@ -38,11 +38,16 @@
 - Account-progress and account-merge regression suites — 13 passed.
 - Combined account browser regression after the platform upgrade — 20 passed.
 - Production dependency audit — zero known vulnerabilities.
+- Link integrity — passed across 99 HTML routes, 4 metadata endpoints, 4,402
+  internal references, 45 static assets, and 142 external links. The NIST
+  response that failed in the first pull-request run was transient and now
+  returns 200. Two public OpenAI sources consistently return 403 to automated
+  clients and are covered by exact, expiring governed exceptions.
 
 ## Delivery boundary
 
-- This worktree contains a local implementation candidate only. Nothing was
-  pushed, published, deployed, or changed in Azure DevOps.
+- Pull request #21 contains this Learn delivery candidate. It does not deploy
+  the hosted account service or change production infrastructure.
 - Production use still requires the Worker release containing platform PR #104
   and its associated D1 migration before hosted preference and receipt behavior
   can be validated end to end.
