@@ -1,5 +1,10 @@
 "use client";
 
+import type {
+  DeletionStatus,
+  DeletionStatusReceipt,
+  LearnerProfile as PlatformLearnerProfile,
+} from "@project42/platform";
 import Link from "next/link";
 import {
   useCallback,
@@ -31,18 +36,15 @@ interface DomainRule {
   updatedAt: string;
 }
 
-interface LearnerProfile {
-  userId: string;
-  displayName: string | null;
-  bio: string | null;
-  organization: string | null;
-  location: string | null;
-  websiteUrl: string | null;
-  photoAvailable: boolean;
-  photoUpdatedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+type LearnerProfile = Omit<
+  PlatformLearnerProfile,
+  "locale" | "timeZone" | "reducedMotion" | "highContrast"
+> & {
+  locale?: string | null;
+  timeZone?: string | null;
+  reducedMotion?: boolean;
+  highContrast?: boolean;
+};
 
 interface LinkedIdentity {
   id: string;
@@ -64,6 +66,7 @@ interface ConsentRecord {
   policyVersion: string;
   decision: "granted" | "withdrawn";
   decidedAt: string;
+  contractStatus?: "current" | "legacy";
 }
 
 interface DeletionRequest {
@@ -150,23 +153,26 @@ export function AccountDashboard() {
 
   if (!configured) {
     return (
-      <section className="profile-card account-card">
-        <p className="eyebrow">Account service</p>
-        <h2>Ready for hosted identity configuration</h2>
-        <p>
-          Account code is installed, but this deployment has not yet been connected
-          to its OIDC tenant and API. Browser-local learning remains available.
-        </p>
-        <p>
-          Review <Link href="/learner-data">learner-data and recovery controls</Link>
-          {" "}and the{" "}
-          <a href="https://project-42.dev/legal-transparency">
-            Legal &amp; Transparency page
-          </a>
-          . Hosted sign-in and records may be temporarily unavailable even after
-          configuration.
-        </p>
-      </section>
+      <div className="account-dashboard">
+        <section className="profile-card account-card">
+          <p className="eyebrow">Account service</p>
+          <h2>Ready for hosted identity configuration</h2>
+          <p>
+            Account code is installed, but this deployment has not yet been connected
+            to its OIDC tenant and API. Browser-local learning remains available.
+          </p>
+          <p>
+            Review <Link href="/learner-data">learner-data and recovery controls</Link>
+            {" "}and the{" "}
+            <a href="https://project-42.dev/legal-transparency">
+              Legal &amp; Transparency page
+            </a>
+            . Hosted sign-in and records may be temporarily unavailable even after
+            configuration.
+          </p>
+        </section>
+        <ProfilePreferencesEditor hosted={false} />
+      </div>
     );
   }
 
@@ -176,62 +182,68 @@ export function AccountDashboard() {
 
   if (status === "signed-out") {
     return (
-      <section className="profile-card account-card">
-        <p className="eyebrow">Project 42 account</p>
-        <h2>Keep your progress across devices</h2>
-        <p>
-          Sign in through the configured identity provider. New accounts remain
-          pending until an owner approves them or a verified email matches an exact
-          approved-domain rule.
-        </p>
-        <p>
-          Before requesting access, review{" "}
-          <Link href="/learner-data">learner data, consent, retention, and recovery</Link>
-          {" "}and the{" "}
-          <a href="https://project-42.dev/legal-transparency">
-            Legal &amp; Transparency page
-          </a>
-          . Hosted sign-in and records may be temporarily unavailable.
-        </p>
-        <button className="button button-primary" onClick={() => void signIn()} type="button">
-          Sign in or request access
-        </button>
-      </section>
+      <div className="account-dashboard">
+        <section className="profile-card account-card">
+          <p className="eyebrow">Project 42 account</p>
+          <h2>Keep your progress across devices</h2>
+          <p>
+            Sign in through the configured identity provider. New accounts remain
+            pending until an owner approves them or a verified email matches an exact
+            approved-domain rule.
+          </p>
+          <p>
+            Before requesting access, review{" "}
+            <Link href="/learner-data">learner data, consent, retention, and recovery</Link>
+            {" "}and the{" "}
+            <a href="https://project-42.dev/legal-transparency">
+              Legal &amp; Transparency page
+            </a>
+            . Hosted sign-in and records may be temporarily unavailable.
+          </p>
+          <button className="button button-primary" onClick={() => void signIn()} type="button">
+            Sign in or request access
+          </button>
+        </section>
+        <ProfilePreferencesEditor hosted={false} />
+      </div>
     );
   }
 
   if (status === "error" || !account) {
     return (
-      <section className="profile-card account-card" role="alert">
-        <p className="eyebrow">Account service</p>
-        <h2>Account sign-in needs attention</h2>
-        <p>{error ?? "The account could not be loaded."}</p>
-        <p>
-          Your browser-local record remains available. See{" "}
-          <Link href="/learner-data">learner-data and recovery expectations</Link>
-          {" "}or{" "}
-          <a href="https://project-42.dev/legal-transparency#service-title">
-            service limitations
-          </a>
-          .
-        </p>
-        <div className="button-row">
-          <button
-            className="button button-primary"
-            onClick={() => void refreshAccount()}
-            type="button"
-          >
-            Try again
-          </button>
-          <button
-            className="button button-secondary"
-            onClick={() => void signOut()}
-            type="button"
-          >
-            Clear this sign-in
-          </button>
-        </div>
-      </section>
+      <div className="account-dashboard">
+        <section className="profile-card account-card" role="alert">
+          <p className="eyebrow">Account service</p>
+          <h2>Account sign-in needs attention</h2>
+          <p>{error ?? "The account could not be loaded."}</p>
+          <p>
+            Your browser-local record remains available. See{" "}
+            <Link href="/learner-data">learner-data and recovery expectations</Link>
+            {" "}or{" "}
+            <a href="https://project-42.dev/legal-transparency#service-title">
+              service limitations
+            </a>
+            .
+          </p>
+          <div className="button-row">
+            <button
+              className="button button-primary"
+              onClick={() => void refreshAccount()}
+              type="button"
+            >
+              Try again
+            </button>
+            <button
+              className="button button-secondary"
+              onClick={() => void signOut()}
+              type="button"
+            >
+              Clear this sign-in
+            </button>
+          </div>
+        </section>
+        <ProfilePreferencesEditor hosted={false} />
+      </div>
     );
   }
 
@@ -295,11 +307,135 @@ export function AccountDashboard() {
       {account.state !== "suspended" && account.state !== "revoked" ? (
         <ProfileEditor />
       ) : null}
-      <ProfilePreferencesEditor />
+      <ProfilePreferencesEditor hosted={account.state === "approved"} />
       {account.state === "approved" ? <LinkedIdentityEditor /> : null}
       <LearnerDataControls />
       {account.roles.includes("owner") ? <OwnerAdministration /> : null}
     </div>
+  );
+}
+
+export function DeletionStatusLookup() {
+  const { apiFetch, configured } = useAuth();
+  const { formatDateTime } = useProfilePreferences();
+  const [status, setStatus] = useState<DeletionStatus | null>(null);
+  const [message, setMessage] = useState(
+    "Use the private receipt saved when deletion was requested. The token is submitted directly and is not retained by this page.",
+  );
+  const [hasError, setHasError] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function lookup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const values = new FormData(form);
+    const requestId = String(values.get("requestId") ?? "").trim();
+    const statusToken = String(values.get("statusToken") ?? "").trim();
+    form.reset();
+    setStatus(null);
+    setBusy(true);
+    try {
+      const response = await apiFetch("/v1/deletion-status", {
+        method: "POST",
+        body: JSON.stringify({ requestId, statusToken }),
+      });
+      const body = (await response.json()) as {
+        status?: DeletionStatus;
+      };
+      if (!response.ok || !body.status) throw new Error("status_lookup_failed");
+      setStatus(body.status);
+      setHasError(false);
+      setMessage("Deletion status verified from the private receipt.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "The receipt could not be verified. Check both values and try again; no account details were disclosed.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section
+      className="profile-card deletion-status-lookup"
+      aria-labelledby="deletion-status-lookup-title"
+    >
+      <p className="eyebrow">After account deletion</p>
+      <h2 id="deletion-status-lookup-title">Check a deletion request</h2>
+      <p>
+        This receipt-based check works without signing in, including after the
+        learner account has been removed. It cannot search by email, name, or
+        account identifier.
+      </p>
+      <p className="admin-status" role={hasError ? "alert" : "status"}>
+        {configured
+          ? message
+          : "Deletion-status lookup becomes available when the hosted account API is configured."}
+      </p>
+      {configured ? (
+        <form
+          autoComplete="off"
+          className="account-profile-form"
+          onSubmit={(event) => void lookup(event)}
+        >
+          <label htmlFor="deletion-lookup-request-id">Request ID</label>
+          <input
+            id="deletion-lookup-request-id"
+            name="requestId"
+            required
+            spellCheck={false}
+          />
+          <label htmlFor="deletion-lookup-status-token">
+            Private status token
+          </label>
+          <input
+            id="deletion-lookup-status-token"
+            name="statusToken"
+            required
+            spellCheck={false}
+            type="password"
+          />
+          <button className="button button-secondary" disabled={busy} type="submit">
+            Check deletion status
+          </button>
+        </form>
+      ) : null}
+      {status ? (
+        <dl className="deletion-status-result" aria-live="polite">
+          <div>
+            <dt>Status</dt>
+            <dd>{status.state}</dd>
+          </div>
+          <div>
+            <dt>Requested</dt>
+            <dd>
+              <time dateTime={status.requestedAt}>
+                {formatDateTime(status.requestedAt)}
+              </time>
+            </dd>
+          </div>
+          <div>
+            <dt>Cancellation deadline</dt>
+            <dd>
+              <time dateTime={status.cancellationDeadline}>
+                {formatDateTime(status.cancellationDeadline)}
+              </time>
+            </dd>
+          </div>
+          {status.completedAt ? (
+            <div>
+              <dt>Completed</dt>
+              <dd>
+                <time dateTime={status.completedAt}>
+                  {formatDateTime(status.completedAt)}
+                </time>
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
+    </section>
   );
 }
 
@@ -761,37 +897,147 @@ const commonTimeZones = [
   "Australia/Sydney",
 ];
 
-function ProfilePreferencesEditor() {
+function hostedPreferencesFromProfile(
+  profile: LearnerProfile,
+  fallback: ProfilePreferences,
+): ProfilePreferences | null {
+  const requiredFields = [
+    "locale",
+    "timeZone",
+    "reducedMotion",
+    "highContrast",
+  ] as const;
+  if (
+    !requiredFields.every((field) =>
+      Object.prototype.hasOwnProperty.call(profile, field),
+    ) ||
+    typeof profile.reducedMotion !== "boolean" ||
+    typeof profile.highContrast !== "boolean"
+  ) {
+    return null;
+  }
+  return validateProfilePreferences({
+    locale: profile.locale ?? fallback.locale,
+    timeZone: profile.timeZone ?? fallback.timeZone,
+    reducedMotion: profile.reducedMotion,
+    highContrast: profile.highContrast,
+  });
+}
+
+function browserPreferenceDefaults(): ProfilePreferences {
+  const resolved = new Intl.DateTimeFormat().resolvedOptions();
+  return (
+    validateProfilePreferences({
+      locale: resolved.locale,
+      timeZone: resolved.timeZone,
+      reducedMotion: false,
+      highContrast: false,
+    }) ?? {
+      locale: "en-US",
+      timeZone: "UTC",
+      reducedMotion: false,
+      highContrast: false,
+    }
+  );
+}
+
+function ProfilePreferencesEditor({ hosted }: { hosted: boolean }) {
+  const { apiFetch } = useAuth();
   const {
     preferences,
     ready,
+    applySessionPreferences,
     savePreferences,
-    resetPreferences,
   } = useProfilePreferences();
   const [message, setMessage] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [hostedState, setHostedState] = useState<
+    "browser" | "loading" | "ready" | "legacy" | "offline"
+  >(hosted ? "loading" : "browser");
+  const hostedLoadStarted = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!hosted) {
+        hostedLoadStarted.current = false;
+        setHostedState("browser");
+        return;
+      }
+      if (!ready || hostedLoadStarted.current) return;
+      hostedLoadStarted.current = true;
+      setHostedState("loading");
+      void apiFetch("/v1/me/profile")
+        .then(async (response) => {
+          const body = (await response.json()) as { profile?: LearnerProfile };
+          if (!response.ok || !body.profile) {
+            throw new Error("profile_load_failed");
+          }
+          const hostedPreferences = hostedPreferencesFromProfile(
+            body.profile,
+            preferences,
+          );
+          if (cancelled) return;
+          if (!hostedPreferences) {
+            setHostedState("legacy");
+            setHasError(false);
+            return;
+          }
+          applySessionPreferences(hostedPreferences);
+          setHostedState("ready");
+          setHasError(false);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setHostedState("offline");
+          setHasError(true);
+        });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [apiFetch, applySessionPreferences, hosted, preferences, ready]);
+
   const displayedMessage =
     message ??
-    (ready
-      ? "These preferences are stored in this browser. Hosted preference synchronization is not available in the current account API."
-      : "Loading this browser’s learning preferences…");
+    (!ready || hostedState === "loading"
+      ? "Loading your learning preferences…"
+      : hostedState === "ready"
+        ? "These preferences are synchronized with your approved account. A browser copy remains available if the account service is temporarily offline."
+        : hostedState === "legacy"
+          ? "The hosted account API does not yet expose preference fields. Changes use the browser-local fallback until the v0.63.0 contract is deployed."
+          : hostedState === "offline"
+            ? "Hosted preferences could not be reached. Browser-local fallback remains available and no account preference was changed."
+            : "These preferences are stored in this browser until you sign in with an approved account.");
 
-  function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const candidate: ProfilePreferences = {
-      locale: String(form.get("locale") ?? ""),
-      timeZone: String(form.get("timeZone") ?? ""),
-      reducedMotion: form.get("reducedMotion") === "on",
-      highContrast: form.get("highContrast") === "on",
-    };
-    const validated = validateProfilePreferences(candidate);
-    if (!validated) {
-      setHasError(true);
-      setMessage(
-        "Enter a valid language tag, such as en-US, and an IANA time zone, such as America/New_York.",
-      );
-      return;
+  async function persistPreferences(validated: ProfilePreferences) {
+    if (hostedState === "ready") {
+      try {
+        const response = await apiFetch("/v1/me/profile", {
+          method: "PATCH",
+          body: JSON.stringify(validated),
+        });
+        const body = (await response.json()) as { profile?: LearnerProfile };
+        const confirmed = body.profile
+          ? hostedPreferencesFromProfile(body.profile, validated)
+          : null;
+        if (!response.ok || !confirmed) throw new Error("preference_save_failed");
+        const fallback = savePreferences(confirmed);
+        setHasError(!fallback.persisted);
+        setMessage(
+          fallback.persisted
+            ? "Preferences saved to your account and this browser’s offline fallback."
+            : "Preferences saved to your account. This browser blocked the offline fallback copy.",
+        );
+        return;
+      } catch {
+        setHasError(true);
+        setMessage(
+          "Hosted preferences could not be saved. Your previous account preferences are unchanged.",
+        );
+        return;
+      }
     }
     const result = savePreferences(validated);
     setHasError(!result.persisted);
@@ -802,14 +1048,27 @@ function ProfilePreferencesEditor() {
     );
   }
 
-  function reset() {
-    const result = resetPreferences();
-    setHasError(!result.persisted);
-    setMessage(
-      result.persisted
-        ? "Browser language, time zone, and system accessibility defaults restored."
-        : "Browser defaults restored for this visit, but storage is unavailable.",
-    );
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const validated = validateProfilePreferences({
+      locale: String(form.get("locale") ?? ""),
+      timeZone: String(form.get("timeZone") ?? ""),
+      reducedMotion: form.get("reducedMotion") === "on",
+      highContrast: form.get("highContrast") === "on",
+    });
+    if (!validated) {
+      setHasError(true);
+      setMessage(
+        "Enter a valid language tag, such as en-US, and an IANA time zone, such as America/New_York.",
+      );
+      return;
+    }
+    await persistPreferences(validated);
+  }
+
+  async function reset() {
+    await persistPreferences(browserPreferenceDefaults());
   }
 
   return (
@@ -831,7 +1090,7 @@ function ProfilePreferencesEditor() {
       <form
         className="account-profile-form account-preferences-form"
         key={`${preferences.locale}:${preferences.timeZone}:${preferences.reducedMotion}:${preferences.highContrast}`}
-        onSubmit={save}
+        onSubmit={(event) => void save(event)}
       >
         <label htmlFor="profile-locale">Language tag for dates and times</label>
         <input
@@ -913,7 +1172,7 @@ function ProfilePreferencesEditor() {
           <button
             className="button button-secondary"
             disabled={!ready}
-            onClick={reset}
+            onClick={() => void reset()}
             type="button"
           >
             Use browser defaults
@@ -929,6 +1188,8 @@ function LearnerDataControls() {
   const { formatDateTime } = useProfilePreferences();
   const [consents, setConsents] = useState<ConsentRecord[]>([]);
   const [deletions, setDeletions] = useState<DeletionRequest[]>([]);
+  const [deletionReceipt, setDeletionReceipt] =
+    useState<DeletionStatusReceipt | null>(null);
   const [confirmation, setConfirmation] = useState("");
   const [message, setMessage] = useState("Loading privacy controls…");
   const [hasError, setHasError] = useState(false);
@@ -976,8 +1237,10 @@ function LearnerDataControls() {
   );
   const latestLearnerRecordConsent = orderedConsents.find(
     (record) =>
-      record.purpose === "learning-record" ||
-      record.purpose === "learner-records",
+      record.contractStatus === "current" ||
+      (record.contractStatus === undefined &&
+        record.purpose === "learning-record" &&
+        record.policyVersion === learnerDataPolicy.policyVersion),
   );
   const orderedDeletions = [...deletions].sort(
     (left, right) =>
@@ -1071,6 +1334,7 @@ function LearnerDataControls() {
       });
       const body = (await response.json()) as {
         deletionRequest?: DeletionRequest;
+        receipt?: DeletionStatusReceipt;
         error?: { code?: string; message?: string };
       };
       if (!response.ok || !body.deletionRequest) {
@@ -1084,12 +1348,17 @@ function LearnerDataControls() {
         throw new Error("deletion_request_failed");
       }
       setDeletions((current) => [body.deletionRequest as DeletionRequest, ...current]);
+      setDeletionReceipt(body.receipt ?? null);
       setConfirmation("");
       setHasError(false);
       setMessage(
-        `Deletion requested. Receipt ${body.deletionRequest.id}. It can be cancelled until ${formatDateTime(
-          body.deletionRequest.cancellationDeadline,
-        )}.`,
+        body.receipt
+          ? `Deletion requested. Save the one-time private status receipt before leaving this page. Cancellation remains available until ${formatDateTime(
+              body.deletionRequest.cancellationDeadline,
+            )}.`
+          : `Deletion requested. This account API did not return a private post-deletion status receipt. Cancellation remains available until ${formatDateTime(
+              body.deletionRequest.cancellationDeadline,
+            )}.`,
       );
     } catch {
       setHasError(true);
@@ -1140,6 +1409,35 @@ function LearnerDataControls() {
 
   function reauthenticate() {
     void signIn("/account");
+  }
+
+  async function copyDeletionReceipt() {
+    if (!deletionReceipt) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(deletionReceipt));
+      setHasError(false);
+      setMessage("Private deletion-status receipt copied. Store it securely.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "The browser could not copy the receipt. Use the visible values or download it instead.",
+      );
+    }
+  }
+
+  function downloadDeletionReceipt() {
+    if (!deletionReceipt) return;
+    const blob = new Blob([JSON.stringify(deletionReceipt, null, 2)], {
+      type: "application/json",
+    });
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = `project42-deletion-status-${deletionReceipt.requestId}.json`;
+    anchor.click();
+    URL.revokeObjectURL(href);
+    setHasError(false);
+    setMessage("Private deletion-status receipt downloaded.");
   }
 
   return (
@@ -1232,6 +1530,7 @@ function LearnerDataControls() {
                     <tr>
                       <th scope="col">Purpose</th>
                       <th scope="col">Policy version</th>
+                      <th scope="col">Contract</th>
                       <th scope="col">Decision</th>
                       <th scope="col">Decided</th>
                     </tr>
@@ -1243,6 +1542,7 @@ function LearnerDataControls() {
                           <code>{record.purpose}</code>
                         </td>
                         <td>{record.policyVersion}</td>
+                        <td>{record.contractStatus ?? "unclassified"}</td>
                         <td>{record.decision}</td>
                         <td>
                           <time dateTime={record.decidedAt}>
@@ -1260,6 +1560,64 @@ function LearnerDataControls() {
 
         <section className="profile-card">
           <h3>Delete account and learner data</h3>
+          {deletionReceipt ? (
+            <aside
+              className="deletion-status-receipt"
+              aria-labelledby="deletion-status-receipt-title"
+            >
+              <h4 id="deletion-status-receipt-title">
+                Save your one-time private status receipt
+              </h4>
+              <p>
+                This receipt is required to check status after the account is
+                deleted. Project 42 does not place it in browser storage, a URL,
+                analytics, or logs. It disappears from this page when you confirm
+                that it is saved.
+              </p>
+              <label htmlFor="deletion-status-request-id">Request ID</label>
+              <input
+                id="deletion-status-request-id"
+                readOnly
+                value={deletionReceipt.requestId}
+              />
+              <label htmlFor="deletion-status-token">Private status token</label>
+              <textarea
+                id="deletion-status-token"
+                readOnly
+                rows={3}
+                value={deletionReceipt.statusToken}
+              />
+              <p>
+                Issued{" "}
+                <time dateTime={deletionReceipt.issuedAt}>
+                  {formatDateTime(deletionReceipt.issuedAt)}
+                </time>
+              </p>
+              <div className="button-row">
+                <button
+                  className="button button-secondary"
+                  onClick={() => void copyDeletionReceipt()}
+                  type="button"
+                >
+                  Copy private receipt
+                </button>
+                <button
+                  className="button button-secondary"
+                  onClick={downloadDeletionReceipt}
+                  type="button"
+                >
+                  Download private receipt
+                </button>
+                <button
+                  className="button button-primary"
+                  onClick={() => setDeletionReceipt(null)}
+                  type="button"
+                >
+                  I saved this receipt
+                </button>
+              </div>
+            </aside>
+          ) : null}
           {activeDeletion ? (
             <>
               <p>
@@ -1337,8 +1695,8 @@ function LearnerDataControls() {
                         </span>
                       )}
                     </div>
-                    <code aria-label={`Deletion request receipt ${request.id}`}>
-                      Receipt {request.id}
+                    <code aria-label={`Deletion request identifier ${request.id}`}>
+                      Request {request.id}
                     </code>
                   </li>
                 ))}

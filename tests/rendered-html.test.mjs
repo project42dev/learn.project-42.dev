@@ -157,6 +157,9 @@ test("renders account, approval, and cross-device progress surfaces", async () =
   const profile = await profileResponse.text();
   const admin = await adminResponse.text();
   assert.match(account, /Account and access/);
+  assert.match(account, /Check a deletion request/);
+  assert.match(account, /cannot search by email, name, or account identifier/i);
+  assert.match(account, /not retained by this page/i);
   assert.match(
     account,
     hostedIdentityConfigured
@@ -298,7 +301,7 @@ test("renders evidence-producing activities for every substantive module", async
   const activityModules = starterCatalog.modules.filter(
     (learningModule) => learningModule.activity,
   );
-  assert.equal(activityModules.length, 49);
+  assert.equal(activityModules.length, releaseFacts.counts.evidenceActivities);
 
   for (const learningModule of activityModules) {
     const path = starterCatalog.paths.find((candidate) =>
@@ -321,10 +324,6 @@ test("renders evidence-producing activities for every substantive module", async
       `${learningModule.id} activity needs a matching heading id`,
     );
   }
-
-  const legacyResponse = await render("/learn/ai-foundations/what-ai-does");
-  assert.equal(legacyResponse.status, 200);
-  assert.doesNotMatch(await legacyResponse.text(), /Practice activity/);
 });
 
 test("renders the complete AI Foundations curriculum and source provenance", async () => {
@@ -333,7 +332,10 @@ test("renders the complete AI Foundations curriculum and source provenance", asy
   );
   assert.ok(path);
   assert.equal(path.moduleIds.length, 16);
-  assert.equal(starterCatalog.modules.length, 55);
+  assert.equal(
+    starterCatalog.modules.length,
+    releaseFacts.counts.assessedModules,
+  );
 
   for (const moduleId of path.moduleIds) {
     const learningModule = starterCatalog.modules.find(

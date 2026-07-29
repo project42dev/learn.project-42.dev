@@ -47,10 +47,10 @@ accessibility, and security contract.
 ## Current release facts
 
 - Site release `0.9.0`
-- Platform package `0.60.0`
-- Content release `0.36.0`
-- 6 learning paths, 55 assessed modules, 49 evidence activities, and 257 reviewed questions
-- 6 dedicated learning paths and 4 provider scopes
+- Platform package `0.63.0`
+- Content release `0.42.0`
+- 8 learning paths, 72 assessed modules, 69 evidence activities, and 363 reviewed questions
+- 8 dedicated learning paths and 4 provider scopes
 
 These facts are generated from `package.json` and the tagged platform catalog into
 [`public/release-facts.json`](public/release-facts.json). `npm run facts:check`

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   createContext,
   useContext,
   useEffect,
@@ -19,6 +20,7 @@ export interface ProfilePreferences {
 interface ProfilePreferencesContextValue {
   preferences: ProfilePreferences;
   ready: boolean;
+  applySessionPreferences: (preferences: ProfilePreferences) => boolean;
   savePreferences: (preferences: ProfilePreferences) => { persisted: boolean };
   resetPreferences: () => { persisted: boolean };
   formatDate: (value: string | number | Date) => string;
@@ -148,8 +150,18 @@ export function ProfilePreferencesProvider({
     }
   }, [preferences]);
 
-  const value = useMemo<ProfilePreferencesContextValue>(() => {
-    function persist(next: ProfilePreferences): { persisted: boolean } {
+  const applySessionPreferences = useCallback(
+    (next: ProfilePreferences): boolean => {
+      const validated = validateProfilePreferences(next);
+      if (!validated) return false;
+      setPreferences(validated);
+      return true;
+    },
+    [],
+  );
+
+  const savePreferences = useCallback(
+    (next: ProfilePreferences): { persisted: boolean } => {
       setPreferences(next);
       try {
         window.localStorage.setItem(storageKey, JSON.stringify(next));
@@ -157,8 +169,11 @@ export function ProfilePreferencesProvider({
       } catch {
         return { persisted: false };
       }
-    }
+    },
+    [],
+  );
 
+  const value = useMemo<ProfilePreferencesContextValue>(() => {
     function format(
       input: string | number | Date,
       options: Intl.DateTimeFormatOptions,
@@ -181,13 +196,14 @@ export function ProfilePreferencesProvider({
     return {
       preferences,
       ready,
-      savePreferences: persist,
-      resetPreferences: () => persist(browserDefaults()),
+      applySessionPreferences,
+      savePreferences,
+      resetPreferences: () => savePreferences(browserDefaults()),
       formatDate: (input) => format(input, { dateStyle: "medium" }),
       formatDateTime: (input) =>
         format(input, { dateStyle: "medium", timeStyle: "short" }),
     };
-  }, [preferences, ready]);
+  }, [applySessionPreferences, preferences, ready, savePreferences]);
 
   return (
     <ProfilePreferencesContext.Provider value={value}>

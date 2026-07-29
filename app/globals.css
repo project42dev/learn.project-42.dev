@@ -3879,6 +3879,62 @@ a {
   font-size: 0.72rem;
 }
 
+.deletion-status-receipt {
+  background: var(--surface-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.deletion-status-receipt h4,
+.deletion-status-receipt p {
+  margin: 0;
+}
+
+.deletion-status-receipt input,
+.deletion-status-receipt textarea {
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  color: var(--ink);
+  font: inherit;
+  overflow-wrap: anywhere;
+  padding: 0.7rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.deletion-status-lookup {
+  margin-top: 1.25rem;
+}
+
+.deletion-status-result {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  margin: 1rem 0 0;
+}
+
+.deletion-status-result div {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.8rem;
+}
+
+.deletion-status-result dt {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.deletion-status-result dd {
+  margin: 0.25rem 0 0;
+}
+
 .account-photo-editor {
   align-items: start;
   display: grid;
