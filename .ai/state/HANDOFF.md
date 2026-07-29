@@ -2,59 +2,44 @@
 
 ## Active branch
 
-`feat/admin-pagination-ab6358`
+`fix/device-local-quarantine-ab5424`
 
 ## Scope
 
-The Learn owner console now consumes the reusable platform's optional
-cursor-pagination response contract for:
-
-- `GET /v1/admin/accounts`
-- `GET /v1/admin/audit`
-
-The implementation remains compatible with the currently deployed unpaged
-platform `v0.63.0` response while the pagination platform release is coordinated.
+Learn now fails safely when `project42.progress.v1` contains malformed JSON, an
+unsupported schema version, an invalid full record shape, or catalog-incompatible
+learning evidence.
 
 ## Implemented
 
-- Account requests send a bounded `pageSize=25`, preserve the server-side account
-  state filter, and pass only the opaque `nextCursor` returned by the API.
-- Audit requests use the same bounded continuation contract.
-- Load-more controls append records while rejecting duplicate IDs client-side.
-- Result summaries distinguish shown, loaded, and more-available records without
-  claiming an unknown total.
-- Initial loading, empty result, final page, legacy unpaged response, and invalid
-  or stale cursor states have explicit user-facing copy.
-- An `invalid_admin_cursor` response retains already reviewed rows, stops unsafe
-  continuation, and offers a first-page reload.
-- Changing the server-side account-state filter or signed-in owner context
-  discards pagination state and reloads from the first page.
-- Load-more completion and stale-page recovery are announced through live regions
-  and move focus to a persistent status target so keyboard users do not lose their
-  place when a final-page button disappears.
-- The legacy compatibility path treats a response with no `page` member as one
-  complete response and never fabricates a continuation.
+- Reuses the platform portable-record validator and catalog reconciliation rules
+  before hydrating a device-local record.
+- Adds explicit badge and badge-evidence catalog validation.
+- Preserves the original storage value byte-for-byte and writes a separate local
+  quarantine envelope when browser quota permits.
+- Blocks empty-record persistence and account synchronization while recovery is
+  required.
+- Shows accessible recovery guidance without rendering the raw record.
+- Downloads the untouched raw record on explicit learner action.
+- Documents the local-only privacy boundary and recovery behavior.
 
 ## Verification
 
 - `npm run typecheck` — passed.
 - `npm run lint` — passed.
+- `npm run test:unit` — 4 passed.
 - Production-configured `npm run build` — passed.
-- Production-configured rendered-route suite — 17 passed.
-- Self-host container contract — passed.
-- Focused paged and legacy owner journeys — 2 passed.
-- Complete account-progress and account-merge browser suites — 13 passed.
-- Pagination accessibility scan — zero WCAG 2.0/2.1/2.2 A/AA violations.
-- Dependency installation audit — zero known vulnerabilities.
+- Production-configured `tests/browser/account-progress.spec.ts` — 12 passed.
+- Recovery-state WCAG 2.0/2.1/2.2 A/AA scan — zero violations.
+- Production-configured `npm run check` — passed, including 31 runtime and 31
+  GitHub Pages browser tests.
 
 ## Delivery boundary
 
-- No dependency version, release, deployment, production data, or Azure DevOps
-  state was changed.
-- The Learn change must not be released until the platform pagination contract is
-  published and the coordinated production deployment is approved.
-- The public pull-request title and body must not contain private tracker links or
-  identifiers. The delivery commit retains its required work-item reference.
-
-No production tenant, client, learner, or resource identifiers belong in this
-repository.
+- AB#5424 remains Active because exact item-level reconciliation, transcript
+  projection guidance, local-backup removal, and authenticated production
+  validation remain.
+- AB#5784 remains Active because the authenticated production import,
+  cross-device retrieval, and replay journey remains.
+- No production data, identity configuration, account, database, Worker, platform
+  release, or dependency version was changed.

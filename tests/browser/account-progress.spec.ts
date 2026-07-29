@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import type { LearnerProgress } from "@project42/platform";
+import { readFile } from "node:fs/promises";
 
 const hostedIdentityConfigured = Boolean(
   process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
@@ -444,6 +445,127 @@ test("handles empty, local-only, and server-only records without overwriting evi
     )
     .toEqual(["scenario-attempt"]);
   expect(writes).toBe(0);
+});
+
+test("quarantines and downloads an unsupported local record without uploading or replacing it", async ({
+  page,
+}) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The recovery boundary requires hosted-account test configuration.",
+  );
+
+  const privateMarker = "device-only-recovery-marker";
+  const rawRecord = JSON.stringify({
+    schemaVersion: 2,
+    displayName: "Future learner",
+    startedPathIds: [],
+    completedModuleIds: [],
+    attempts: [],
+    capstoneSubmissions: [],
+    badges: [],
+    updatedAt: "2026-07-29T12:00:00.000Z",
+    privateMarker,
+  });
+  let progressRequests = 0;
+  const requestBodies: string[] = [];
+
+  await page.addInitScript((storedRecord) => {
+    window.localStorage.setItem("project42.progress.v1", storedRecord);
+  }, rawRecord);
+  page.on("request", (request) => {
+    const body = request.postData();
+    if (body) requestBodies.push(body);
+  });
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
+    async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      const headers = { "content-type": "application/json" };
+      if (pathname === "/v1/auth/session") {
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            account: {
+              id: "recovery-account",
+              installationId: "test",
+              identity: {
+                issuer: "https://issuer.example",
+                subject: "recovery-subject",
+              },
+              displayName: "Recovery learner",
+              primaryEmail: "learner@example.test",
+              emailVerified: true,
+              state: "approved",
+              roles: ["learner"],
+              createdAt: "2026-07-29T12:00:00.000Z",
+              updatedAt: "2026-07-29T12:00:00.000Z",
+            },
+          }),
+        });
+        return;
+      }
+      if (pathname === "/v1/me/progress") progressRequests += 1;
+      await route.fulfill({
+        status: 500,
+        headers,
+        body: JSON.stringify({ error: { message: "Unexpected request" } }),
+      });
+    },
+  );
+
+  await page.goto("/profile");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Your browser record needs recovery." }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/unsupported progress schema version 2/i),
+  ).toBeVisible();
+  await expect(page.getByText(privateMarker)).toHaveCount(0);
+  await expect(
+    page.getByText(/account synchronization is paused/i),
+  ).toBeVisible();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.localStorage.getItem("project42.progress.v1")),
+    )
+    .toBe(rawRecord);
+  const quarantine = await page.evaluate(() =>
+    JSON.parse(
+      window.localStorage.getItem("project42.progress.quarantine.v1") ?? "null",
+    ),
+  );
+  expect(quarantine).toMatchObject({
+    schemaVersion: 1,
+    sourceKey: "project42.progress.v1",
+    rawRecord,
+  });
+  expect(Object.keys(quarantine).sort()).toEqual([
+    "capturedAt",
+    "errors",
+    "rawRecord",
+    "schemaVersion",
+    "sourceKey",
+  ]);
+
+  const downloadPromise = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Download original browser record" })
+    .click();
+  const download = await downloadPromise;
+  const downloadedPath = await download.path();
+  expect(downloadedPath).not.toBeNull();
+  expect(await readFile(downloadedPath!, "utf8")).toBe(rawRecord);
+
+  expect(progressRequests).toBe(0);
+  expect(requestBodies.some((body) => body.includes(privateMarker))).toBe(false);
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
 });
 
 test("previews, safely retries, and deduplicates a browser-to-account merge", async ({

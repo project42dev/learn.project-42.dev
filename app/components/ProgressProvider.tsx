@@ -27,13 +27,18 @@ import {
   needsProgressMigration,
   type ProgressMigrationPreview,
 } from "../lib/progressMigration";
+import {
+  deviceLocalProgressKey,
+  readDeviceLocalProgress,
+  type DeviceLocalProgressRecovery,
+} from "../lib/deviceLocalProgress";
 import { useAuth } from "./AuthProvider";
 
-const storageKey = "project42.progress.v1";
 const migrationRecoveryKey = "project42.progress.migration.recovery.v1";
 type StorageStatus = "ready" | "unavailable" | "write-error";
 type SyncStatus =
   | "local-only"
+  | "recovery-needed"
   | "checking"
   | "migration-available"
   | "syncing"
@@ -44,6 +49,7 @@ type SyncStatus =
 interface ProgressContextValue {
   progress: LearnerProgress;
   migrationPreview: ProgressMigrationPreview | null;
+  localRecordRecovery: DeviceLocalProgressRecovery | null;
   hydrated: boolean;
   storageStatus: StorageStatus;
   syncStatus: SyncStatus;
@@ -67,23 +73,35 @@ const ProgressContext = createContext<ProgressContextValue | null>(null);
 function safeReadProgress(): {
   progress: LearnerProgress;
   storageStatus: StorageStatus;
+  localRecordRecovery: DeviceLocalProgressRecovery | null;
 } {
   try {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return { progress: createEmptyProgress(), storageStatus: "ready" };
-    const parsed = JSON.parse(raw) as Partial<LearnerProgress>;
-    if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.attempts)) {
-      return { progress: createEmptyProgress(), storageStatus: "unavailable" };
+    const result = readDeviceLocalProgress(window.localStorage, starterCatalog);
+    if (result.status === "missing") {
+      return {
+        progress: createEmptyProgress(),
+        storageStatus: "ready",
+        localRecordRecovery: null,
+      };
+    }
+    if (result.status === "quarantined") {
+      return {
+        progress: createEmptyProgress(),
+        storageStatus: "unavailable",
+        localRecordRecovery: result.recovery,
+      };
     }
     return {
-      progress: {
-        ...(parsed as LearnerProgress),
-        capstoneSubmissions: parsed.capstoneSubmissions ?? [],
-      },
+      progress: result.progress,
       storageStatus: "ready",
+      localRecordRecovery: null,
     };
   } catch {
-    return { progress: createEmptyProgress(), storageStatus: "unavailable" };
+    return {
+      progress: createEmptyProgress(),
+      storageStatus: "unavailable",
+      localRecordRecovery: null,
+    };
   }
 }
 
@@ -95,6 +113,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("local-only");
   const [migrationPreview, setMigrationPreview] =
     useState<ProgressMigrationPreview | null>(null);
+  const [localRecordRecovery, setLocalRecordRecovery] =
+    useState<DeviceLocalProgressRecovery | null>(null);
+  const localPersistenceBlocked = useRef(false);
   const synchronizationEnabled = useRef(false);
   const lastSynchronized = useRef("");
   const currentProgress = useRef(progress);
@@ -107,24 +128,35 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const hydrationTimer = window.setTimeout(() => {
       const stored = safeReadProgress();
+      localPersistenceBlocked.current = Boolean(stored.localRecordRecovery);
       setProgress(stored.progress);
       setStorageStatus(stored.storageStatus);
+      setLocalRecordRecovery(stored.localRecordRecovery);
       setHydrated(true);
     }, 0);
     return () => window.clearTimeout(hydrationTimer);
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (
+      !hydrated ||
+      localRecordRecovery ||
+      localPersistenceBlocked.current
+    ) {
+      return;
+    }
     let nextStatus: StorageStatus = "ready";
     try {
-      window.localStorage.setItem(storageKey, JSON.stringify(progress));
+      window.localStorage.setItem(
+        deviceLocalProgressKey,
+        JSON.stringify(progress),
+      );
     } catch {
       nextStatus = "write-error";
     }
     const statusTimer = window.setTimeout(() => setStorageStatus(nextStatus), 0);
     return () => window.clearTimeout(statusTimer);
-  }, [hydrated, progress]);
+  }, [hydrated, localRecordRecovery, progress]);
 
   useEffect(() => {
     synchronizationEnabled.current = false;
@@ -135,6 +167,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setMigrationPreview(null);
       if (!hydrated || !account) {
         setSyncStatus("local-only");
+        return;
+      }
+      if (localRecordRecovery) {
+        setSyncStatus("recovery-needed");
         return;
       }
       if (account.state !== "approved") {
@@ -187,7 +223,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [account, apiFetch, hydrated]);
+  }, [account, apiFetch, hydrated, localRecordRecovery]);
 
   useEffect(() => {
     if (
@@ -407,6 +443,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     () => ({
       progress,
       migrationPreview,
+      localRecordRecovery,
       hydrated,
       storageStatus,
       syncStatus,
@@ -421,6 +458,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     [
       progress,
       migrationPreview,
+      localRecordRecovery,
       hydrated,
       storageStatus,
       syncStatus,

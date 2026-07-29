@@ -34,6 +34,20 @@ The recovery envelope uses the key
 `project42.progress.migration.recovery.v1`. It contains learning data but no access
 token, identity-provider token, tenant identifier, issuer, subject, or email.
 
+## Unsupported browser records
+
+Learn validates the complete local progress shape and every referenced learning
+path, module, assessment, capstone, and badge against the current catalog before
+hydrating or synchronizing it. Malformed JSON, unsupported future schema versions,
+and catalog-incompatible records are quarantined locally.
+
+Quarantine never replaces the original `project42.progress.v1` value with an empty
+record. The profile page pauses account synchronization, explains the validation
+failure, and lets the learner download the untouched source record. The local
+quarantine envelope contains only the raw learning record, validation messages,
+the source-key name, and capture metadata; Learn does not add account identifiers,
+email addresses, identity claims, session values, or access tokens.
+
 ## Validation
 
 The browser suite covers:
