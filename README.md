@@ -46,7 +46,7 @@ accessibility, and security contract.
 
 ## Current release facts
 
-- Site release `0.10.0`
+- Site release `0.10.1`
 - Platform package `0.65.0`
 - Content release `0.42.0`
 - 8 learning paths, 72 assessed modules, 69 evidence activities, and 363 reviewed questions

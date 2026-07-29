@@ -1,6 +1,6 @@
 {
   "name": "project-42-learn",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Project 42 Learn: free, provider-neutral AI learning paths and assessments.",
   "private": true,
   "license": "Apache-2.0",

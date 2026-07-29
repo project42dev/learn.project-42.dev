@@ -38,6 +38,14 @@ jobs:
       # Playwright's headless Chromium launch uses the smaller headless shell.
       - run: npx playwright install --with-deps chromium --only-shell
       - run: npm run check
+      - name: Verify reusable unconfigured account rendering
+        env:
+          NEXT_PUBLIC_PROJECT42_API_ORIGIN: ""
+        run: |
+          npm run build
+          node --test \
+            --test-name-pattern="renders account, approval, and cross-device progress surfaces" \
+            tests/rendered-html.test.mjs
 
   self-host-image:
     runs-on: ubuntu-24.04
