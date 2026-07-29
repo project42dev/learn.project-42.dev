@@ -9,6 +9,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  parseRegistrationStatus,
+  readBrowserAuthOutcome,
+  registrationRetryDelaySeconds,
+  type BrowserAuthOutcome,
+  type RegistrationStatusReceipt,
+} from "../lib/registrationStatus";
 
 export type AccountState =
   | "pending"
@@ -39,14 +46,31 @@ type AuthStatus =
   | "signed-in"
   | "error";
 
+export type RegistrationPhase =
+  | "none"
+  | "checking"
+  | "current"
+  | "expired"
+  | "provider-error"
+  | "account-unavailable"
+  | "temporarily-unavailable";
+
+export interface RegistrationExperience {
+  phase: RegistrationPhase;
+  receipt: RegistrationStatusReceipt | null;
+  retryAt: string | null;
+}
+
 interface AuthContextValue {
   configured: boolean;
   status: AuthStatus;
   account: Project42Account | null;
+  registration: RegistrationExperience;
   error: string | null;
   apiFetch: (path: string, init?: RequestInit) => Promise<Response>;
   completeSignIn: () => Promise<void>;
   completeGithubLink: () => Promise<string>;
+  refreshRegistration: () => Promise<void>;
   refreshAccount: () => Promise<void>;
   signIn: (returnPath?: string) => Promise<void>;
   startGithubLink: (returnPath?: string) => Promise<void>;
@@ -71,6 +95,11 @@ const apiOrigin = readApiOrigin(
 );
 const configured = Boolean(apiOrigin);
 const githubLinkFlowKey = "project42.identity-link.github.v1";
+const emptyRegistration: RegistrationExperience = {
+  phase: "none",
+  receipt: null,
+  retryAt: null,
+};
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -189,6 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [account, setAccount] = useState<Project42Account | null>(null);
   const [session, setSession] = useState<BrowserSession | null>(null);
+  const [registration, setRegistration] =
+    useState<RegistrationExperience>(emptyRegistration);
   const [error, setError] = useState<string | null>(null);
 
   const apiFetch = useCallback(async (path: string, init: RequestInit = {}) => {
@@ -205,7 +236,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const refreshAccount = useCallback(async () => {
+  const loadRegistration = useCallback(
+    async (outcome: BrowserAuthOutcome, expectedReceipt: boolean) => {
+      setRegistration((current) => ({
+        phase: "checking",
+        receipt: current.receipt,
+        retryAt: null,
+      }));
+      try {
+        const response = await apiFetch("/v1/registration/status");
+        if (response.ok) {
+          const receipt = parseRegistrationStatus(await response.json());
+          setRegistration({
+            phase: "current",
+            receipt,
+            retryAt: new Date(Date.now() + 10_000).toISOString(),
+          });
+          setError(null);
+          setStatus("signed-out");
+          return;
+        }
+        if (response.status === 401) {
+          const phase: RegistrationPhase =
+            outcome === "error" || outcome === "invalid"
+              ? "provider-error"
+              : outcome === "unavailable"
+                ? "account-unavailable"
+                : expectedReceipt
+                  ? "expired"
+                  : "none";
+          setRegistration({ phase, receipt: null, retryAt: null });
+          setError(null);
+          setStatus("signed-out");
+          return;
+        }
+        const retrySeconds = registrationRetryDelaySeconds(
+          response.headers.get("retry-after"),
+        );
+        setRegistration({
+          phase: "temporarily-unavailable",
+          receipt: null,
+          retryAt: new Date(Date.now() + retrySeconds * 1_000).toISOString(),
+        });
+        setError(null);
+        setStatus("signed-out");
+      } catch {
+        setRegistration({
+          phase: "temporarily-unavailable",
+          receipt: null,
+          retryAt: new Date(Date.now() + 30_000).toISOString(),
+        });
+        setError(null);
+        setStatus("signed-out");
+      }
+    },
+    [apiFetch],
+  );
+
+  const loadAccount = useCallback(async (outcome: BrowserAuthOutcome = null) => {
     if (!configured) return;
     setStatus("loading");
     try {
@@ -218,8 +306,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 401) {
         setAccount(null);
         setSession(null);
-        setError(null);
-        setStatus("signed-out");
+        await loadRegistration(
+          outcome,
+          outcome === "pending" ||
+            outcome === "rejected" ||
+            outcome === "success",
+        );
         return;
       }
       if (!response.ok || !body.account) {
@@ -227,21 +319,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setAccount(body.account);
       setSession(body.session ?? null);
+      setRegistration(emptyRegistration);
       setError(null);
       setStatus("signed-in");
     } catch (caught) {
       setAccount(null);
       setSession(null);
+      setRegistration(emptyRegistration);
       setError(accountServiceErrorMessage(caught));
       setStatus("error");
     }
-  }, [apiFetch]);
+  }, [apiFetch, loadRegistration]);
+
+  const refreshAccount = useCallback(async () => {
+    await loadAccount();
+  }, [loadAccount]);
+
+  const refreshRegistration = useCallback(async () => {
+    await loadRegistration(null, true);
+  }, [loadRegistration]);
 
   useEffect(() => {
     if (!configured) return;
-    const timer = window.setTimeout(() => void refreshAccount(), 0);
+    const outcome = readBrowserAuthOutcome(window.location.search);
+    if (new URLSearchParams(window.location.search).has("auth")) {
+      const target = new URL(window.location.href);
+      target.searchParams.delete("auth");
+      window.history.replaceState(
+        {},
+        "",
+        `${target.pathname}${target.search}${target.hash}`,
+      );
+    }
+    const timer = window.setTimeout(() => void loadAccount(outcome), 0);
     return () => window.clearTimeout(timer);
-  }, [refreshAccount]);
+  }, [loadAccount]);
 
   const signIn = useCallback(async (returnPath = "/account") => {
     if (!apiOrigin) return;
@@ -263,13 +375,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await refreshAccount();
       return;
     }
+    if (query.get("auth") === "pending" || query.get("auth") === "rejected") {
+      await refreshRegistration();
+      return;
+    }
     if (query.get("auth") === "error") {
       throw new Error("The identity provider did not complete sign-in. Start again.");
     }
     throw new Error(
       "This callback belongs to the retired browser-token flow. Start sign-in again.",
     );
-  }, [refreshAccount]);
+  }, [refreshAccount, refreshRegistration]);
 
   const renewSession = useCallback(async () => {
     const response = await apiFetch("/v1/auth/renew", { method: "POST" });
@@ -460,6 +576,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem(githubLinkFlowKey);
       setAccount(null);
       setSession(null);
+      setRegistration(emptyRegistration);
       setError(null);
       setStatus(configured ? "signed-out" : "unavailable");
     } catch (caught) {
@@ -473,10 +590,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured,
       status,
       account,
+      registration,
       error,
       apiFetch,
       completeGithubLink,
       completeSignIn,
+      refreshRegistration,
       refreshAccount,
       signIn,
       signOut,
@@ -485,10 +604,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       status,
       account,
+      registration,
       error,
       apiFetch,
       completeGithubLink,
       completeSignIn,
+      refreshRegistration,
       refreshAccount,
       signIn,
       signOut,

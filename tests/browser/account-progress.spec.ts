@@ -9,9 +9,9 @@ const hostedIdentityConfigured = Boolean(
 
 async function installSignedOutApi(page: Page) {
   if (!hostedIdentityConfigured) return;
-  await page.route(
-    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/auth/session`,
-    async (route) => {
+  await page.route(`${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`, async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === "/v1/auth/session") {
       await route.fulfill({
         status: 401,
         headers: { "content-type": "application/json" },
@@ -19,8 +19,20 @@ async function installSignedOutApi(page: Page) {
           error: { code: "authentication_required", message: "Sign in is required." },
         }),
       });
-    },
-  );
+      return;
+    }
+    if (pathname === "/v1/registration/status") {
+      await route.fulfill({
+        status: 401,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          error: { code: "registration_receipt_invalid" },
+        }),
+      });
+      return;
+    }
+    await route.continue();
+  });
 }
 
 test("renders the account state selected by public account-API configuration", async ({
@@ -30,10 +42,12 @@ test("renders the account state selected by public account-API configuration", a
   await page.goto("/account");
   if (hostedIdentityConfigured) {
     await expect(
-      page.getByRole("heading", { name: "Keep your progress across devices" }),
+      page.getByRole("heading", { name: "Request a Project 42 account" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign in or request access" }),
+      page.getByRole("button", {
+        name: "Continue to sign in or request access",
+      }),
     ).toBeVisible();
   } else {
     await expect(
@@ -87,7 +101,9 @@ test("starts API-owned sign-in without storing an identity-provider token", asyn
 
   const requestPromise = page.waitForRequest(startPattern);
   await page
-    .getByRole("button", { name: "Sign in or request access" })
+    .getByRole("button", {
+      name: "Continue to sign in or request access",
+    })
     .click();
   const request = await requestPromise;
   const target = new URL(request.url());

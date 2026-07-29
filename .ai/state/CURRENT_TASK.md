@@ -1,6 +1,7 @@
 # Current task
 
-Protect unsupported or damaged device-local learner records before hydration or
-account synchronization.
+Deliver the public, approval-gated learner account-request and private status
+experience against the immutable Project 42 platform `v0.65.0` registration
+boundary.
 
-Primary work items: AB#5424 and AB#5784.
+Primary work item: AB#5695. Integration context: AB#5697.

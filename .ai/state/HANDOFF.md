@@ -2,56 +2,56 @@
 
 ## Active branch
 
-`feat/progress-reconciliation-ab5424`
+`feat/account-request-status-ab5695`
 
-## CI repair — 2026-07-29
-
-- Protected PR verification passed the product gates and then received HTTP 429
-  from the exact vLLM documentation URL after all three bounded link-check
-  attempts.
-- `config/link-check-exceptions.json` now permits only HTTP 429 for that exact
-  URL through 2026-10-31. Successful responses still pass normally; all other
-  statuses and network failures remain fatal.
-- The CI-equivalent full check passes with 99 HTML routes, 4 metadata endpoints,
-  4,402 internal references, 142 external links, 31 runtime browser tests, and
-  31 GitHub Pages browser tests.
+Base: exact `origin/main` commit
+`35391e81e61d18eee7b5d4788f5c581176144b1f`.
 
 ## Scope
 
-Learn now fails safely when `project42.progress.v1` contains malformed JSON, an
-unsupported schema version, an invalid full record shape, or catalog-incompatible
-learning evidence.
+Learn now presents the complete learner-facing account-request and private
+registration-status experience published by platform `v0.65.0`.
 
 ## Implemented
 
-- Reuses the platform portable-record validator and catalog reconciliation rules
-  before hydrating a device-local record.
-- Adds explicit badge and badge-evidence catalog validation.
-- Preserves the original storage value byte-for-byte and writes a separate local
-  quarantine envelope when browser quota permits.
-- Blocks empty-record persistence and account synchronization while recovery is
-  required.
-- Shows accessible recovery guidance without rendering the raw record.
-- Downloads the untouched raw record on explicit learner action.
-- Documents the local-only privacy boundary and recovery behavior.
+- Pins `@project42/platform` and self-host compatibility metadata to immutable
+  `v0.65.0`, peeled commit
+  `5a083de3add80ad6635c6319391cba4f7e34b265`.
+- Adds a provider-neutral public request entry with privacy, learner-data,
+  local-learning, and approval expectations before identity-provider
+  navigation.
+- Distinguishes API-owned authenticated sessions from the separate HttpOnly
+  registration receipt. Pending and rejected requests never become learner
+  sessions.
+- Consumes only the five PII-free `RegistrationStatus` fields from the released
+  platform contract and rejects unsafe, inconsistent, or malformed responses.
+- Handles pending, rejected, approved, expired/replaced receipt,
+  provider-error, account-unavailable, and temporarily unavailable states with
+  accessible fixed copy.
+- Avoids automatic polling and server error-detail rendering; retry controls
+  honor a bounded `Retry-After` window.
+- Preserves browser-local learning and the signed-out deletion-receipt workflow.
+- Documents the account/session/receipt boundary and recovery behavior.
 
 ## Verification
 
-- `npm run typecheck` — passed.
-- `npm run lint` — passed.
-- `npm run test:unit` — 4 passed.
-- Production-configured `npm run build` — passed.
-- Production-configured `tests/browser/account-progress.spec.ts` — 12 passed.
-- Recovery-state WCAG 2.0/2.1/2.2 A/AA scan — zero violations.
-- Production-configured `npm run check` — passed, including 31 runtime and 31
-  GitHub Pages browser tests.
+- Clean `npm@10.9.4 ci` — passed; 737 packages audited, zero vulnerabilities.
+- Production-configured `npm run check` — passed.
+- Unit tests — 12 passed.
+- Rendered route tests — 17 passed.
+- Runtime browser tests — 37 passed.
+- GitHub Pages artifact tests — 3 passed.
+- GitHub Pages browser tests — 37 passed.
+- Link integrity — 99 HTML routes, 4 metadata endpoints, 4,402 internal
+  references, 142 external links.
+- Release facts, brand integrity, diagram integrity, lint, typecheck, container
+  contract, production build, and Pages export — passed.
+- Changed application/test lines were scanned for private ADO URLs, personal
+  email addresses, GUIDs, credentials, secrets, and local paths; none found.
 
 ## Delivery boundary
 
-- AB#5424 remains Active because exact item-level reconciliation, transcript
-  projection guidance, local-backup removal, and authenticated production
-  validation remain.
-- AB#5784 remains Active because the authenticated production import,
-  cross-device retrieval, and replay journey remains.
-- No production data, identity configuration, account, database, Worker, platform
-  release, or dependency version was changed.
+- This worktree contains no deployment, ADO state change, push, pull request,
+  merge, production session, Cloudflare, Entra, D1, or other cloud mutation.
+- Production approval-flow validation remains outside this local Learn lane and
+  requires the released platform API to be deployed and configured.
