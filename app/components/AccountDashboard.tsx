@@ -16,6 +16,11 @@ import {
   type Project42Account,
 } from "./AuthProvider";
 import { AccountMergeAdministration } from "./AccountMergeAdministration";
+import {
+  useProfilePreferences,
+  validateProfilePreferences,
+  type ProfilePreferences,
+} from "./ProfilePreferencesProvider";
 
 interface DomainRule {
   id: string;
@@ -290,6 +295,7 @@ export function AccountDashboard() {
       {account.state !== "suspended" && account.state !== "revoked" ? (
         <ProfileEditor />
       ) : null}
+      <ProfilePreferencesEditor />
       {account.state === "approved" ? <LinkedIdentityEditor /> : null}
       <LearnerDataControls />
       {account.roles.includes("owner") ? <OwnerAdministration /> : null}
@@ -460,6 +466,7 @@ function ProfileEditor() {
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [message, setMessage] = useState("Loading profile…");
+  const [hasError, setHasError] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -468,15 +475,18 @@ function ProfileEditor() {
       const response = await apiFetch("/v1/me/profile");
       const body = (await response.json()) as {
         profile?: LearnerProfile;
-        error?: { message?: string };
       };
       if (!response.ok || !body.profile) {
-        throw new Error(body.error?.message ?? "Your profile could not be loaded.");
+        throw new Error("profile_load_failed");
       }
       setProfile(body.profile);
+      setHasError(false);
       setMessage("Profile is current.");
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Your profile could not be loaded.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "Your profile could not be loaded. Your browser-local learning record is unchanged.",
+      );
     } finally {
       setBusy(false);
     }
@@ -497,11 +507,10 @@ function ProfileEditor() {
         objectUrl = URL.createObjectURL(await response.blob());
         if (!cancelled) setPhotoUrl(objectUrl);
       })
-      .catch((caught) => {
+      .catch(() => {
         if (!cancelled) {
-          setMessage(
-            caught instanceof Error ? caught.message : "Profile photo could not be loaded.",
-          );
+          setHasError(true);
+          setMessage("Your private profile photo could not be loaded.");
         }
       });
     return () => {
@@ -527,16 +536,19 @@ function ProfileEditor() {
       });
       const body = (await response.json()) as {
         profile?: LearnerProfile;
-        error?: { message?: string };
       };
       if (!response.ok || !body.profile) {
-        throw new Error(body.error?.message ?? "Your profile could not be saved.");
+        throw new Error("profile_save_failed");
       }
       setProfile(body.profile);
+      setHasError(false);
       setMessage("Profile saved.");
       await refreshAccount();
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Your profile could not be saved.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "Your profile could not be saved. No local learning progress was changed.",
+      );
     } finally {
       setBusy(false);
     }
@@ -544,9 +556,11 @@ function ProfileEditor() {
 
   async function uploadPhoto(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const photo = form.get("photo");
     if (!(photo instanceof File) || photo.size === 0) {
+      setHasError(true);
       setMessage("Choose a JPEG, PNG, or WebP photo first.");
       return;
     }
@@ -561,6 +575,7 @@ function ProfileEditor() {
             ? "image/webp"
             : "");
     if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
+      setHasError(true);
       setMessage("Choose a JPEG, PNG, or WebP photo.");
       return;
     }
@@ -573,17 +588,20 @@ function ProfileEditor() {
       });
       const body = (await response.json()) as {
         photo?: { available: boolean };
-        error?: { message?: string };
       };
       if (!response.ok || !body.photo?.available) {
-        throw new Error(body.error?.message ?? "Profile photo could not be uploaded.");
+        throw new Error("photo_upload_failed");
       }
       setPhotoUrl(null);
-      event.currentTarget.reset();
+      formElement.reset();
       await load();
+      setHasError(false);
       setMessage("Profile photo saved.");
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Profile photo could not be uploaded.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "Profile photo could not be uploaded. The selected file was not retained by this page.",
+      );
     } finally {
       setBusy(false);
     }
@@ -595,14 +613,15 @@ function ProfileEditor() {
     try {
       const response = await apiFetch("/v1/me/profile/photo", { method: "DELETE" });
       if (!response.ok) {
-        const body = (await response.json()) as { error?: { message?: string } };
-        throw new Error(body.error?.message ?? "Profile photo could not be removed.");
+        throw new Error("photo_remove_failed");
       }
       setPhotoUrl(null);
       await load();
+      setHasError(false);
       setMessage("Profile photo removed.");
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Profile photo could not be removed.");
+    } catch {
+      setHasError(true);
+      setMessage("Profile photo could not be removed. Your existing photo is unchanged.");
     } finally {
       setBusy(false);
     }
@@ -616,7 +635,7 @@ function ProfileEditor() {
         These details are stored with your Project 42 account. Your verified email
         remains controlled by your identity provider.
       </p>
-      <p className="admin-status" role="status">
+      <p className="admin-status" role={hasError ? "alert" : "status"}>
         {message}
       </p>
       {profile ? (
@@ -714,12 +733,205 @@ function ProfileEditor() {
   );
 }
 
+const commonLocales = [
+  "en-US",
+  "en-GB",
+  "en-CA",
+  "es-ES",
+  "fr-FR",
+  "de-DE",
+  "hi-IN",
+  "ja-JP",
+  "ko-KR",
+  "pt-BR",
+  "zh-CN",
+];
+
+const commonTimeZones = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Toronto",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Kolkata",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];
+
+function ProfilePreferencesEditor() {
+  const {
+    preferences,
+    ready,
+    savePreferences,
+    resetPreferences,
+  } = useProfilePreferences();
+  const [message, setMessage] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+  const displayedMessage =
+    message ??
+    (ready
+      ? "These preferences are stored in this browser. Hosted preference synchronization is not available in the current account API."
+      : "Loading this browser’s learning preferences…");
+
+  function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const candidate: ProfilePreferences = {
+      locale: String(form.get("locale") ?? ""),
+      timeZone: String(form.get("timeZone") ?? ""),
+      reducedMotion: form.get("reducedMotion") === "on",
+      highContrast: form.get("highContrast") === "on",
+    };
+    const validated = validateProfilePreferences(candidate);
+    if (!validated) {
+      setHasError(true);
+      setMessage(
+        "Enter a valid language tag, such as en-US, and an IANA time zone, such as America/New_York.",
+      );
+      return;
+    }
+    const result = savePreferences(validated);
+    setHasError(!result.persisted);
+    setMessage(
+      result.persisted
+        ? "Preferences saved in this browser."
+        : "The browser blocked preference storage. Your choices apply for this visit only.",
+    );
+  }
+
+  function reset() {
+    const result = resetPreferences();
+    setHasError(!result.persisted);
+    setMessage(
+      result.persisted
+        ? "Browser language, time zone, and system accessibility defaults restored."
+        : "Browser defaults restored for this visit, but storage is unavailable.",
+    );
+  }
+
+  return (
+    <section className="profile-card" aria-labelledby="profile-preferences-title">
+      <p className="eyebrow">Learning preferences</p>
+      <h3 id="profile-preferences-title">Language, time, and accessibility</h3>
+      <p>
+        Choose how Project 42 formats dates and add accessibility preferences. An
+        operating-system request for reduced motion, increased contrast, or forced
+        colors always takes priority; these controls can add support but never turn
+        system support off.
+      </p>
+      <p
+        className="admin-status"
+        role={hasError ? "alert" : "status"}
+      >
+        {displayedMessage}
+      </p>
+      <form
+        className="account-profile-form account-preferences-form"
+        key={`${preferences.locale}:${preferences.timeZone}:${preferences.reducedMotion}:${preferences.highContrast}`}
+        onSubmit={save}
+      >
+        <label htmlFor="profile-locale">Language tag for dates and times</label>
+        <input
+          aria-describedby="profile-locale-help"
+          defaultValue={preferences.locale}
+          disabled={!ready}
+          id="profile-locale"
+          list="profile-locale-options"
+          name="locale"
+          required
+        />
+        <datalist id="profile-locale-options">
+          {commonLocales.map((locale) => (
+            <option key={locale} value={locale} />
+          ))}
+        </datalist>
+        <small id="profile-locale-help">
+          Use a BCP 47 language tag, such as en-US or fr-FR.
+        </small>
+
+        <label htmlFor="profile-time-zone">Time zone</label>
+        <input
+          aria-describedby="profile-time-zone-help"
+          defaultValue={preferences.timeZone}
+          disabled={!ready}
+          id="profile-time-zone"
+          list="profile-time-zone-options"
+          name="timeZone"
+          required
+        />
+        <datalist id="profile-time-zone-options">
+          {commonTimeZones.map((timeZone) => (
+            <option key={timeZone} value={timeZone} />
+          ))}
+        </datalist>
+        <small id="profile-time-zone-help">
+          Use an IANA time zone, such as America/New_York or UTC.
+        </small>
+
+        <fieldset>
+          <legend>Accessibility</legend>
+          <label className="account-checkbox" htmlFor="profile-reduced-motion">
+            <input
+              defaultChecked={preferences.reducedMotion}
+              disabled={!ready}
+              id="profile-reduced-motion"
+              name="reducedMotion"
+              type="checkbox"
+            />
+            <span>
+              <strong>Always reduce motion</strong>
+              <small>
+                Minimize animation and smooth scrolling even when the system has no
+                reduced-motion preference.
+              </small>
+            </span>
+          </label>
+          <label className="account-checkbox" htmlFor="profile-high-contrast">
+            <input
+              defaultChecked={preferences.highContrast}
+              disabled={!ready}
+              id="profile-high-contrast"
+              name="highContrast"
+              type="checkbox"
+            />
+            <span>
+              <strong>Increase contrast</strong>
+              <small>
+                Use stronger text and control boundaries without overriding forced
+                colors.
+              </small>
+            </span>
+          </label>
+        </fieldset>
+        <div className="button-row">
+          <button className="button button-primary" disabled={!ready} type="submit">
+            Save preferences
+          </button>
+          <button
+            className="button button-secondary"
+            disabled={!ready}
+            onClick={reset}
+            type="button"
+          >
+            Use browser defaults
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 function LearnerDataControls() {
   const { apiFetch, signIn } = useAuth();
+  const { formatDateTime } = useProfilePreferences();
   const [consents, setConsents] = useState<ConsentRecord[]>([]);
   const [deletions, setDeletions] = useState<DeletionRequest[]>([]);
   const [confirmation, setConfirmation] = useState("");
   const [message, setMessage] = useState("Loading privacy controls…");
+  const [hasError, setHasError] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -731,25 +943,21 @@ function LearnerDataControls() {
       ]);
       const consentBody = (await consentResponse.json()) as {
         consents?: ConsentRecord[];
-        error?: { message?: string };
       };
       const deletionBody = (await deletionResponse.json()) as {
         requests?: DeletionRequest[];
-        error?: { message?: string };
       };
       if (!consentResponse.ok || !deletionResponse.ok) {
-        throw new Error(
-          consentBody.error?.message ??
-            deletionBody.error?.message ??
-            "Privacy controls could not be loaded.",
-        );
+        throw new Error("privacy_controls_load_failed");
       }
       setConsents(consentBody.consents ?? []);
       setDeletions(deletionBody.requests ?? []);
+      setHasError(false);
       setMessage("Privacy controls are current.");
-    } catch (caught) {
+    } catch {
+      setHasError(true);
       setMessage(
-        caught instanceof Error ? caught.message : "Privacy controls could not be loaded.",
+        "Privacy controls could not be loaded. No consent or deletion decision was changed.",
       );
     } finally {
       setBusy(false);
@@ -761,10 +969,22 @@ function LearnerDataControls() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  const latestLearnerRecordConsent = [...consents]
-    .reverse()
-    .find((record) => record.purpose === "learner-records");
-  const activeDeletion = deletions.find((request) =>
+  const orderedConsents = [...consents].sort(
+    (left, right) =>
+      Date.parse(right.decidedAt) - Date.parse(left.decidedAt) ||
+      right.id.localeCompare(left.id),
+  );
+  const latestLearnerRecordConsent = orderedConsents.find(
+    (record) =>
+      record.purpose === "learning-record" ||
+      record.purpose === "learner-records",
+  );
+  const orderedDeletions = [...deletions].sort(
+    (left, right) =>
+      Date.parse(right.requestedAt) - Date.parse(left.requestedAt) ||
+      right.id.localeCompare(left.id),
+  );
+  const activeDeletion = orderedDeletions.find((request) =>
     ["requested", "processing"].includes(request.state),
   );
 
@@ -774,26 +994,27 @@ function LearnerDataControls() {
       const response = await apiFetch("/v1/me/consents", {
         method: "POST",
         body: JSON.stringify({
-          purpose: "learner-records",
+          purpose: "learning-record",
           policyVersion: learnerDataPolicy.policyVersion,
           decision,
         }),
       });
       const body = (await response.json()) as {
         consent?: ConsentRecord;
-        error?: { message?: string };
       };
       if (!response.ok || !body.consent) {
-        throw new Error(body.error?.message ?? "Consent could not be recorded.");
+        throw new Error("consent_write_failed");
       }
       setConsents((current) => [...current, body.consent as ConsentRecord]);
+      setHasError(false);
       setMessage(
         decision === "granted"
           ? "Learner-record consent recorded."
           : "Learner-record consent withdrawn. You can still export or delete your data.",
       );
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Consent update failed.");
+    } catch {
+      setHasError(true);
+      setMessage("Consent could not be recorded. Your previous decision is unchanged.");
     } finally {
       setBusy(false);
     }
@@ -809,11 +1030,13 @@ function LearnerDataControls() {
       };
       if (!response.ok || !body.export) {
         if (body.error?.code === "recent_authentication_required") {
-          throw new Error(
+          setHasError(true);
+          setMessage(
             "Sign out and sign in again before exporting this sensitive account data.",
           );
+          return;
         }
-        throw new Error(body.error?.message ?? "Account data could not be exported.");
+        throw new Error("export_failed");
       }
       const blob = new Blob([JSON.stringify(body.export, null, 2)], {
         type: "application/json",
@@ -826,9 +1049,13 @@ function LearnerDataControls() {
         .slice(0, 10)}.json`;
       anchor.click();
       URL.revokeObjectURL(href);
+      setHasError(false);
       setMessage("Account and learner data export downloaded.");
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Account export failed.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "Account data could not be exported. No public download link was created.",
+      );
     } finally {
       setBusy(false);
     }
@@ -848,21 +1075,27 @@ function LearnerDataControls() {
       };
       if (!response.ok || !body.deletionRequest) {
         if (body.error?.code === "recent_authentication_required") {
-          throw new Error(
+          setHasError(true);
+          setMessage(
             "Sign out and sign in again before requesting account deletion.",
           );
+          return;
         }
-        throw new Error(body.error?.message ?? "Deletion could not be requested.");
+        throw new Error("deletion_request_failed");
       }
       setDeletions((current) => [body.deletionRequest as DeletionRequest, ...current]);
       setConfirmation("");
+      setHasError(false);
       setMessage(
-        `Deletion requested. It can be cancelled until ${new Date(
+        `Deletion requested. Receipt ${body.deletionRequest.id}. It can be cancelled until ${formatDateTime(
           body.deletionRequest.cancellationDeadline,
-        ).toLocaleString()}.`,
+        )}.`,
       );
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Deletion request failed.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "Deletion could not be requested. Your account and learner record are unchanged.",
+      );
     } finally {
       setBusy(false);
     }
@@ -878,11 +1111,13 @@ function LearnerDataControls() {
       };
       if (!response.ok || !body.deletionRequest) {
         if (body.error?.code === "recent_authentication_required") {
-          throw new Error(
+          setHasError(true);
+          setMessage(
             "Sign out and sign in again before cancelling account deletion.",
           );
+          return;
         }
-        throw new Error(body.error?.message ?? "Deletion could not be cancelled.");
+        throw new Error("deletion_cancel_failed");
       }
       setDeletions((current) =>
         current.map((request) =>
@@ -891,9 +1126,13 @@ function LearnerDataControls() {
             : request,
         ),
       );
+      setHasError(false);
       setMessage("Deletion request cancelled.");
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Deletion cancellation failed.");
+    } catch {
+      setHasError(true);
+      setMessage(
+        "Deletion could not be cancelled. Check the request status before trying again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -919,7 +1158,7 @@ function LearnerDataControls() {
           Refresh
         </button>
       </div>
-      <p className="admin-status" role="status">
+      <p className="admin-status" role={hasError ? "alert" : "status"}>
         {message}
       </p>
       <p className="account-policy-note">
@@ -966,7 +1205,10 @@ function LearnerDataControls() {
             </button>
           </div>
           <p>
-            Export and deletion require a sign-in issued within the last 15 minutes.
+            Export and deletion require a sign-in issued within the last{" "}
+            {learnerDataPolicy.export.recentAuthenticationMinutes} minutes. The
+            export is returned directly to this browser; Project 42 does not create
+            a public object URL.
           </p>
           <button
             className="button button-secondary"
@@ -976,6 +1218,44 @@ function LearnerDataControls() {
           >
             Sign in again
           </button>
+          <div className="account-history">
+            <h4>Consent history</h4>
+            {orderedConsents.length === 0 ? (
+              <p>No consent decisions have been recorded.</p>
+            ) : (
+              <div className="account-history-table-wrap">
+                <table>
+                  <caption>
+                    Every versioned consent decision returned by your account
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Purpose</th>
+                      <th scope="col">Policy version</th>
+                      <th scope="col">Decision</th>
+                      <th scope="col">Decided</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderedConsents.map((record) => (
+                      <tr key={record.id}>
+                        <td>
+                          <code>{record.purpose}</code>
+                        </td>
+                        <td>{record.policyVersion}</td>
+                        <td>{record.decision}</td>
+                        <td>
+                          <time dateTime={record.decidedAt}>
+                            {formatDateTime(record.decidedAt)}
+                          </time>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="profile-card">
@@ -984,7 +1264,10 @@ function LearnerDataControls() {
             <>
               <p>
                 Deletion is {activeDeletion.state}. You can cancel until{" "}
-                {new Date(activeDeletion.cancellationDeadline).toLocaleString()}.
+                <time dateTime={activeDeletion.cancellationDeadline}>
+                  {formatDateTime(activeDeletion.cancellationDeadline)}
+                </time>
+                .
               </p>
               <button
                 className="button button-secondary"
@@ -999,8 +1282,9 @@ function LearnerDataControls() {
             <form className="domain-form" onSubmit={(event) => void requestDeletion(event)}>
               <p>
                 This removes the account, progress, attempts, transcript, badges, and
-                consent history after a seven-day cancellation period. A minimized
-                audit tombstone remains.
+                consent history after a{" "}
+                {learnerDataPolicy.deletion.cancellationWindowDays}-day cancellation
+                period. A minimized audit tombstone remains.
               </p>
               <label htmlFor="deletion-confirmation">
                 Enter DELETE MY PROJECT 42 ACCOUNT
@@ -1021,6 +1305,46 @@ function LearnerDataControls() {
               </button>
             </form>
           )}
+          <div className="account-history">
+            <h4>Deletion request history</h4>
+            {orderedDeletions.length === 0 ? (
+              <p>No deletion request has been recorded.</p>
+            ) : (
+              <ol className="deletion-history">
+                {orderedDeletions.map((request) => (
+                  <li key={request.id}>
+                    <div>
+                      <strong>{request.state}</strong>
+                      <span>
+                        Requested{" "}
+                        <time dateTime={request.requestedAt}>
+                          {formatDateTime(request.requestedAt)}
+                        </time>
+                      </span>
+                      {request.completedAt ? (
+                        <span>
+                          Completed{" "}
+                          <time dateTime={request.completedAt}>
+                            {formatDateTime(request.completedAt)}
+                          </time>
+                        </span>
+                      ) : (
+                        <span>
+                          Cancellation deadline{" "}
+                          <time dateTime={request.cancellationDeadline}>
+                            {formatDateTime(request.cancellationDeadline)}
+                          </time>
+                        </span>
+                      )}
+                    </div>
+                    <code aria-label={`Deletion request receipt ${request.id}`}>
+                      Receipt {request.id}
+                    </code>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
         </section>
       </div>
     </section>

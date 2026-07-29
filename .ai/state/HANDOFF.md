@@ -1,53 +1,48 @@
 # Handoff
 
-## 2026-07-28 browser-progress migration candidate
-
-- Branch: `feat/progress-migration-ab5784`.
-- Learn `0.8.0` now previews browser, account, and merged progress before an
-  approved learner confirms an import.
-- The merge preserves immutable assessment and capstone evidence, combines
-  non-conflicting progress deterministically, blocks mismatched immutable IDs,
-  keeps a local recovery envelope, and reuses a content-derived import receipt
-  across interrupted retries.
-- Pull-request CI now supplies non-secret test-only public configuration so hosted
-  account tests execute instead of silently skipping.
-- The exact candidate passed `npm run check`: 18 runtime browser journeys, 18
-  GitHub Pages journeys, rendered routes, link integrity, accessibility, build,
-  type, lint, package, and Pages artifact gates.
-- No infrastructure, identity-provider configuration, database, Worker, or
-  production resource changed.
-
 ## Active branch
 
-`feat/progress-migration-ab5784`
+`feat/profile-consent-controls-ab5419`
 
-## Current candidate
+## Implemented
 
-- Learn `0.7.0` adds a searchable, state-filtered owner approval queue.
-- Account transitions now use an accessible in-page review form with required
-  audit reasons.
-- Terminal revocation requires explicit typed confirmation.
-- Application and Pages Playwright ports are configurable so isolated worktrees
-  can validate concurrently.
-- Owner workflow and trusted-domain launch-lock guidance is documented in
-  `docs/owner-administration.md`.
+- Preserved the existing hosted display-name, biography, organization, location,
+  website, and private profile-photo controls.
+- Added browser-fallback locale, time-zone, reduced-motion, and increased-contrast
+  preferences with validation and application across Learn.
+- Kept operating-system reduced-motion, contrast, and forced-color preferences
+  authoritative.
+- Corrected new consent writes to the canonical `learning-record` purpose while
+  retaining legacy evidence under its original purpose.
+- Added reviewable consent history with purpose, policy version, decision, and
+  timestamp.
+- Added deletion request receipts and status history, including cancellation and
+  completed states returned by the current API.
+- Replaced raw profile, consent, export, photo, and deletion API error details with
+  privacy-safe learner messages.
+- Added deterministic browser and accessibility coverage for profile/photo edits,
+  preference persistence, consent history, recent-authentication export handling,
+  deletion request/cancellation, and failure redaction.
 
 ## Verification
 
-- `npm run check` passed, including 15 application browser journeys and the same
-  15 exported GitHub Pages journeys.
-- The targeted owner journey passed with focus, state-change request, terminal
-  confirmation, and automated WCAG checks.
-- `npm audit --omit=dev` reports zero known production vulnerabilities.
-- GitHub CI verify and self-host image checks passed for commit `4905132`.
+- `npm run typecheck` — passed.
+- `npm run lint` — passed.
+- Production build with hosted API configuration — passed.
+- Focused profile-control Playwright and axe suite — 3 passed.
+- Combined account/profile Playwright regression — 14 passed.
 
-## Delivery state
+## Remaining integration
 
-- Draft pull request: Learn PR #17.
-- No Cloudflare, database, Entra, identity configuration, or deployment change
-  was made.
-- The implementation task and parent administration story remain Active pending
-  review, merge, release, and authenticated production validation.
+- The currently consumed account API does not yet persist locale, time zone,
+  reduced motion, or high contrast in the hosted learner profile. The new provider
+  isolates validation, fallback storage, preference application, and formatting so
+  those controls can be connected to the expanded profile contract after its
+  reviewed platform release.
+- A completed deletion can be displayed when returned by the current history API.
+  The learner cannot independently prove post-deletion status after account access
+  is removed; that requires a durable receipt/status retrieval contract.
+- Cross-learner authorization proof remains a platform/API test responsibility.
 
-No production tenant, client, owner, learner, or resource identifiers belong in
-this repository.
+No production tenant, client, learner, or resource identifiers belong in this
+repository.
