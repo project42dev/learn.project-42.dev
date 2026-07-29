@@ -12,6 +12,26 @@
       "expires": "2026-10-31"
     },
     {
+      "targetPattern": "https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/",
+      "expectedStatuses": [
+        403
+      ],
+      "reason": "The guide is public in a normal browser but consistently returns an automated-client 403 to the bounded Project 42 link checker.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-07-29",
+      "expires": "2026-10-31"
+    },
+    {
+      "targetPattern": "https://openai.com/index/unrolling-the-codex-agent-loop/",
+      "expectedStatuses": [
+        403
+      ],
+      "reason": "The article is public in a normal browser but consistently returns an automated-client 403 to the bounded Project 42 link checker.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-07-29",
+      "expires": "2026-10-31"
+    },
+    {
       "targetPattern": "https://project-42.dev/legal-transparency*",
       "expectedStatuses": [
         404

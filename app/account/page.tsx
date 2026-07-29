@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AccountDashboard } from "../components/AccountDashboard";
+import {
+  AccountDashboard,
+  DeletionStatusLookup,
+} from "../components/AccountDashboard";
 
 export const metadata: Metadata = {
   title: "My account",
@@ -31,6 +34,7 @@ export default function AccountPage() {
         </div>
       </header>
       <AccountDashboard />
+      <DeletionStatusLookup />
     </main>
   );
 }

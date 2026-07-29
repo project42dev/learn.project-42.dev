@@ -32,6 +32,10 @@ interface Profile {
   organization: string | null;
   location: string | null;
   websiteUrl: string | null;
+  locale: string | null;
+  timeZone: string | null;
+  reducedMotion: boolean;
+  highContrast: boolean;
   photoAvailable: boolean;
   photoUpdatedAt: string | null;
   createdAt: string;
@@ -46,6 +50,10 @@ function initialProfile(): Profile {
     organization: null,
     location: null,
     websiteUrl: null,
+    locale: "en-US",
+    timeZone: "UTC",
+    reducedMotion: false,
+    highContrast: false,
     photoAvailable: false,
     photoUpdatedAt: null,
     createdAt: now,
@@ -115,6 +123,7 @@ test.describe("hosted profile and learner-data controls", () => {
   }) => {
     let profile = initialProfile();
     const profilePatches: Array<Record<string, unknown>> = [];
+    const preferencePatches: Array<Record<string, unknown>> = [];
     const photoWrites: Array<{ contentType: string; size: number }> = [];
     let photoRemovals = 0;
 
@@ -126,16 +135,28 @@ test.describe("hosted profile and learner-data controls", () => {
       }
       if (pathname === "/v1/me/profile" && request.method() === "PATCH") {
         const patch = request.postDataJSON() as Record<string, unknown>;
-        profilePatches.push(patch);
-        profile = {
-          ...profile,
-          displayName: String(patch.displayName ?? "") || null,
-          bio: String(patch.bio ?? "") || null,
-          organization: String(patch.organization ?? "") || null,
-          location: String(patch.location ?? "") || null,
-          websiteUrl: String(patch.websiteUrl ?? "") || null,
-          updatedAt: "2026-07-29T12:05:00.000Z",
-        };
+        if ("locale" in patch) {
+          preferencePatches.push(patch);
+          profile = {
+            ...profile,
+            locale: String(patch.locale),
+            timeZone: String(patch.timeZone),
+            reducedMotion: Boolean(patch.reducedMotion),
+            highContrast: Boolean(patch.highContrast),
+            updatedAt: "2026-07-29T12:05:30.000Z",
+          };
+        } else {
+          profilePatches.push(patch);
+          profile = {
+            ...profile,
+            displayName: String(patch.displayName ?? "") || null,
+            bio: String(patch.bio ?? "") || null,
+            organization: String(patch.organization ?? "") || null,
+            location: String(patch.location ?? "") || null,
+            websiteUrl: String(patch.websiteUrl ?? "") || null,
+            updatedAt: "2026-07-29T12:05:00.000Z",
+          };
+        }
         await fulfillJson(route, { profile });
         return true;
       }
@@ -221,7 +242,19 @@ test.describe("hosted profile and learner-data controls", () => {
     await page.getByLabel("Always reduce motion").check();
     await page.getByLabel("Increase contrast").check();
     await page.getByRole("button", { name: "Save preferences" }).click();
-    await expect(page.getByText("Preferences saved in this browser.")).toBeVisible();
+    await expect(
+      page.getByText(
+        "Preferences saved to your account and this browser’s offline fallback.",
+      ),
+    ).toBeVisible();
+    expect(preferencePatches).toEqual([
+      {
+        locale: "en-GB",
+        timeZone: "America/Los_Angeles",
+        reducedMotion: true,
+        highContrast: true,
+      },
+    ]);
     await expect(page.locator("html")).toHaveAttribute(
       "data-project42-reduced-motion",
       "true",
@@ -287,6 +320,7 @@ test.describe("hosted profile and learner-data controls", () => {
         policyVersion: "2026-06-01",
         decision: "withdrawn",
         decidedAt: "2026-07-27T09:00:00.000Z",
+        contractStatus: "legacy",
       },
       {
         id: "consent-current",
@@ -294,6 +328,7 @@ test.describe("hosted profile and learner-data controls", () => {
         policyVersion: "2026-07-27",
         decision: "granted",
         decidedAt: "2026-07-29T09:00:00.000Z",
+        contractStatus: "current",
       },
       {
         id: "consent-optional",
@@ -301,6 +336,7 @@ test.describe("hosted profile and learner-data controls", () => {
         policyVersion: "2026-07-27",
         decision: "withdrawn",
         decidedAt: "2026-07-28T09:00:00.000Z",
+        contractStatus: "legacy",
       },
       {
         id: "consent-legacy",
@@ -308,6 +344,7 @@ test.describe("hosted profile and learner-data controls", () => {
         policyVersion: "2026-06-01",
         decision: "granted",
         decidedAt: "2026-07-26T09:00:00.000Z",
+        contractStatus: "legacy",
       },
     ];
     let deletions = [
@@ -346,6 +383,7 @@ test.describe("hosted profile and learner-data controls", () => {
           id: "consent-new",
           ...input,
           decidedAt: "2026-07-29T12:10:00.000Z",
+          contractStatus: "current",
         };
         consents.push(
           consent as {
@@ -354,6 +392,7 @@ test.describe("hosted profile and learner-data controls", () => {
             policyVersion: string;
             decision: string;
             decidedAt: string;
+            contractStatus: string;
           },
         );
         await fulfillJson(route, { consent }, 201);
@@ -381,7 +420,19 @@ test.describe("hosted profile and learner-data controls", () => {
           completedAt: null,
         };
         deletions = [deletionRequest, ...deletions];
-        await fulfillJson(route, { deletionRequest }, 201);
+        await fulfillJson(
+          route,
+          {
+            deletionRequest,
+            receipt: {
+              requestId: deletionRequest.id,
+              statusToken:
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              issuedAt: "2026-07-29T12:15:00.000Z",
+            },
+          },
+          201,
+        );
         return true;
       }
       return false;
@@ -397,6 +448,7 @@ test.describe("hosted profile and learner-data controls", () => {
     await expect(consentRows).toHaveCount(5);
     await expect(consentRows.nth(1)).toContainText("learning-record");
     await expect(consentRows.nth(1)).toContainText("2026-07-27");
+    await expect(consentRows.nth(1)).toContainText("current");
     await expect(consentRows.nth(1)).toContainText("granted");
     await expect(consentRows.nth(2)).toContainText("product-improvement");
     await expect(
@@ -416,11 +468,11 @@ test.describe("hosted profile and learner-data controls", () => {
     ]);
 
     await expect(
-      page.getByLabel("Deletion request receipt deletion-completed"),
-    ).toContainText("Receipt deletion-completed");
+      page.getByLabel("Deletion request identifier deletion-completed"),
+    ).toContainText("Request deletion-completed");
     await expect(
-      page.getByLabel("Deletion request receipt deletion-open"),
-    ).toContainText("Receipt deletion-open");
+      page.getByLabel("Deletion request identifier deletion-open"),
+    ).toContainText("Request deletion-open");
     await page.getByRole("button", { name: "Cancel deletion" }).click();
     await expect(page.getByText("Deletion request cancelled.")).toBeVisible();
     await expect(page.getByText("cancelled", { exact: true })).toBeVisible();
@@ -429,12 +481,261 @@ test.describe("hosted profile and learner-data controls", () => {
       .getByLabel("Enter DELETE MY PROJECT 42 ACCOUNT")
       .fill("DELETE MY PROJECT 42 ACCOUNT");
     await page.getByRole("button", { name: "Request deletion" }).click();
+    const receipt = page.getByRole("complementary", {
+      name: "Save your one-time private status receipt",
+    });
+    await expect(receipt).toBeVisible();
+    await expect(receipt.getByLabel("Request ID")).toHaveValue("deletion-new");
+    await expect(receipt.getByLabel("Private status token")).toHaveValue(
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    );
     await expect(
-      page.getByLabel("Deletion request receipt deletion-new"),
-    ).toContainText("Receipt deletion-new");
+      page.getByLabel("Deletion request identifier deletion-new"),
+    ).toContainText("Request deletion-new");
+    expect(
+      await page.evaluate(() => {
+        const values = (target: Storage) =>
+          Array.from({ length: target.length }, (_, index) =>
+            target.getItem(target.key(index) ?? ""),
+          ).join(" ");
+        return `${values(window.localStorage)} ${values(window.sessionStorage)}`;
+      }),
+    ).not.toContain("aaaaaaaaaaaaaaaa");
+    await page.getByRole("button", { name: "I saved this receipt" }).click();
+    await expect(receipt).toHaveCount(0);
     expect(deletionWrites).toEqual([
       { confirmation: "DELETE MY PROJECT 42 ACCOUNT" },
     ]);
+
+    const accessibility = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    expect(accessibility.violations).toEqual([]);
+  });
+
+  test("keeps approved profile and consent writes scoped to the current account", async ({
+    page,
+  }) => {
+    const writes: Array<{ pathname: string; search: string; body: unknown }> = [];
+    let profile = initialProfile();
+
+    await installBaselineApi(page, async (route, pathname) => {
+      const request = route.request();
+      if (pathname === "/v1/me/profile" && request.method() === "GET") {
+        await fulfillJson(route, { profile });
+        return true;
+      }
+      if (pathname === "/v1/me/profile" && request.method() === "PATCH") {
+        const url = new URL(request.url());
+        const body = request.postDataJSON() as Record<string, unknown>;
+        writes.push({ pathname, search: url.search, body });
+        profile = { ...profile, ...body, updatedAt: now };
+        await fulfillJson(route, { profile });
+        return true;
+      }
+      if (pathname === "/v1/me/consents" && request.method() === "POST") {
+        const url = new URL(request.url());
+        const body = request.postDataJSON() as Record<string, unknown>;
+        writes.push({ pathname, search: url.search, body });
+        await fulfillJson(
+          route,
+          {
+            consent: {
+              id: "self-scoped-consent",
+              ...body,
+              decidedAt: now,
+              contractStatus: "current",
+            },
+          },
+          201,
+        );
+        return true;
+      }
+      return false;
+    });
+
+    await page.goto("/account");
+    await page.getByLabel("Language tag for dates and times").fill("fr-FR");
+    await page.getByRole("button", { name: "Save preferences" }).click();
+    await page
+      .getByRole("button", { name: "Grant learner-record consent" })
+      .click();
+
+    expect(writes).toEqual([
+      {
+        pathname: "/v1/me/profile",
+        search: "",
+        body: {
+          locale: "fr-FR",
+          timeZone: "UTC",
+          reducedMotion: false,
+          highContrast: false,
+        },
+      },
+      {
+        pathname: "/v1/me/consents",
+        search: "",
+        body: {
+          purpose: "learning-record",
+          policyVersion: expect.any(String),
+          decision: "granted",
+        },
+      },
+    ]);
+    for (const write of writes) {
+      expect(JSON.stringify(write.body)).not.toContain("userId");
+      expect(JSON.stringify(write.body)).not.toContain("profile-controls-subject");
+    }
+  });
+
+  test("uses browser-local preferences when the hosted contract is legacy", async ({
+    page,
+  }) => {
+    const legacyProfile = initialProfile() as Partial<Profile>;
+    delete legacyProfile.locale;
+    delete legacyProfile.timeZone;
+    delete legacyProfile.reducedMotion;
+    delete legacyProfile.highContrast;
+    let preferenceWrites = 0;
+
+    await installBaselineApi(page, async (route, pathname) => {
+      const request = route.request();
+      if (pathname === "/v1/me/profile" && request.method() === "GET") {
+        await fulfillJson(route, { profile: legacyProfile });
+        return true;
+      }
+      if (pathname === "/v1/me/profile" && request.method() === "PATCH") {
+        preferenceWrites += 1;
+        await fulfillJson(route, { profile: legacyProfile });
+        return true;
+      }
+      return false;
+    });
+
+    await page.goto("/account");
+    await expect(
+      page.getByText(/does not yet expose preference fields/i),
+    ).toBeVisible();
+    await page.getByLabel("Language tag for dates and times").fill("en-CA");
+    await page.getByRole("button", { name: "Save preferences" }).click();
+    await expect(page.getByText("Preferences saved in this browser.")).toBeVisible();
+    expect(preferenceWrites).toBe(0);
+    expect(
+      await page.evaluate(() =>
+        window.localStorage.getItem("project42.profile-preferences.v1"),
+      ),
+    ).toContain("en-CA");
+  });
+
+  test("keeps an accessible in-browser fallback when hosted profile loading is offline", async ({
+    page,
+  }) => {
+    let writes = 0;
+    await installBaselineApi(page, async (route, pathname) => {
+      const request = route.request();
+      if (pathname === "/v1/me/profile" && request.method() === "GET") {
+        await fulfillJson(route, { error: { code: "unavailable" } }, 503);
+        return true;
+      }
+      if (pathname === "/v1/me/profile" && request.method() === "PATCH") {
+        writes += 1;
+        await fulfillJson(route, { error: { code: "unavailable" } }, 503);
+        return true;
+      }
+      return false;
+    });
+
+    await page.goto("/account");
+    await expect(
+      page.getByText(/Hosted preferences could not be reached/i),
+    ).toBeVisible();
+    await page.getByLabel("Time zone").fill("Europe/Paris");
+    await page.getByRole("button", { name: "Save preferences" }).click();
+    await expect(page.getByText("Preferences saved in this browser.")).toBeVisible();
+    expect(writes).toBe(0);
+
+    const accessibility = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    expect(accessibility.violations).toEqual([]);
+  });
+
+  test("checks deletion status while signed out without retaining the private token", async ({
+    page,
+  }) => {
+    const privateToken =
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    await page.route(`${apiOrigin}/**`, async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      if (request.method() === "OPTIONS") {
+        await route.fulfill({ status: 204, headers: jsonHeaders(route) });
+        return;
+      }
+      if (pathname === "/v1/auth/session") {
+        await fulfillJson(route, { error: { code: "unauthorized" } }, 401);
+        return;
+      }
+      if (pathname === "/v1/deletion-status" && request.method() === "POST") {
+        const body = request.postDataJSON() as Record<string, unknown>;
+        if (
+          body.requestId !== "deletion-after-account" ||
+          body.statusToken !== privateToken
+        ) {
+          await fulfillJson(
+            route,
+            {
+              error: {
+                code: "not_found",
+                message: "Other Learner, other@example.test",
+              },
+            },
+            404,
+          );
+          return;
+        }
+        await fulfillJson(route, {
+          status: {
+            requestId: "deletion-after-account",
+            state: "completed",
+            requestedAt: "2026-07-20T12:00:00.000Z",
+            cancellationDeadline: "2026-07-27T12:00:00.000Z",
+            completedAt: "2026-07-28T12:00:00.000Z",
+          },
+        });
+        return;
+      }
+      await fulfillJson(route, { error: { code: "not_found" } }, 404);
+    });
+
+    await page.goto("/account");
+    await expect(
+      page.getByRole("heading", { name: "Keep your progress across devices" }),
+    ).toBeVisible();
+    await page.getByLabel("Request ID").fill("deletion-after-account");
+    await page.getByLabel("Private status token").fill(privateToken);
+    await page.getByRole("button", { name: "Check deletion status" }).click();
+    await expect(page.getByText("completed", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Request ID")).toHaveValue("");
+    await expect(page.getByLabel("Private status token")).toHaveValue("");
+    const storage = await page.evaluate(() => {
+      const values = (target: Storage) =>
+        Array.from({ length: target.length }, (_, index) =>
+          target.getItem(target.key(index) ?? ""),
+        ).join(" ");
+      return `${values(window.localStorage)} ${values(window.sessionStorage)}`;
+    });
+    expect(storage).not.toContain(privateToken);
+
+    await page.getByLabel("Request ID").fill("another-account");
+    await page
+      .getByLabel("Private status token")
+      .fill("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
+    await page.getByRole("button", { name: "Check deletion status" }).click();
+    await expect(
+      page.getByText(/could not be verified/i),
+    ).toBeVisible();
+    await expect(page.getByText(/other@example\.test/i)).toHaveCount(0);
 
     const accessibility = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
