@@ -33,7 +33,7 @@ production.
 
 - Clean `npm ci` — passed; 732 packages audited, zero vulnerabilities.
 - Complete `npm run check` — passed.
-- Unit tests — 22 passed, including seven governance tests.
+- Unit tests — 25 passed, including ten governance tests.
 - Rendered route tests — 17 passed.
 - Runtime browser suite — 12 passed and 25 configuration-gated cases skipped.
 - GitHub Pages artifact tests — 3 passed.
@@ -46,6 +46,19 @@ production.
   passed.
 - The changed public file set passes the private-material and diff-hygiene
   scans.
+
+## Review hardening
+
+- Test module paths use `fileURLToPath` and the governance suite validates a
+  repository root containing spaces.
+- README content is included in private-material scanning.
+- Quoted JSON-style secret and resource-identifier assignments fail closed.
+- Public self-hosting is documented as a tagged source build while anonymous
+  registry pulls return `401`.
+- Contributor setup documents Playwright Chromium installation and commands for
+  PowerShell, Command Prompt, macOS, and Linux.
+- GitHub private vulnerability reporting is enabled and was verified through
+  the Project 42 GitHub App.
 
 ## Delivery boundary
 

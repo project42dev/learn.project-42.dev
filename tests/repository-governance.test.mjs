@@ -3,13 +3,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   assertRepositoryGovernance,
   validateRepositoryGovernance,
 } from "../scripts/validate-repository-governance.mjs";
 
 const repositoryRoot = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/u, "$1")),
+  path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
 
@@ -71,6 +72,42 @@ test("rejects private data and private operational references", (t) => {
   }
 });
 
+test("scans README for private material", (t) => {
+  const fixture = createFixture(t);
+  fs.appendFileSync(
+    path.join(fixture, "README.md"),
+    "\nInternal reference: " + "AB" + "#1234\n",
+    "utf8",
+  );
+
+  assert.match(
+    errorText(() => assertRepositoryGovernance(fixture)),
+    /README\.md contains private work-item reference/u,
+  );
+});
+
+test("rejects quoted JSON-style secret assignments", (t) => {
+  const fixture = createFixture(t);
+  fs.appendFileSync(
+    path.join(fixture, "SECURITY.md"),
+    '\n```json\n{"client_secret": "not a real secret value"}\n```\n',
+    "utf8",
+  );
+
+  assert.match(
+    errorText(() => assertRepositoryGovernance(fixture)),
+    /SECURITY\.md contains credential-like assignment/u,
+  );
+});
+
+test("validates repository roots containing spaces", (t) => {
+  const fixture = createFixture(t, "project 42 learn governance-");
+  const result = assertRepositoryGovernance(fixture);
+
+  assert.equal(result.documentCount, 3);
+  assert.deepEqual(result.errors, []);
+});
+
 test("rejects governance documents that are not linked from the README", (t) => {
   const fixture = createFixture(t);
   const readmePath = path.join(fixture, "README.md");
@@ -113,10 +150,8 @@ test("rejects broken local links in governance documents", (t) => {
   );
 });
 
-function createFixture(t) {
-  const fixture = fs.mkdtempSync(
-    path.join(os.tmpdir(), "project42-learn-governance-"),
-  );
+function createFixture(t, prefix = "project42-learn-governance-") {
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   t.after(() => fs.rmSync(fixture, { force: true, recursive: true }));
   for (const file of [
     "README.md",
@@ -127,6 +162,11 @@ function createFixture(t) {
   ]) {
     fs.copyFileSync(path.join(repositoryRoot, file), path.join(fixture, file));
   }
+  fs.mkdirSync(path.join(fixture, "public"));
+  fs.copyFileSync(
+    path.join(repositoryRoot, "public", "release-facts.json"),
+    path.join(fixture, "public", "release-facts.json"),
+  );
   return fixture;
 }
 

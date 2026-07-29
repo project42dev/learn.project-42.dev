@@ -10,8 +10,14 @@ self-hoster's own service and data responsibilities.
 | --- | --- |
 | Hosted Learn | The current release at [learn.project-42.dev](https://learn.project-42.dev) |
 | Source development | The current default branch with Node.js 22.13 or newer and the committed lockfile |
-| Self-hosted Learn | The latest published Learn image or source release paired with a compatible Project 42 Platform release |
+| Self-hosted Learn | A local image built from the latest tagged source release and paired with its compatible Project 42 Platform release |
 | Modified distributions | Supported by the organization that made and operates the modification |
+
+Public self-hosting currently uses a source build. Anonymous pulls of the
+repository's GitHub Container Registry package currently return `401`, so that
+package is not a supported anonymous distribution channel. Build the included
+Dockerfile from a tagged source release until release notes explicitly announce
+an anonymously available image.
 
 Project 42 Learn targets current stable desktop and mobile browsers. Automated
 release gates exercise Chromium-based application and exported Pages journeys;
@@ -25,6 +31,9 @@ The generated release facts in
 [`public/release-facts.json`](public/release-facts.json) identify the exact Learn,
 platform, and content versions. Self-hosted installations should keep those
 versions compatible and review the matching platform release before updating.
+The supported public installation path builds the Learn image locally from the
+matching tagged source; it does not depend on access to a private registry
+package.
 
 The browser receives only the public account-API origin. Identity-provider
 configuration, credentials, session keys, database configuration, and learner

@@ -26,13 +26,37 @@ public issue.
 
 ## Local development
 
-Use Node.js 22.13 or newer and the committed npm lockfile:
+Use Node.js 22.13 or newer and the committed npm lockfile. Install the
+Playwright Chromium binary used by the browser and accessibility checks:
 
-```powershell
+```text
 npm ci
-Copy-Item .env.example .env.local
+npx playwright install chromium
 npm run dev
 ```
+
+These npm and Playwright commands are the same in PowerShell, Command Prompt,
+bash, and zsh. Copy the example environment file with the command for your
+shell:
+
+```powershell
+# PowerShell
+Copy-Item .env.example .env.local
+```
+
+```cmd
+rem Command Prompt
+copy .env.example .env.local
+```
+
+```sh
+# macOS and Linux
+cp .env.example .env.local
+```
+
+On a Linux development host that does not already provide Chromium system
+libraries, run `npx playwright install --with-deps chromium` instead. This may
+require the host's normal package-administration privileges.
 
 `NEXT_PUBLIC_PROJECT42_API_ORIGIN` is public browser configuration. Do not add
 OIDC credentials, session keys, provider secrets, database identifiers, or
@@ -48,7 +72,7 @@ and reduced-motion consideration.
 Run the narrowest relevant checks while developing and the complete gate before
 requesting review:
 
-```powershell
+```text
 npm run governance:check
 npm run lint
 npm run typecheck
@@ -60,7 +84,26 @@ npm run check
 and diagram assets, lint and types, the container contract, application and
 exported Pages builds, links, browser journeys, and accessibility assertions.
 Parallel browser runs can set `PROJECT42_PLAYWRIGHT_PORT` and `PAGES_PORT` to
-unused local ports.
+unused local ports. For example:
+
+```powershell
+# PowerShell
+$env:PROJECT42_PLAYWRIGHT_PORT = "48143"
+$env:PAGES_PORT = "48144"
+npm run check
+```
+
+```cmd
+rem Command Prompt
+set PROJECT42_PLAYWRIGHT_PORT=48143
+set PAGES_PORT=48144
+npm run check
+```
+
+```sh
+# macOS and Linux
+PROJECT42_PLAYWRIGHT_PORT=48143 PAGES_PORT=48144 npm run check
+```
 
 Documentation-only changes must still pass `npm run governance:check` and any
 link checks affected by the change. Update tests when behavior or a public

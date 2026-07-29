@@ -61,12 +61,12 @@ const PRIVATE_MATERIAL_PATTERNS = [
   {
     label: "credential-like assignment",
     pattern:
-      /\b(?:api[_-]?key|client[_-]?secret|account[_-]?key|password|token)\s*[:=]\s*["']?[^\s"'`]{8,}/i,
+      /\b(?:api[_-]?key|client[_-]?secret|account[_-]?key|password|token)\b["']?\s*[:=]\s*(?:"[^"\r\n]{8,}"|'[^'\r\n]{8,}'|[^\s"'`]{8,})/i,
   },
   {
     label: "resource-identifier assignment",
     pattern:
-      /\b(?:tenant|subscription|account|database|bucket|application)[_-]?id\s*[:=]\s*["']?[A-Za-z0-9_-]{8,}/i,
+      /\b(?:tenant|subscription|account|database|bucket|application)[_-]?id\b["']?\s*[:=]\s*(?:"[A-Za-z0-9_-]{8,}"|'[A-Za-z0-9_-]{8,}'|[A-Za-z0-9_-]{8,})/i,
   },
 ];
 
@@ -102,7 +102,9 @@ export function validateRepositoryGovernance(repositoryRoot) {
         errors.push(`${documentName} is missing the "${heading}" section.`);
       }
     }
+  }
 
+  for (const [documentName, content] of documents) {
     for (const { label, pattern } of PRIVATE_MATERIAL_PATTERNS) {
       if (pattern.test(content)) {
         errors.push(`${documentName} contains ${label}.`);
