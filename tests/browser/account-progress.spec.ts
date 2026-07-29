@@ -980,7 +980,20 @@ test("protects the owner route and renders request-correlated audit evidence", a
     createdAt: "2026-07-27T01:00:00.000Z",
     updatedAt: "2026-07-27T01:00:00.000Z",
   };
+  const secondPendingAccount = {
+    ...pendingAccount,
+    id: "pending-account-2",
+    identity: {
+      issuer: "https://issuer.example",
+      subject: "pending-subject-2",
+    },
+    displayName: "Second pending learner",
+    primaryEmail: "pending-2@example.test",
+    createdAt: "2026-07-27T01:30:00.000Z",
+    updatedAt: "2026-07-27T01:30:00.000Z",
+  };
   const accountStateChanges: Array<Record<string, unknown>> = [];
+  const accountListRequests: string[] = [];
   const domainChanges: Array<{
     id: string;
     method: string;
@@ -1028,7 +1041,80 @@ test("protects the owner route and renders request-correlated audit evidence", a
         await route.fulfill({ status: 204, headers });
         return;
       }
-      const pathname = new URL(route.request().url()).pathname;
+      const target = new URL(route.request().url());
+      const pathname = target.pathname;
+      if (
+        pathname === "/v1/admin/accounts" &&
+        route.request().method() === "GET"
+      ) {
+        accountListRequests.push(`${target.pathname}${target.search}`);
+        const state = target.searchParams.get("state");
+        const cursor = target.searchParams.get("cursor");
+        const returnedAccounts =
+          cursor === "accounts-pending-2"
+            ? [pendingAccount, secondPendingAccount]
+            : state === "pending"
+              ? [pendingAccount]
+              : [account, pendingAccount, secondPendingAccount];
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            accounts: returnedAccounts,
+            page: {
+              pageSize: 25,
+              returnedCount: returnedAccounts.length,
+              hasMore: state === "pending" && cursor === null,
+              nextCursor:
+                state === "pending" && cursor === null
+                  ? "accounts-pending-2"
+                  : null,
+            },
+          }),
+        });
+        return;
+      }
+      if (
+        pathname === "/v1/admin/audit" &&
+        route.request().method() === "GET"
+      ) {
+        if (target.searchParams.get("cursor") === "audit-stale") {
+          await route.fulfill({
+            status: 400,
+            headers,
+            body: JSON.stringify({
+              error: {
+                code: "invalid_admin_cursor",
+                message: "The administration cursor no longer matches this query.",
+              },
+            }),
+          });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            events: [
+              {
+                id: "audit-1",
+                action: "account.state.change",
+                requestId: "request-1",
+                outcome: "success",
+                reason: "Approved after review.",
+                occurredAt: "2026-07-27T00:00:00.000Z",
+              },
+            ],
+            page: {
+              pageSize: 25,
+              returnedCount: 1,
+              hasMore: true,
+              nextCursor: "audit-stale",
+            },
+          }),
+        });
+        return;
+      }
       if (
         pathname === "/v1/admin/accounts/pending-account/state" &&
         route.request().method() === "PATCH"
@@ -1207,6 +1293,31 @@ test("protects the owner route and renders request-correlated audit evidence", a
   await expect(
     page.locator(".admin-account-list").first().getByText("Test owner", { exact: true }),
   ).toHaveCount(0);
+  await expect(
+    page.getByText("1 shown · 1 loaded · more available"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Load more accounts" }).click();
+  await expect(
+    page
+      .locator(".admin-account-list")
+      .first()
+      .getByText("Second pending learner", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".admin-account-list")
+      .first()
+      .getByText("Pending learner", { exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByText("Loaded 1 more account. 2 total loaded."),
+  ).toBeFocused();
+  expect(accountListRequests).toContain(
+    "/v1/admin/accounts?pageSize=25&state=pending",
+  );
+  expect(accountListRequests).toContain(
+    "/v1/admin/accounts?pageSize=25&state=pending&cursor=accounts-pending-2",
+  );
 
   await page.getByLabel("Search accounts").fill("missing@example.test");
   await expect(page.getByText("No accounts match this state and search.")).toBeVisible();
@@ -1235,6 +1346,12 @@ test("protects the owner route and renders request-correlated audit evidence", a
   ]);
 
   await page.getByLabel("Account state").selectOption("all");
+  await expect(
+    page.locator(".admin-account-list").first().getByText("Test owner", { exact: true }),
+  ).toBeVisible();
+  expect(accountListRequests.at(-1)).toBe(
+    "/v1/admin/accounts?pageSize=25",
+  );
   const approvedLearnerRow = page
     .locator(".admin-account-list article")
     .filter({ hasText: "pending@example.test" });
@@ -1263,6 +1380,26 @@ test("protects the owner route and renders request-correlated audit evidence", a
   ).toBeVisible();
   await expect(page.getByText("account.state.change")).toBeVisible();
   await expect(page.getByText("Request request-1")).toBeVisible();
+  await page.getByRole("button", { name: "Load more audit events" }).click();
+  await expect(
+    page.getByText(
+      "The audit results changed. Reload from the first page before continuing.",
+    ),
+  ).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Reload audit from start" }),
+  ).toBeVisible();
+  const paginationAccessibility = await new AxeBuilder({ page })
+    .include(".admin-pagination")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(paginationAccessibility.violations).toEqual([]);
+  await page.getByRole("button", { name: "Reload audit from start" }).click();
+  await expect(
+    page.getByText(
+      "The audit results changed. Reload from the first page before continuing.",
+    ),
+  ).toHaveCount(0);
   await expect(
     page.getByText(/Automatic approval remains locked/i),
   ).toBeVisible();

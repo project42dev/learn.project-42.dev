@@ -96,6 +96,93 @@ interface AuditEvent {
   occurredAt: string;
 }
 
+interface AdminPageState {
+  mode: "paged" | "legacy";
+  pageSize: number;
+  returnedCount: number;
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+interface AdminListError {
+  code?: string;
+  message?: string;
+}
+
+const adminPageSize = 25;
+
+function legacyAdminPage(returnedCount: number): AdminPageState {
+  return {
+    mode: "legacy",
+    pageSize: returnedCount,
+    returnedCount,
+    hasMore: false,
+    nextCursor: null,
+  };
+}
+
+function readAdminPage(value: unknown, returnedCount: number): AdminPageState {
+  if (value === undefined) return legacyAdminPage(returnedCount);
+  if (!value || typeof value !== "object") {
+    throw new Error("The account service returned invalid pagination metadata.");
+  }
+  const candidate = value as Record<string, unknown>;
+  const nextCursor = candidate.nextCursor;
+  const validCursor =
+    nextCursor === null ||
+    (typeof nextCursor === "string" && nextCursor.length > 0);
+  if (
+    typeof candidate.pageSize !== "number" ||
+    !Number.isSafeInteger(candidate.pageSize) ||
+    candidate.pageSize < 1 ||
+    candidate.pageSize > 100 ||
+    typeof candidate.returnedCount !== "number" ||
+    !Number.isSafeInteger(candidate.returnedCount) ||
+    candidate.returnedCount < 0 ||
+    candidate.returnedCount > candidate.pageSize ||
+    candidate.returnedCount !== returnedCount ||
+    typeof candidate.hasMore !== "boolean" ||
+    !validCursor ||
+    (candidate.hasMore && typeof nextCursor !== "string") ||
+    (!candidate.hasMore && nextCursor !== null)
+  ) {
+    throw new Error("The account service returned invalid pagination metadata.");
+  }
+  return {
+    mode: "paged",
+    pageSize: candidate.pageSize,
+    returnedCount: candidate.returnedCount,
+    hasMore: candidate.hasMore,
+    nextCursor,
+  };
+}
+
+function appendUniqueById<T extends { id: string }>(
+  current: T[],
+  incoming: T[],
+): T[] {
+  const known = new Set(current.map((item) => item.id));
+  const result = [...current];
+  for (const item of incoming) {
+    if (known.has(item.id)) continue;
+    known.add(item.id);
+    result.push(item);
+  }
+  return result;
+}
+
+function adminListPath(
+  resource: "accounts" | "audit",
+  options: { cursor?: string; state?: AccountStateFilter } = {},
+): string {
+  const search = new URLSearchParams({ pageSize: String(adminPageSize) });
+  if (options.state && options.state !== "all") {
+    search.set("state", options.state);
+  }
+  if (options.cursor) search.set("cursor", options.cursor);
+  return `/v1/admin/${resource}?${search.toString()}`;
+}
+
 const nextStates: Record<AccountState, AccountState[]> = {
   pending: ["approved", "rejected", "revoked"],
   approved: ["suspended", "revoked"],
@@ -1800,8 +1887,14 @@ export function AdminDashboard() {
 }
 
 export function OwnerAdministration() {
-  const { apiFetch } = useAuth();
+  const { account: ownerAccount, apiFetch } = useAuth();
   const [accounts, setAccounts] = useState<Project42Account[]>([]);
+  const [accountPage, setAccountPage] = useState<AdminPageState>(
+    legacyAdminPage(0),
+  );
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountsStale, setAccountsStale] = useState(false);
+  const [accountAnnouncement, setAccountAnnouncement] = useState("");
   const [accountStateFilter, setAccountStateFilter] =
     useState<AccountStateFilter>("pending");
   const [accountSearch, setAccountSearch] = useState("");
@@ -1820,12 +1913,20 @@ export function OwnerAdministration() {
   const [deletionActionReason, setDeletionActionReason] = useState("");
   const [deletionActionConfirmation, setDeletionActionConfirmation] = useState("");
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [auditPage, setAuditPage] = useState<AdminPageState>(
+    legacyAdminPage(0),
+  );
+  const [auditLoading, setAuditLoading] = useState(true);
+  const [auditStale, setAuditStale] = useState(false);
+  const [auditAnnouncement, setAuditAnnouncement] = useState("");
   const [loadedAt, setLoadedAt] = useState(0);
   const [message, setMessage] = useState("Loading owner controls…");
   const [busy, setBusy] = useState(false);
   const accountActionHeading = useRef<HTMLHeadingElement>(null);
   const domainActionHeading = useRef<HTMLHeadingElement>(null);
   const deletionActionHeading = useRef<HTMLHeadingElement>(null);
+  const accountPaginationStatus = useRef<HTMLParagraphElement>(null);
+  const auditPaginationStatus = useRef<HTMLParagraphElement>(null);
 
   const filteredAccounts = useMemo(() => {
     const query = accountSearch.trim().toLocaleLowerCase();
@@ -1846,19 +1947,6 @@ export function OwnerAdministration() {
       ].some((value) => value?.toLocaleLowerCase().includes(query));
     });
   }, [accountSearch, accountStateFilter, accounts]);
-
-  const accountCounts = useMemo(
-    () =>
-      Object.fromEntries(
-        accountStateFilters.map((state) => [
-          state,
-          state === "all"
-            ? accounts.length
-            : accounts.filter((candidate) => candidate.state === state).length,
-        ]),
-      ) as Record<AccountStateFilter, number>,
-    [accounts],
-  );
 
   const selectedAccount = accountAction
     ? accounts.find((candidate) => candidate.id === accountAction.accountId) ?? null
@@ -1883,18 +1971,30 @@ export function OwnerAdministration() {
   }, [deletionActionId]);
 
   const load = useCallback(async () => {
+    if (!ownerAccount?.id) return;
     setBusy(true);
+    setAccountsLoading(true);
+    setAuditLoading(true);
+    setAccountsStale(false);
+    setAuditStale(false);
+    setAccountAnnouncement("");
+    setAuditAnnouncement("");
     try {
       const [accountResponse, domainResponse, deletionResponse, auditResponse] =
         await Promise.all([
-        apiFetch("/v1/admin/accounts"),
+        apiFetch(
+          adminListPath("accounts", {
+            state: accountStateFilter,
+          }),
+        ),
         apiFetch("/v1/admin/domains"),
         apiFetch("/v1/admin/deletions"),
-        apiFetch("/v1/admin/audit"),
+        apiFetch(adminListPath("audit")),
       ]);
       const accountBody = (await accountResponse.json()) as {
         accounts?: Project42Account[];
-        error?: { message?: string };
+        page?: unknown;
+        error?: AdminListError;
       };
       const domainBody = (await domainResponse.json()) as {
         domains?: DomainRule[];
@@ -1907,7 +2007,8 @@ export function OwnerAdministration() {
       };
       const auditBody = (await auditResponse.json()) as {
         events?: AuditEvent[];
-        error?: { message?: string };
+        page?: unknown;
+        error?: AdminListError;
       };
       if (
         !accountResponse.ok ||
@@ -1923,26 +2024,171 @@ export function OwnerAdministration() {
             "Owner data could not be loaded.",
         );
       }
-      setAccounts(accountBody.accounts ?? []);
+      const nextAccounts = accountBody.accounts ?? [];
+      const nextAuditEvents = auditBody.events ?? [];
+      const nextAccountPage = readAdminPage(
+        accountBody.page,
+        nextAccounts.length,
+      );
+      const nextAuditPage = readAdminPage(
+        auditBody.page,
+        nextAuditEvents.length,
+      );
+      setAccounts(nextAccounts);
+      setAccountPage(nextAccountPage);
       setDomains(domainBody.domains ?? []);
       setAutomaticDomainApprovalEnabled(
         domainBody.automaticApprovalEnabled === true,
       );
       setDeletionRequests(deletionBody.requests ?? []);
-      setAuditEvents(auditBody.events ?? []);
+      setAuditEvents(nextAuditEvents);
+      setAuditPage(nextAuditPage);
       setLoadedAt(Date.now());
       setMessage("Owner data is current.");
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Owner data could not be loaded.");
     } finally {
+      setAccountsLoading(false);
+      setAuditLoading(false);
       setBusy(false);
     }
-  }, [apiFetch]);
+  }, [accountStateFilter, apiFetch, ownerAccount?.id]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  async function loadMoreAccounts() {
+    const cursor = accountPage.nextCursor;
+    if (!cursor || accountsLoading) return;
+    setAccountsLoading(true);
+    setAccountsStale(false);
+    setAccountAnnouncement("Loading more accounts…");
+    try {
+      const response = await apiFetch(
+        adminListPath("accounts", {
+          cursor,
+          state: accountStateFilter,
+        }),
+      );
+      const body = (await response.json()) as {
+        accounts?: Project42Account[];
+        page?: unknown;
+        error?: AdminListError;
+      };
+      if (!response.ok) {
+        if (body.error?.code === "invalid_admin_cursor") {
+          setAccountsStale(true);
+          setAccountPage((current) => ({
+            ...current,
+            hasMore: false,
+            nextCursor: null,
+          }));
+          setAccountAnnouncement(
+            "The account results changed. Reload from the first page before continuing.",
+          );
+          window.requestAnimationFrame(() =>
+            accountPaginationStatus.current?.focus(),
+          );
+          return;
+        }
+        throw new Error(
+          body.error?.message ?? "More accounts could not be loaded.",
+        );
+      }
+      const nextAccounts = body.accounts ?? [];
+      const nextPage = readAdminPage(body.page, nextAccounts.length);
+      const combinedAccounts = appendUniqueById(accounts, nextAccounts);
+      const addedAccounts = combinedAccounts.length - accounts.length;
+      setAccounts(combinedAccounts);
+      setAccountPage(nextPage);
+      setAccountAnnouncement(
+        `Loaded ${addedAccounts} more account${
+          addedAccounts === 1 ? "" : "s"
+        }. ${combinedAccounts.length} total loaded.`,
+      );
+      window.requestAnimationFrame(() =>
+        accountPaginationStatus.current?.focus(),
+      );
+    } catch (caught) {
+      setAccountAnnouncement(
+        caught instanceof Error
+          ? caught.message
+          : "More accounts could not be loaded.",
+      );
+      window.requestAnimationFrame(() =>
+        accountPaginationStatus.current?.focus(),
+      );
+    } finally {
+      setAccountsLoading(false);
+    }
+  }
+
+  async function loadMoreAuditEvents() {
+    const cursor = auditPage.nextCursor;
+    if (!cursor || auditLoading) return;
+    setAuditLoading(true);
+    setAuditStale(false);
+    setAuditAnnouncement("Loading more audit events…");
+    try {
+      const response = await apiFetch(
+        adminListPath("audit", {
+          cursor,
+        }),
+      );
+      const body = (await response.json()) as {
+        events?: AuditEvent[];
+        page?: unknown;
+        error?: AdminListError;
+      };
+      if (!response.ok) {
+        if (body.error?.code === "invalid_admin_cursor") {
+          setAuditStale(true);
+          setAuditPage((current) => ({
+            ...current,
+            hasMore: false,
+            nextCursor: null,
+          }));
+          setAuditAnnouncement(
+            "The audit results changed. Reload from the first page before continuing.",
+          );
+          window.requestAnimationFrame(() =>
+            auditPaginationStatus.current?.focus(),
+          );
+          return;
+        }
+        throw new Error(
+          body.error?.message ?? "More audit events could not be loaded.",
+        );
+      }
+      const nextEvents = body.events ?? [];
+      const nextPage = readAdminPage(body.page, nextEvents.length);
+      const combinedEvents = appendUniqueById(auditEvents, nextEvents);
+      const addedEvents = combinedEvents.length - auditEvents.length;
+      setAuditEvents(combinedEvents);
+      setAuditPage(nextPage);
+      setAuditAnnouncement(
+        `Loaded ${addedEvents} more audit event${
+          addedEvents === 1 ? "" : "s"
+        }. ${combinedEvents.length} total loaded.`,
+      );
+      window.requestAnimationFrame(() =>
+        auditPaginationStatus.current?.focus(),
+      );
+    } catch (caught) {
+      setAuditAnnouncement(
+        caught instanceof Error
+          ? caught.message
+          : "More audit events could not be loaded.",
+      );
+      window.requestAnimationFrame(() =>
+        auditPaginationStatus.current?.focus(),
+      );
+    } finally {
+      setAuditLoading(false);
+    }
+  }
 
   function beginStateChange(target: Project42Account, state: AccountState) {
     setAccountAction({ accountId: target.id, nextState: state });
@@ -2201,7 +2447,8 @@ export function OwnerAdministration() {
               </p>
             </div>
             <strong aria-live="polite">
-              {filteredAccounts.length} of {accounts.length} shown
+              {filteredAccounts.length} shown · {accounts.length} loaded
+              {accountPage.hasMore ? " · more available" : ""}
             </strong>
           </div>
           <div className="admin-account-filters">
@@ -2218,9 +2465,15 @@ export function OwnerAdministration() {
             <div>
               <label htmlFor="admin-account-state">Account state</label>
               <select
+                disabled={busy || accountsLoading}
                 id="admin-account-state"
                 onChange={(event) => {
                   setAccountStateFilter(event.target.value as AccountStateFilter);
+                  setAccounts([]);
+                  setAccountPage(legacyAdminPage(0));
+                  setAccountsLoading(true);
+                  setAccountsStale(false);
+                  setAccountAnnouncement("");
                   cancelStateChange();
                 }}
                 value={accountStateFilter}
@@ -2229,17 +2482,23 @@ export function OwnerAdministration() {
                   <option key={state} value={state}>
                     {state === "all"
                       ? "All accounts"
-                      : state.charAt(0).toUpperCase() + state.slice(1)}{" "}
-                    ({accountCounts[state]})
+                      : state.charAt(0).toUpperCase() + state.slice(1)}
                   </option>
                 ))}
               </select>
             </div>
           </div>
           <div className="admin-account-list">
-            {filteredAccounts.length === 0 ? (
+            {accountsLoading && accounts.length === 0 ? (
+              <p className="admin-empty-state" role="status">
+                Loading accounts…
+              </p>
+            ) : null}
+            {!accountsLoading && filteredAccounts.length === 0 ? (
               <p className="admin-empty-state">
-                No accounts match this state and search.
+                {accounts.length === 0
+                  ? "No accounts were returned for this state."
+                  : "No accounts match this state and search."}
               </p>
             ) : null}
             {filteredAccounts.map((candidate) => (
@@ -2354,6 +2613,47 @@ export function OwnerAdministration() {
                 ) : null}
               </article>
             ))}
+          </div>
+          <div className="admin-pagination" aria-label="Account result pages">
+            {accountAnnouncement ? (
+              <p
+                className="admin-pagination-status"
+                ref={accountPaginationStatus}
+                role={accountsStale ? "alert" : "status"}
+                tabIndex={-1}
+              >
+                {accountAnnouncement}
+              </p>
+            ) : accountPage.mode === "legacy" && !accountsLoading ? (
+              <p className="admin-pagination-status" role="status">
+                The current account service returned all matching accounts without
+                continuation metadata.
+              </p>
+            ) : !accountPage.hasMore && accounts.length > 0 && !accountsLoading ? (
+              <p className="admin-pagination-status">End of account results.</p>
+            ) : null}
+            <div className="button-row">
+              {accountPage.hasMore && accountPage.nextCursor ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy || accountsLoading}
+                  onClick={() => void loadMoreAccounts()}
+                  type="button"
+                >
+                  {accountsLoading ? "Loading more accounts…" : "Load more accounts"}
+                </button>
+              ) : null}
+              {accountsStale ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy}
+                  onClick={() => void load()}
+                  type="button"
+                >
+                  Reload accounts from start
+                </button>
+              ) : null}
+            </div>
           </div>
         </section>
 
@@ -2592,16 +2892,27 @@ export function OwnerAdministration() {
         />
 
         <section className="profile-card">
-          <h3>Privileged audit events</h3>
-          <p>
-            The newest request-correlated administrative and data-rights events are
-            shown first.
-          </p>
-          {auditEvents.length === 0 ? (
+          <div className="admin-account-heading">
+            <div>
+              <h3>Privileged audit events</h3>
+              <p>
+                The newest request-correlated administrative and data-rights events
+                are shown first.
+              </p>
+            </div>
+            <strong aria-live="polite">
+              {auditEvents.length} loaded
+              {auditPage.hasMore ? " · more available" : ""}
+            </strong>
+          </div>
+          {auditLoading && auditEvents.length === 0 ? (
+            <p role="status">Loading privileged audit events…</p>
+          ) : null}
+          {!auditLoading && auditEvents.length === 0 ? (
             <p>No privileged audit events are recorded.</p>
           ) : (
             <div className="audit-event-list">
-              {auditEvents.slice(0, 25).map((event) => (
+              {auditEvents.map((event) => (
                 <article key={event.id}>
                   <div>
                     <strong>{event.action}</strong>
@@ -2614,6 +2925,49 @@ export function OwnerAdministration() {
               ))}
             </div>
           )}
+          <div className="admin-pagination" aria-label="Audit result pages">
+            {auditAnnouncement ? (
+              <p
+                className="admin-pagination-status"
+                ref={auditPaginationStatus}
+                role={auditStale ? "alert" : "status"}
+                tabIndex={-1}
+              >
+                {auditAnnouncement}
+              </p>
+            ) : auditPage.mode === "legacy" && !auditLoading ? (
+              <p className="admin-pagination-status" role="status">
+                The current account service returned all audit events without
+                continuation metadata.
+              </p>
+            ) : !auditPage.hasMore && auditEvents.length > 0 && !auditLoading ? (
+              <p className="admin-pagination-status">End of audit results.</p>
+            ) : null}
+            <div className="button-row">
+              {auditPage.hasMore && auditPage.nextCursor ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy || auditLoading}
+                  onClick={() => void loadMoreAuditEvents()}
+                  type="button"
+                >
+                  {auditLoading
+                    ? "Loading more audit events…"
+                    : "Load more audit events"}
+                </button>
+              ) : null}
+              {auditStale ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy}
+                  onClick={() => void load()}
+                  type="button"
+                >
+                  Reload audit from start
+                </button>
+              ) : null}
+            </div>
+          </div>
         </section>
       </div>
     </section>
