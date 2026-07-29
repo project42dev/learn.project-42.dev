@@ -20,6 +20,7 @@ export function ProfileDashboard() {
   const {
     progress,
     migrationPreview,
+    localRecordRecovery,
     hydrated,
     storageStatus,
     syncStatus,
@@ -61,6 +62,15 @@ export function ProfileDashboard() {
       `project-42-transcript-${exportDate}.csv`,
       buildTranscriptCsv(starterCatalog, progress),
       "text/csv",
+    );
+  };
+
+  const downloadRecoveryRecord = () => {
+    if (!localRecordRecovery) return;
+    downloadTextFile(
+      `project-42-browser-record-recovery-${exportDate}.json`,
+      localRecordRecovery.rawRecord,
+      "application/json",
     );
   };
 
@@ -113,7 +123,38 @@ export function ProfileDashboard() {
 
   return (
     <div className="profile-dashboard">
-      {storageStatus !== "ready" ? (
+      {localRecordRecovery ? (
+        <aside
+          aria-labelledby="local-record-recovery-title"
+          className="storage-warning"
+          role="alert"
+        >
+          <strong id="local-record-recovery-title">
+            Your browser record needs recovery.
+          </strong>
+          <p>
+            Project 42 found an unsupported or damaged local record. It has not
+            replaced that record, uploaded it, or started account synchronization.
+          </p>
+          <ul>
+            {localRecordRecovery.errors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+          <p>
+            Download the untouched record before trying to repair it or restore a
+            compatible Project 42 JSON record. Keep the download private because it
+            can contain learning history.
+          </p>
+          <button
+            className="button button-secondary"
+            onClick={downloadRecoveryRecord}
+            type="button"
+          >
+            Download original browser record
+          </button>
+        </aside>
+      ) : storageStatus !== "ready" ? (
         <aside className="storage-warning" role="alert">
           <strong>Progress storage needs attention.</strong>
           <p>
@@ -261,6 +302,8 @@ export function ProfileDashboard() {
         ) : (
           <p>
             {syncStatus === "checking" && "Checking the server record…"}
+            {syncStatus === "recovery-needed" &&
+              "Account synchronization is paused while the original browser record is available for recovery."}
             {syncStatus === "syncing" && "Saving your latest progress…"}
             {syncStatus === "synced" &&
               "Changes to modules, scores, transcripts, and badges are saved to your account."}
