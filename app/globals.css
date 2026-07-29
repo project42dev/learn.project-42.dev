@@ -2052,6 +2052,10 @@ a {
   padding: 0.8rem 1rem;
 }
 
+.profile-identity input {
+  width: 100%;
+}
+
 .results-count {
   color: #606979;
   font-size: 0.72rem;
@@ -2303,6 +2307,13 @@ a {
 .profile-dashboard {
   display: grid;
   gap: 4rem;
+  min-width: 0;
+}
+
+.profile-dashboard > *,
+.profile-identity form,
+.name-row {
+  min-width: 0;
 }
 
 .storage-warning {
@@ -3190,6 +3201,25 @@ a {
   color: inherit;
 }
 
+.policy-link-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.account-policy-note {
+  color: var(--ink-soft);
+  line-height: 1.65;
+  margin: -0.5rem 0 1.5rem;
+  max-width: 900px;
+}
+
+.account-policy-note a,
+.account-card a {
+  font-weight: 760;
+}
+
 @media (max-width: 960px) {
   .header-inner {
     gap: 1rem;
@@ -3200,8 +3230,10 @@ a {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-content: flex-start;
+    min-width: 0;
     overflow-x: auto;
     padding-bottom: 0.8rem;
+    width: 100%;
   }
 
   .header-action {
@@ -3268,6 +3300,7 @@ a {
 
   .header-inner {
     min-height: 66px;
+    min-width: 0;
   }
 
   .site-header nav {
@@ -3436,6 +3469,15 @@ a {
   .profile-identity form {
     grid-column: 1;
     grid-row: auto;
+    min-width: 0;
+  }
+
+  .name-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .name-row .button {
+    justify-self: start;
   }
 
   .profile-stats {
