@@ -14,6 +14,7 @@ npm run dev
 ## Verify
 
 ```bash
+npm run governance:check
 npm run lint
 npm test
 ```
@@ -44,6 +45,19 @@ artifacts are generated ahead of deployment. See
 [`docs/diagram-authoring.md`](docs/diagram-authoring.md) for the validation,
 accessibility, and security contract.
 
+## Contributing and support
+
+- [Contributing](CONTRIBUTING.md) covers repository ownership, local setup,
+  validation, pull requests, and review expectations.
+- [Security](SECURITY.md) provides the private vulnerability-reporting process.
+- [Support, compatibility, and deprecation](SUPPORT.md) defines supported
+  surfaces, update compatibility, retirement notices, and public help.
+
+`npm run governance:check` rejects missing, empty, private-data-bearing, or
+unlinked governance documents.
+Project 42 Learn is available under the
+[Apache License 2.0](LICENSE).
+
 ## Current release facts
 
 - Site release `0.10.1`
@@ -63,7 +77,6 @@ drift.
 - `learn.project-42.dev` — this learning application
 - `guide.project-42.dev` — practical Field Guide
 - `project42-platform` — reusable Apache-2.0 platform and CC BY 4.0 curriculum
-- `project42dev-ops` — private planning and operations
 - `project42dev.github.io` — transitional public site
 
 ## Deployment
@@ -99,17 +112,17 @@ become available.
 The [browser-to-account migration contract](docs/progress-migration.md) documents
 preview, deterministic merge, immutable-evidence conflicts, retry, and recovery.
 
-### Self-hosted image
+### Self-hosted source build
 
-The repository also builds a non-root OCI image for the independently deployable
-Project 42 stack. The public account-API origin is compiled into the static Learn
-artifact at image-build time:
+The repository includes a Dockerfile that builds a non-root OCI image for the
+independently deployable Project 42 stack. Anonymous pulls of the repository's
+GitHub Container Registry package currently return `401`, so the supported
+public path is to build the image locally from a tagged source release. The
+public account-API origin is compiled into the static Learn artifact at
+image-build time:
 
-```bash
-docker build \
-  --build-arg NEXT_PUBLIC_PROJECT42_API_ORIGIN=http://localhost:8787 \
-  --tag project42-learn:local .
-
+```text
+docker build --build-arg NEXT_PUBLIC_PROJECT42_API_ORIGIN=http://localhost:8787 --tag project42-learn:local .
 docker run --rm --publish 3000:8080 project42-learn:local
 ```
 
