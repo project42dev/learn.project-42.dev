@@ -179,7 +179,9 @@ test("renders provider routes and completes an accessible OpenAI journey", async
   await expectNoAutomatedAccessibilityViolations(page);
 
   const jsonDownloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download JSON record" }).click();
+  await page
+    .getByRole("button", { name: "Download browser-local JSON record" })
+    .click();
   const jsonDownload = await jsonDownloadPromise;
   const jsonPath = await jsonDownload.path();
   if (!jsonPath) throw new Error("JSON download path is unavailable");
@@ -192,7 +194,9 @@ test("renders provider routes and completes an accessible OpenAI journey", async
   );
 
   const csvDownloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download CSV transcript" }).click();
+  await page
+    .getByRole("button", { name: "Download browser-local CSV transcript" })
+    .click();
   const csvDownload = await csvDownloadPromise;
   const csvPath = await csvDownload.path();
   if (!csvPath) throw new Error("CSV download path is unavailable");

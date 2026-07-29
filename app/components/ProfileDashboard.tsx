@@ -25,7 +25,7 @@ import { useAuth } from "./AuthProvider";
 import { useProgress } from "./ProgressProvider";
 
 export function ProfileDashboard() {
-  const { account, configured } = useAuth();
+  const { account, apiFetch, configured } = useAuth();
   const {
     progress,
     migrationPreview,
@@ -51,6 +51,12 @@ export function ProfileDashboard() {
     message: string;
   } | null>(null);
   const [backupRemovalConfirmed, setBackupRemovalConfirmed] = useState(false);
+  const [transcriptDownloadStatus, setTranscriptDownloadStatus] = useState<{
+    kind: "error" | "success";
+    message: string;
+  } | null>(null);
+  const [transcriptDownloadPending, setTranscriptDownloadPending] =
+    useState(false);
   const transcript = useMemo(
     () => buildTranscript(starterCatalog, progress),
     [progress],
@@ -64,6 +70,7 @@ export function ProfileDashboard() {
     [progress],
   );
   const exportDate = new Date().toISOString().slice(0, 10);
+  const authoritativeAccountTranscript = account?.state === "approved";
   const migrationItems = useMemo(
     () =>
       migrationPreview
@@ -91,12 +98,78 @@ export function ProfileDashboard() {
     );
   };
 
-  const downloadTranscript = () => {
-    downloadTextFile(
-      `project-42-transcript-${exportDate}.csv`,
-      buildTranscriptCsv(starterCatalog, progress),
-      "text/csv",
-    );
+  const downloadTranscript = async () => {
+    setTranscriptDownloadStatus(null);
+    if (!authoritativeAccountTranscript) {
+      downloadTextFile(
+        `project-42-browser-local-transcript-${exportDate}.csv`,
+        buildTranscriptCsv(starterCatalog, progress),
+        "text/csv",
+      );
+      setTranscriptDownloadStatus({
+        kind: "success",
+        message:
+          "Browser-local transcript downloaded. It is not an authoritative account transcript.",
+      });
+      return;
+    }
+
+    setTranscriptDownloadPending(true);
+    try {
+      const response = await apiFetch("/v1/me/transcript.csv");
+      if (!response.ok) {
+        const body = (await response
+          .clone()
+          .json()
+          .catch(() => null)) as {
+          error?: { code?: string };
+        } | null;
+        if (body?.error?.code === "recent_authentication_required") {
+          throw new Error(
+            "Sign out and sign in again before downloading your authoritative account transcript.",
+          );
+        }
+        throw new Error(
+          "The authoritative account transcript could not be downloaded. Your browser-local record is unchanged; try again.",
+        );
+      }
+      if (
+        !response.headers
+          .get("content-type")
+          ?.toLowerCase()
+          .startsWith("text/csv")
+      ) {
+        throw new Error(
+          "The account service returned an invalid transcript. Your browser-local record is unchanged; try again.",
+        );
+      }
+      const content = await response.text();
+      if (!content.startsWith('"schema_version","record_authority","record_type"')) {
+        throw new Error(
+          "The account service returned an unsupported transcript. Your browser-local record is unchanged; try again.",
+        );
+      }
+      downloadTextFile(
+        `project42-authoritative-account-transcript-${exportDate}.csv`,
+        content,
+        "text/csv",
+      );
+      setTranscriptDownloadStatus({
+        kind: "success",
+        message:
+          "Authoritative account transcript downloaded directly from your durable learner record.",
+      });
+    } catch (caught) {
+      setTranscriptDownloadStatus({
+        kind: "error",
+        message:
+          caught instanceof Error
+            ? caught.message
+            : "The authoritative account transcript could not be downloaded. Your browser-local record is unchanged; try again.",
+      });
+    } finally {
+      setTranscriptDownloadPending(false);
+    }
   };
 
   const downloadRecoveryRecord = () => {
@@ -648,6 +721,11 @@ export function ProfileDashboard() {
             Continue learning
           </Link>
         </div>
+        <p className="record-authority-note">
+          {authoritativeAccountTranscript
+            ? "This on-screen view reflects the latest account progress synchronized to this browser. The authoritative CSV is generated directly from your durable account record."
+            : "This transcript is browser-local. It is useful as a portable learning record, but it is not an authoritative account transcript."}
+        </p>
         <div className="transcript-list">
           {transcript.map((entry) => (
             <article key={entry.pathId}>
@@ -678,8 +756,9 @@ export function ProfileDashboard() {
           <div>
             <h3 id="export-heading">Back up or move your progress</h3>
             <p>
-              Download a complete record, restore one on another device, or save a
-              spreadsheet-friendly transcript. Files stay on your device.
+              {authoritativeAccountTranscript
+                ? "Download a browser-local backup or request a spreadsheet-friendly authoritative transcript from your account. The server creates no public download link."
+                : "Download a complete browser-local record, restore one on another device, or save a browser-local spreadsheet transcript. Files stay on your device."}
             </p>
           </div>
           <div className="profile-transfer">
@@ -689,14 +768,19 @@ export function ProfileDashboard() {
                 onClick={downloadRecord}
                 type="button"
               >
-                Download JSON record
+                Download browser-local JSON record
               </button>
               <button
                 className="button button-secondary"
-                onClick={downloadTranscript}
+                disabled={transcriptDownloadPending}
+                onClick={() => void downloadTranscript()}
                 type="button"
               >
-                Download CSV transcript
+                {transcriptDownloadPending
+                  ? "Requesting authoritative transcript…"
+                  : authoritativeAccountTranscript
+                    ? "Download authoritative account CSV transcript"
+                    : "Download browser-local CSV transcript"}
               </button>
             </div>
             <label className="record-import">
@@ -719,6 +803,16 @@ export function ProfileDashboard() {
             role={importStatus.kind === "error" ? "alert" : "status"}
           >
             {importStatus.message}
+          </p>
+        ) : null}
+        {transcriptDownloadStatus ? (
+          <p
+            className={`import-status import-status-${transcriptDownloadStatus.kind}`}
+            role={
+              transcriptDownloadStatus.kind === "error" ? "alert" : "status"
+            }
+          >
+            {transcriptDownloadStatus.message}
           </p>
         ) : null}
       </section>
@@ -851,11 +945,19 @@ export function ProfileDashboard() {
         )}
       </section>
 
-      <section className="badge-section">
+      <section
+        aria-labelledby="learning-achievements-heading"
+        className="badge-section"
+      >
         <div className="section-heading">
-          <p className="eyebrow">Badges</p>
-          <h2>Evidence of the work</h2>
+          <p className="eyebrow">Learning achievements</p>
+          <h2 id="learning-achievements-heading">Evidence in your progress record</h2>
         </div>
+        <p className="record-authority-note">
+          {authoritativeAccountTranscript
+            ? "These achievements can be synchronized in your durable account progress, but they are not issued credentials."
+            : "These achievements are browser-local and are not issued credentials."}
+        </p>
         {progress.badges.length ? (
           <div className="badge-grid">
             {progress.badges.map((badge) => (
@@ -863,7 +965,10 @@ export function ProfileDashboard() {
                 <div className="badge-medallion">42</div>
                 <h3>{badge.name}</h3>
                 <p>{badge.description}</p>
-                <small>Earned {new Date(badge.earnedAt).toLocaleDateString()}</small>
+                <small>
+                  Earned {new Date(badge.earnedAt).toLocaleDateString()} · Not an
+                  issued credential
+                </small>
               </article>
             ))}
           </div>
@@ -879,6 +984,24 @@ export function ProfileDashboard() {
             </Link>
           </div>
         )}
+      </section>
+
+      <section
+        aria-labelledby="durable-credentials-heading"
+        className="badge-section"
+      >
+        <div className="section-heading">
+          <p className="eyebrow">Credentials</p>
+          <h2 id="durable-credentials-heading">Durable issued credentials</h2>
+        </div>
+        <div className="empty-state">
+          <h3>No durable credentials have been issued.</h3>
+          <p>
+            A durable credential requires server-side issuance against versioned
+            evidence and an append-only lifecycle. Browser-local achievements never
+            appear here as verified credentials.
+          </p>
+        </div>
       </section>
 
       {progress.attempts.length || (progress.capstoneSubmissions?.length ?? 0) > 0 ? (

@@ -2,67 +2,54 @@
 
 ## Active branch
 
-`agent/learn-governance-docs-ab6434`
+`feat/authoritative-transcripts-ab5176`
 
 Base: exact `origin/main` commit
-`ea911e8b28f959d6c83eac44343e87d5dd26bf6d`.
+`c52e944ea07442e6d1e56f4fb450de81924df6bc`.
 
 ## Scope
 
-Add complete public repository-local contributor, security, support,
-compatibility, and deprecation guidance plus deterministic validation. Do not
-change product content, identity behavior, release or deployment workflows, or
-production.
+Distinguish browser-local progress exports, authoritative durable-account
+transcripts, learning achievements, and issued credentials on the learner
+profile. Do not change identity/session storage, release/deployment workflows,
+schemas, production, or branding/content.
 
 ## Implemented
 
-- Adds `CONTRIBUTING.md` with repository ownership, local setup, validation,
-  pull-request, review, privacy, and security-reporting guidance.
-- Adds `SECURITY.md` with supported-version boundaries and the private GitHub
-  Security Advisory reporting path.
-- Adds `SUPPORT.md` with honest hosted, source, self-host, browser,
-  compatibility, deprecation, and help boundaries.
-- Links all three documents from the README and cross-links their related
-  policies.
-- Adds a zero-dependency governance validator to the normal `npm run check`
-  gate.
-- Adds seven deterministic tests that reject missing, empty, private-data-
-  bearing, unlinked, incomplete, and broken-link governance documents.
+- Approved learners download the authoritative CSV directly from
+  `/v1/me/transcript.csv` through the existing cookie-authenticated API client.
+- Signed-out and non-approved learners retain the clearly labelled
+  browser-local CSV fallback.
+- Recent-authentication failures provide an accessible retry path without
+  exposing untrusted API details.
+- Learning achievements are labelled as progress evidence, not issued
+  credentials; the issued-credential surface remains explicitly empty until a
+  server-side credential lifecycle exists.
+- Public documentation and browser tests cover authority, retry, cookie-only
+  requests, downloads, and accessibility.
 
 ## Verification
 
 - Clean `npm ci` — passed; 732 packages audited, zero vulnerabilities.
 - Complete `npm run check` — passed.
-- Unit tests — 25 passed, including ten governance tests.
+- Unit tests — 25 passed.
 - Rendered route tests — 17 passed.
-- Runtime browser suite — 12 passed and 25 configuration-gated cases skipped.
+- Runtime browser suite — 39 passed, zero failed.
 - GitHub Pages artifact tests — 3 passed.
-- GitHub Pages browser suite — 12 passed and 25 configuration-gated cases
-  skipped.
+- GitHub Pages browser suite — 39 passed, zero failed.
 - Link integrity — 99 HTML routes, 4 metadata endpoints, 4,403 internal
   references, 142 external links.
 - Release facts, repository governance, brand and diagram integrity, lint,
   typecheck, container contract, builds, exports, and accessibility assertions
   passed.
-- The changed public file set passes the private-material and diff-hygiene
-  scans.
-
-## Review hardening
-
-- Test module paths use `fileURLToPath` and the governance suite validates a
-  repository root containing spaces.
-- README content is included in private-material scanning.
-- Quoted JSON-style secret and resource-identifier assignments fail closed.
-- Public self-hosting is documented as a tagged source build while anonymous
-  registry pulls return `401`.
-- Contributor setup documents Playwright Chromium installation and commands for
-  PowerShell, Command Prompt, macOS, and Linux.
-- GitHub private vulnerability reporting is enabled and was verified through
-  the Project 42 GitHub App.
+- `npm audit --audit-level=high` reported zero vulnerabilities.
+- `git diff --check` passed.
 
 ## Delivery boundary
 
 - This branch is a review candidate only. It must not be merged, released, or
   deployed by this workstream.
-- No product content, identity, session, account, database, Worker, Pages,
-  Cloudflare, Entra, repository-setting, or production mutation is included.
+- No identity, session, account, database, Worker, Pages, Cloudflare, Entra,
+  repository-setting, or production mutation is included.
+- Production deployment and authenticated learner validation remain separate
+  owner/release gates.

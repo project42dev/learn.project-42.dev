@@ -36,6 +36,10 @@ default; owners can approve, suspend, or revoke them and maintain exact verified
 email-domain auto-approval rules. The accepted lifecycle, consent, retention,
 export, deletion, recovery, authorization, and hosted/self-host storage contract
 is published as an accessible learner-data page and machine-readable policy.
+Profile exports label browser-local records separately from authoritative account
+transcripts. Approved accounts request a recent-authentication-protected, audited
+CSV from the account service, while learning achievements remain clearly
+separate from durable issued credentials.
 
 The Learn site also includes eight accessible visual guides for learning evidence,
 grounded research, prompting, provider selection, safe tools, bounded agents,
