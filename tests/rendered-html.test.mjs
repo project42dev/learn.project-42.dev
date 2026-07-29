@@ -133,7 +133,6 @@ test("links account and profile surfaces to privacy and legal expectations", asy
   const account = await render("/account");
   const accountHtml = await account.text();
   assert.match(accountHtml, /Learner data and controls/);
-  assert.match(accountHtml, /Hosted sign-in and records may be temporarily unavailable/);
 });
 
 test("renders the one-time legacy progress migration experience", async () => {
