@@ -159,7 +159,12 @@ test("renders account, approval, and cross-device progress surfaces", async () =
   assert.match(account, /Account and access/);
   assert.match(account, /Check a deletion request/);
   assert.match(account, /cannot search by email, name, or account identifier/i);
-  assert.match(account, /not retained by this page/i);
+  assert.match(
+    account,
+    hostedIdentityConfigured
+      ? /not retained by this page/i
+      : /Deletion-status lookup becomes available/i,
+  );
   assert.match(
     account,
     hostedIdentityConfigured
