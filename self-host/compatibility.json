@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "application": {
     "name": "project42-learn",
-    "version": "0.4.1"
+    "version": "0.9.0"
   },
   "platform": {
-    "requiredVersion": "0.49.0"
+    "requiredVersion": "0.60.0"
   },
   "runtime": {
     "containerPort": 8080,
@@ -13,11 +13,12 @@
     "configurationMode": "build-time"
   },
   "identity": {
-    "protocol": "OIDC Authorization Code with PKCE",
-    "requiredClaims": [
-      "sub",
-      "email",
-      "email_verified"
-    ]
+    "protocol": "API-owned OIDC Authorization Code with PKCE",
+    "sessionTransport": "secure-http-only-cookie",
+    "browserTokenStorage": "forbidden",
+    "publicConfiguration": [
+      "NEXT_PUBLIC_PROJECT42_API_ORIGIN"
+    ],
+    "requiredClaims": []
   }
 }

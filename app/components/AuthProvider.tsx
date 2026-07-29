@@ -46,29 +46,31 @@ interface AuthContextValue {
   error: string | null;
   apiFetch: (path: string, init?: RequestInit) => Promise<Response>;
   completeSignIn: () => Promise<void>;
+  completeGithubLink: () => Promise<string>;
   refreshAccount: () => Promise<void>;
   signIn: (returnPath?: string) => Promise<void>;
-  signOut: () => void;
+  startGithubLink: (returnPath?: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-interface OidcDiscovery {
-  authorization_endpoint: string;
-  token_endpoint: string;
+interface StoredGithubLinkFlow {
+  transactionId: string;
+  state: string;
+  verifier: string;
+  returnPath: string;
+  expiresAt: string;
 }
 
-interface StoredToken {
-  accessToken: string;
-  expiresAt: number;
+interface BrowserSession {
+  expiresAt: string;
+  absoluteExpiresAt: string;
 }
 
-const authority = process.env.NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY?.replace(/\/$/, "");
-const clientId = process.env.NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID;
-const apiOrigin = process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN?.replace(/\/$/, "");
-const scope =
-  process.env.NEXT_PUBLIC_PROJECT42_OIDC_SCOPE ?? "openid profile email project42.api";
-const configured = Boolean(authority && clientId && apiOrigin);
-const tokenKey = "project42.auth.token.v1";
-const flowKey = "project42.auth.flow.v1";
+const apiOrigin = readApiOrigin(
+  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
+);
+const configured = Boolean(apiOrigin);
+const githubLinkFlowKey = "project42.identity-link.github.v1";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -100,35 +102,83 @@ async function pkceChallenge(verifier: string): Promise<string> {
   return base64Url(new Uint8Array(digest));
 }
 
-async function discover(): Promise<OidcDiscovery> {
-  if (!authority) throw new Error("OIDC authority is not configured.");
-  const response = await fetch(`${authority}/.well-known/openid-configuration`, {
-    headers: { accept: "application/json" },
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error("Identity provider metadata could not be loaded.");
-  const value = (await response.json()) as Partial<OidcDiscovery>;
-  if (!value.authorization_endpoint || !value.token_endpoint) {
-    throw new Error("Identity provider metadata is missing required endpoints.");
+function safeReturnPath(
+  returnPath: string,
+  fallback = "/account",
+): string {
+  if (
+    !returnPath.startsWith("/") ||
+    returnPath.startsWith("//") ||
+    returnPath.includes("\\") ||
+    /[\u0000-\u001f\u007f]/.test(returnPath)
+  ) {
+    return fallback;
   }
-  return value as OidcDiscovery;
+  const target = new URL(returnPath, window.location.origin);
+  if (
+    target.origin !== window.location.origin ||
+    target.username ||
+    target.password ||
+    target.hash
+  ) {
+    return fallback;
+  }
+  return `${target.pathname}${target.search}`;
 }
 
-function readToken(): StoredToken | null {
+function readApiOrigin(value: string | undefined): string | undefined {
+  const normalized = value?.trim();
+  if (!normalized) return undefined;
+  const target = new URL(normalized);
+  const loopback =
+    target.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(target.hostname);
+  if (
+    (target.protocol !== "https:" && !loopback) ||
+    target.username ||
+    target.password ||
+    target.pathname !== "/" ||
+    target.search ||
+    target.hash
+  ) {
+    throw new Error(
+      "NEXT_PUBLIC_PROJECT42_API_ORIGIN must be an HTTPS origin or an HTTP loopback origin.",
+    );
+  }
+  return target.origin;
+}
+
+function hasSingleSearchParam(
+  target: URL,
+  name: string,
+  expected?: string,
+): boolean {
+  const values = target.searchParams.getAll(name);
+  return (
+    values.length === 1 &&
+    (expected === undefined ? values[0].length > 0 : values[0] === expected)
+  );
+}
+
+function readGithubLinkFlow(): StoredGithubLinkFlow | null {
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(tokenKey) ?? "null") as StoredToken | null;
+    const parsed = JSON.parse(
+      sessionStorage.getItem(githubLinkFlowKey) ?? "null",
+    ) as StoredGithubLinkFlow | null;
     if (
       !parsed ||
-      typeof parsed.accessToken !== "string" ||
-      typeof parsed.expiresAt !== "number" ||
-      parsed.expiresAt <= Date.now() + 30_000
+      typeof parsed.transactionId !== "string" ||
+      typeof parsed.state !== "string" ||
+      typeof parsed.verifier !== "string" ||
+      typeof parsed.returnPath !== "string" ||
+      typeof parsed.expiresAt !== "string"
     ) {
-      sessionStorage.removeItem(tokenKey);
+      sessionStorage.removeItem(githubLinkFlowKey);
       return null;
     }
     return parsed;
   } catch {
-    sessionStorage.removeItem(tokenKey);
+    sessionStorage.removeItem(githubLinkFlowKey);
     return null;
   }
 }
@@ -138,43 +188,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     configured ? "loading" : "unavailable",
   );
   const [account, setAccount] = useState<Project42Account | null>(null);
+  const [session, setSession] = useState<BrowserSession | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const apiFetch = useCallback(async (path: string, init: RequestInit = {}) => {
     if (!apiOrigin) throw new Error("Project 42 API is not configured.");
-    const token = readToken();
-    if (!token) throw new Error("Sign in is required.");
     const headers = new Headers(init.headers);
-    headers.set("authorization", `Bearer ${token.accessToken}`);
     if (init.body && !headers.has("content-type")) {
       headers.set("content-type", "application/json");
     }
-    return fetch(`${apiOrigin}${path}`, { ...init, headers, cache: "no-store" });
+    return fetch(`${apiOrigin}${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+      credentials: "include",
+    });
   }, []);
 
   const refreshAccount = useCallback(async () => {
     if (!configured) return;
-    const token = readToken();
-    if (!token) {
-      setAccount(null);
-      setStatus("signed-out");
-      return;
-    }
     setStatus("loading");
     try {
-      const response = await apiFetch("/v1/session", { method: "POST" });
+      const response = await apiFetch("/v1/auth/session");
       const body = (await response.json()) as {
         account?: Project42Account;
+        session?: BrowserSession;
         error?: { message?: string };
       };
+      if (response.status === 401) {
+        setAccount(null);
+        setSession(null);
+        setError(null);
+        setStatus("signed-out");
+        return;
+      }
       if (!response.ok || !body.account) {
         throw new Error(body.error?.message ?? "The account could not be loaded.");
       }
       setAccount(body.account);
+      setSession(body.session ?? null);
       setError(null);
       setStatus("signed-in");
     } catch (caught) {
       setAccount(null);
+      setSession(null);
       setError(accountServiceErrorMessage(caught));
       setStatus("error");
     }
@@ -187,94 +244,229 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshAccount]);
 
   const signIn = useCallback(async (returnPath = "/account") => {
-    if (!authority || !clientId) return;
+    if (!apiOrigin) return;
     setStatus("signing-in");
     setError(null);
-    const metadata = await discover();
-    const verifier = randomValue(48);
-    const state = randomValue();
-    const redirectUri = `${window.location.origin}/auth/callback`;
-    const safeReturnPath =
-      returnPath.startsWith("/") && !returnPath.startsWith("//")
-        ? returnPath
-        : "/account";
-    sessionStorage.setItem(
-      flowKey,
-      JSON.stringify({ verifier, state, redirectUri, returnPath: safeReturnPath }),
+    const returnTo = new URL(
+      safeReturnPath(returnPath),
+      window.location.origin,
     );
-    const target = new URL(metadata.authorization_endpoint);
-    target.searchParams.set("client_id", clientId);
-    target.searchParams.set("redirect_uri", redirectUri);
-    target.searchParams.set("response_type", "code");
-    target.searchParams.set("scope", scope);
-    target.searchParams.set("state", state);
-    target.searchParams.set("code_challenge", await pkceChallenge(verifier));
-    target.searchParams.set("code_challenge_method", "S256");
+    const target = new URL("/v1/auth/start", `${apiOrigin}/`);
+    target.searchParams.set("return_to", returnTo.toString());
     window.location.assign(target.toString());
   }, []);
 
   const completeSignIn = useCallback(async () => {
-    if (!clientId) throw new Error("OIDC client is not configured.");
     const query = new URLSearchParams(window.location.search);
+    window.history.replaceState({}, "", "/account");
+    if (query.get("auth") === "success") {
+      await refreshAccount();
+      return;
+    }
+    if (query.get("auth") === "error") {
+      throw new Error("The identity provider did not complete sign-in. Start again.");
+    }
+    throw new Error(
+      "This callback belongs to the retired browser-token flow. Start sign-in again.",
+    );
+  }, [refreshAccount]);
+
+  const renewSession = useCallback(async () => {
+    const response = await apiFetch("/v1/auth/renew", { method: "POST" });
+    const body = (await response.json()) as {
+      session?: BrowserSession;
+      error?: { message?: string };
+    };
+    if (response.status === 401) {
+      setAccount(null);
+      setSession(null);
+      setError(null);
+      setStatus("signed-out");
+      return;
+    }
+    if (response.status === 409) {
+      await refreshAccount();
+      return;
+    }
+    if (!response.ok || !body.session) {
+      throw new Error(
+        body.error?.message ?? "The secure session could not be renewed.",
+      );
+    }
+    setSession(body.session);
+  }, [apiFetch, refreshAccount]);
+
+  useEffect(() => {
+    if (status !== "signed-in" || account?.state !== "approved" || !session) {
+      return;
+    }
+    const expiresAt = Date.parse(session.expiresAt);
+    if (!Number.isFinite(expiresAt)) return;
+    const renewIn = Math.min(
+      2_147_000_000,
+      Math.max(1_000, expiresAt - Date.now() - 5 * 60_000),
+    );
+    const timer = window.setTimeout(() => {
+      void renewSession().catch((caught) => {
+        setError(accountServiceErrorMessage(caught));
+        setStatus("error");
+      });
+    }, renewIn);
+    return () => window.clearTimeout(timer);
+  }, [account?.state, renewSession, session, status]);
+
+  const startGithubLink = useCallback(
+    async (returnPath = "/account?linked=github") => {
+      const safeReturnPathValue = safeReturnPath(
+        returnPath,
+        "/account?linked=github",
+      );
+      const verifier = randomValue(48);
+      const codeChallenge = await pkceChallenge(verifier);
+      const redirectUri = new URL(
+        "/account/github/callback/",
+        window.location.origin,
+      ).toString();
+      const response = await apiFetch("/v1/me/identity-links/github", {
+        method: "POST",
+        body: JSON.stringify({
+          codeChallenge,
+          codeChallengeMethod: "S256",
+          returnPath: safeReturnPathValue,
+        }),
+      });
+      const body = (await response.json()) as {
+        link?: {
+          id: string;
+          state: string;
+          returnPath: string;
+          expiresAt: string;
+        };
+        authorizationUrl?: string;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.link || !body.authorizationUrl) {
+        throw new Error(
+          body.error?.message ?? "GitHub account linking could not be started.",
+        );
+      }
+      const target = new URL(body.authorizationUrl);
+      const expectedParameterCount = 5;
+      if (
+        target.origin !== "https://github.com" ||
+        target.pathname !== "/login/oauth/authorize" ||
+        target.username ||
+        target.password ||
+        target.hash ||
+        [...target.searchParams].length !== expectedParameterCount ||
+        !hasSingleSearchParam(target, "state", body.link.state) ||
+        !hasSingleSearchParam(target, "client_id") ||
+        !hasSingleSearchParam(target, "redirect_uri", redirectUri) ||
+        !hasSingleSearchParam(target, "code_challenge", codeChallenge) ||
+        !hasSingleSearchParam(target, "code_challenge_method", "S256") ||
+        body.link.returnPath !== safeReturnPathValue
+      ) {
+        throw new Error("The GitHub authorization destination was not valid.");
+      }
+      sessionStorage.setItem(
+        githubLinkFlowKey,
+        JSON.stringify({
+          transactionId: body.link.id,
+          state: body.link.state,
+          verifier,
+          returnPath: body.link.returnPath,
+          expiresAt: body.link.expiresAt,
+        } satisfies StoredGithubLinkFlow),
+      );
+      window.location.assign(target.toString());
+    },
+    [apiFetch],
+  );
+
+  const completeGithubLink = useCallback(async () => {
+    const query = new URLSearchParams(window.location.search);
+    window.history.replaceState({}, "", "/account/github/callback/");
+    const flow = readGithubLinkFlow();
     const providerError = query.get("error");
     if (providerError) {
-      throw new Error(query.get("error_description") ?? providerError);
+      if (flow) {
+        await apiFetch(
+          `/v1/me/identity-links/${encodeURIComponent(flow.transactionId)}`,
+          { method: "DELETE" },
+        ).catch(() => undefined);
+      }
+      sessionStorage.removeItem(githubLinkFlowKey);
+      throw new Error(
+        query.get("error_description") ??
+          "GitHub authorization was cancelled or rejected.",
+      );
     }
     const code = query.get("code");
     const returnedState = query.get("state");
-    const rawFlow = sessionStorage.getItem(flowKey);
-    sessionStorage.removeItem(flowKey);
-    if (!code || !returnedState || !rawFlow) {
-      throw new Error("The sign-in response is incomplete.");
+    const expiresAt = flow ? Date.parse(flow.expiresAt) : Number.NaN;
+    if (
+      !flow ||
+      !code ||
+      !returnedState ||
+      flow.state !== returnedState ||
+      !Number.isFinite(expiresAt) ||
+      expiresAt <= Date.now()
+    ) {
+      sessionStorage.removeItem(githubLinkFlowKey);
+      throw new Error("The GitHub identity-link response was incomplete or expired.");
     }
-    const flow = JSON.parse(rawFlow) as {
-      verifier: string;
-      state: string;
-      redirectUri: string;
-      returnPath: string;
-    };
-    if (flow.state !== returnedState) {
-      throw new Error("The sign-in state did not match.");
-    }
-    const metadata = await discover();
-    const response = await fetch(metadata.token_endpoint, {
+    const response = await apiFetch("/v1/me/identity-links/github/complete", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: clientId,
+      body: JSON.stringify({
+        transactionId: flow.transactionId,
+        state: returnedState,
         code,
-        redirect_uri: flow.redirectUri,
-        code_verifier: flow.verifier,
+        codeVerifier: flow.verifier,
       }),
     });
-    const value = (await response.json()) as {
-      access_token?: string;
-      expires_in?: number;
-      error_description?: string;
+    const body = (await response.json()) as {
+      linkedIdentity?: { provider: string };
+      returnPath?: string;
+      error?: { message?: string };
     };
-    if (!response.ok || !value.access_token) {
-      throw new Error(value.error_description ?? "The authorization code was rejected.");
+    sessionStorage.removeItem(githubLinkFlowKey);
+    if (
+      !response.ok ||
+      body.linkedIdentity?.provider !== "github" ||
+      !body.returnPath
+    ) {
+      throw new Error(
+        body.error?.message ?? "GitHub account linking could not be completed.",
+      );
     }
-    sessionStorage.setItem(
-      tokenKey,
-      JSON.stringify({
-        accessToken: value.access_token,
-        expiresAt: Date.now() + Math.max(60, value.expires_in ?? 300) * 1_000,
-      } satisfies StoredToken),
-    );
-    await refreshAccount();
-    window.history.replaceState({}, "", flow.returnPath);
-    window.location.replace(flow.returnPath);
-  }, [refreshAccount]);
+    return safeReturnPath(body.returnPath, "/account?linked=github");
+  }, [apiFetch]);
 
-  const signOut = useCallback(() => {
-    sessionStorage.removeItem(tokenKey);
-    sessionStorage.removeItem(flowKey);
-    setAccount(null);
-    setError(null);
-    setStatus(configured ? "signed-out" : "unavailable");
-  }, []);
+  const signOut = useCallback(async () => {
+    try {
+      const returnTo = new URL("/account", window.location.origin);
+      const response = await apiFetch(
+        `/v1/auth/signout?return_to=${encodeURIComponent(returnTo.toString())}`,
+        { method: "POST" },
+      );
+      const body = (await response.json()) as {
+        signedOut?: boolean;
+        logoutUrl?: string;
+        error?: { message?: string };
+      };
+      if (response.status !== 401 && (!response.ok || !body.signedOut)) {
+        throw new Error(body.error?.message ?? "Sign-out could not be completed.");
+      }
+      sessionStorage.removeItem(githubLinkFlowKey);
+      setAccount(null);
+      setSession(null);
+      setError(null);
+      setStatus(configured ? "signed-out" : "unavailable");
+    } catch (caught) {
+      setError(accountServiceErrorMessage(caught));
+      setStatus("error");
+    }
+  }, [apiFetch]);
 
   const value = useMemo(
     () => ({
@@ -283,20 +475,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       account,
       error,
       apiFetch,
+      completeGithubLink,
       completeSignIn,
       refreshAccount,
       signIn,
       signOut,
+      startGithubLink,
     }),
     [
       status,
       account,
       error,
       apiFetch,
+      completeGithubLink,
       completeSignIn,
       refreshAccount,
       signIn,
       signOut,
+      startGithubLink,
     ],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

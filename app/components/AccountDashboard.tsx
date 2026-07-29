@@ -1,13 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { learnerDataPolicy } from "../lib/learnerDataPolicy";
 import {
   useAuth,
   type AccountState,
   type Project42Account,
 } from "./AuthProvider";
+import { AccountMergeAdministration } from "./AccountMergeAdministration";
 
 interface DomainRule {
   id: string;
@@ -16,6 +24,33 @@ interface DomainRule {
   policyVersion: number;
   createdAt: string;
   updatedAt: string;
+}
+
+interface LearnerProfile {
+  userId: string;
+  displayName: string | null;
+  bio: string | null;
+  organization: string | null;
+  location: string | null;
+  websiteUrl: string | null;
+  photoAvailable: boolean;
+  photoUpdatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface LinkedIdentity {
+  id: string;
+  provider: string;
+  providerLogin: string | null;
+  displayName: string | null;
+  status: "active" | "unlinked";
+  primary: boolean;
+  linkedAt: string;
+  lastVerifiedAt: string;
+  lastSeenAt: string;
+  unlinkedAt: string | null;
+  canUnlink: boolean;
 }
 
 interface ConsentRecord {
@@ -60,6 +95,37 @@ const nextStates: Record<AccountState, AccountState[]> = {
   suspended: ["approved", "revoked"],
   revoked: [],
 };
+
+type AccountStateFilter = AccountState | "all";
+
+interface AccountStateAction {
+  accountId: string;
+  nextState: AccountState;
+}
+
+const accountStateFilters: AccountStateFilter[] = [
+  "pending",
+  "all",
+  "approved",
+  "rejected",
+  "suspended",
+  "revoked",
+];
+
+function accountLabel(account: Project42Account): string {
+  return account.displayName ?? account.primaryEmail ?? `Account ${account.id.slice(0, 8)}`;
+}
+
+function accountActionLabel(
+  currentState: AccountState,
+  nextState: AccountState,
+): string {
+  if (nextState === "approved" && currentState !== "pending") return "Restore access";
+  if (nextState === "approved") return "Approve";
+  if (nextState === "rejected") return "Reject";
+  if (nextState === "suspended") return "Suspend";
+  return "Revoke";
+}
 
 export function AccountDashboard() {
   const {
@@ -147,7 +213,11 @@ export function AccountDashboard() {
           >
             Try again
           </button>
-          <button className="button button-secondary" onClick={signOut} type="button">
+          <button
+            className="button button-secondary"
+            onClick={() => void signOut()}
+            type="button"
+          >
             Clear this sign-in
           </button>
         </div>
@@ -199,7 +269,11 @@ export function AccountDashboard() {
             transcript entries, and badges with the server.
           </p>
         ) : null}
-        <button className="button button-secondary" onClick={signOut} type="button">
+        <button
+          className="button button-secondary"
+          onClick={() => void signOut()}
+          type="button"
+        >
           Sign out on this browser
         </button>
         {account.roles.includes("owner") ? (
@@ -208,14 +282,435 @@ export function AccountDashboard() {
           </a>
         ) : null}
       </section>
+      {account.state !== "suspended" && account.state !== "revoked" ? (
+        <ProfileEditor />
+      ) : null}
+      {account.state === "approved" ? <LinkedIdentityEditor /> : null}
       <LearnerDataControls />
       {account.roles.includes("owner") ? <OwnerAdministration /> : null}
     </div>
   );
 }
 
+function LinkedIdentityEditor() {
+  const { apiFetch, startGithubLink } = useAuth();
+  const [identities, setIdentities] = useState<LinkedIdentity[]>([]);
+  const [message, setMessage] = useState("Loading linked accounts…");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const response = await apiFetch("/v1/me/identities");
+      const body = (await response.json()) as {
+        identities?: LinkedIdentity[];
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.identities) {
+        throw new Error(
+          body.error?.message ?? "Linked accounts could not be loaded.",
+        );
+      }
+      setIdentities(body.identities);
+      setMessage("Linked accounts are current.");
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Linked accounts could not be loaded.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [apiFetch]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  async function connectGithub() {
+    setBusy(true);
+    setMessage("Opening GitHub’s secure authorization page…");
+    try {
+      await startGithubLink("/account?linked=github");
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "GitHub account linking could not be started.",
+      );
+      setBusy(false);
+    }
+  }
+
+  async function unlink(identity: LinkedIdentity) {
+    const label = identity.providerLogin
+      ? `@${identity.providerLogin}`
+      : identity.displayName ?? identity.provider;
+    if (
+      !window.confirm(
+        `Unlink ${label}? Your Project 42 learning record will remain intact.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await apiFetch(
+        `/v1/me/identities/${encodeURIComponent(identity.id)}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) {
+        const body = (await response.json()) as {
+          error?: { message?: string };
+        };
+        throw new Error(
+          body.error?.message ?? "The linked account could not be removed.",
+        );
+      }
+      await load();
+      setMessage(`${label} was unlinked.`);
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "The linked account could not be removed.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const githubLinked = identities.some(
+    (identity) => identity.provider === "github" && identity.status === "active",
+  );
+
+  return (
+    <section className="profile-card" aria-labelledby="linked-identities-title">
+      <p className="eyebrow">Linked accounts</p>
+      <h3 id="linked-identities-title">Sign-in and contributor identity</h3>
+      <p>
+        Link GitHub to your existing Project 42 learner record without changing
+        your primary sign-in. Repository permissions are never requested.
+      </p>
+      <p className="admin-status" role="status">
+        {message}
+      </p>
+      <div className="linked-identity-list">
+        {identities.map((identity) => (
+          <article key={identity.id}>
+            <div>
+              <strong>
+                {identity.provider === "github"
+                  ? "GitHub"
+                  : identity.provider === "oidc"
+                    ? "Primary identity provider"
+                    : identity.provider}
+              </strong>
+              <span>
+                {identity.providerLogin
+                  ? `@${identity.providerLogin}`
+                  : identity.displayName ?? "Verified identity"}
+              </span>
+              <small>
+                Last verified{" "}
+                {new Date(identity.lastVerifiedAt).toLocaleDateString()}
+              </small>
+            </div>
+            <div className="linked-identity-actions">
+              <span className="account-state">
+                {identity.primary ? "Primary" : "Linked"}
+              </span>
+              {identity.canUnlink ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy}
+                  onClick={() => void unlink(identity)}
+                  type="button"
+                >
+                  Unlink
+                </button>
+              ) : null}
+            </div>
+          </article>
+        ))}
+      </div>
+      {!githubLinked ? (
+        <button
+          className="button button-primary"
+          disabled={busy}
+          onClick={() => void connectGithub()}
+          type="button"
+        >
+          Connect GitHub
+        </button>
+      ) : null}
+    </section>
+  );
+}
+
+function ProfileEditor() {
+  const { apiFetch, refreshAccount } = useAuth();
+  const [profile, setProfile] = useState<LearnerProfile | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [message, setMessage] = useState("Loading profile…");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const response = await apiFetch("/v1/me/profile");
+      const body = (await response.json()) as {
+        profile?: LearnerProfile;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.profile) {
+        throw new Error(body.error?.message ?? "Your profile could not be loaded.");
+      }
+      setProfile(body.profile);
+      setMessage("Profile is current.");
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Your profile could not be loaded.");
+    } finally {
+      setBusy(false);
+    }
+  }, [apiFetch]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  useEffect(() => {
+    if (!profile?.photoAvailable) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    void apiFetch("/v1/me/profile/photo")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Profile photo could not be loaded.");
+        objectUrl = URL.createObjectURL(await response.blob());
+        if (!cancelled) setPhotoUrl(objectUrl);
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setMessage(
+            caught instanceof Error ? caught.message : "Profile photo could not be loaded.",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [apiFetch, profile?.photoAvailable, profile?.photoUpdatedAt]);
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    try {
+      const response = await apiFetch("/v1/me/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          displayName: String(form.get("displayName") ?? ""),
+          bio: String(form.get("bio") ?? ""),
+          organization: String(form.get("organization") ?? ""),
+          location: String(form.get("location") ?? ""),
+          websiteUrl: String(form.get("websiteUrl") ?? ""),
+        }),
+      });
+      const body = (await response.json()) as {
+        profile?: LearnerProfile;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.profile) {
+        throw new Error(body.error?.message ?? "Your profile could not be saved.");
+      }
+      setProfile(body.profile);
+      setMessage("Profile saved.");
+      await refreshAccount();
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Your profile could not be saved.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function uploadPhoto(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const photo = form.get("photo");
+    if (!(photo instanceof File) || photo.size === 0) {
+      setMessage("Choose a JPEG, PNG, or WebP photo first.");
+      return;
+    }
+    const extension = photo.name.split(".").pop()?.toLowerCase();
+    const contentType =
+      photo.type ||
+      (extension === "jpg" || extension === "jpeg"
+        ? "image/jpeg"
+        : extension === "png"
+          ? "image/png"
+          : extension === "webp"
+            ? "image/webp"
+            : "");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
+      setMessage("Choose a JPEG, PNG, or WebP photo.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await apiFetch("/v1/me/profile/photo", {
+        method: "PUT",
+        headers: { "content-type": contentType },
+        body: photo,
+      });
+      const body = (await response.json()) as {
+        photo?: { available: boolean };
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.photo?.available) {
+        throw new Error(body.error?.message ?? "Profile photo could not be uploaded.");
+      }
+      setPhotoUrl(null);
+      event.currentTarget.reset();
+      await load();
+      setMessage("Profile photo saved.");
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Profile photo could not be uploaded.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removePhoto() {
+    if (!window.confirm("Remove your Project 42 profile photo?")) return;
+    setBusy(true);
+    try {
+      const response = await apiFetch("/v1/me/profile/photo", { method: "DELETE" });
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: { message?: string } };
+        throw new Error(body.error?.message ?? "Profile photo could not be removed.");
+      }
+      setPhotoUrl(null);
+      await load();
+      setMessage("Profile photo removed.");
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Profile photo could not be removed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="profile-card" aria-labelledby="hosted-profile-title">
+      <p className="eyebrow">Hosted profile</p>
+      <h3 id="hosted-profile-title">How you appear in Project 42</h3>
+      <p>
+        These details are stored with your Project 42 account. Your verified email
+        remains controlled by your identity provider.
+      </p>
+      <p className="admin-status" role="status">
+        {message}
+      </p>
+      {profile ? (
+        <>
+          <div className="account-photo-editor">
+            <div className="account-photo-preview">
+              {photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img alt="Current profile" src={photoUrl} />
+              ) : (
+                <span aria-hidden="true">
+                  {(profile.displayName?.trim().charAt(0) || "?").toUpperCase()}
+                </span>
+              )}
+            </div>
+            <form onSubmit={uploadPhoto}>
+              <label htmlFor="profile-photo">Profile photo</label>
+              <input
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy}
+                id="profile-photo"
+                name="photo"
+                required
+                type="file"
+              />
+              <small>JPEG, PNG, or WebP; 2 MB maximum. Stored privately.</small>
+              <div className="button-row">
+                <button className="button button-secondary" disabled={busy} type="submit">
+                  Upload photo
+                </button>
+                {profile.photoAvailable ? (
+                  <button
+                    className="button button-secondary"
+                    disabled={busy}
+                    onClick={() => void removePhoto()}
+                    type="button"
+                  >
+                    Remove photo
+                  </button>
+                ) : null}
+              </div>
+            </form>
+          </div>
+          <form className="account-profile-form" key={profile.updatedAt} onSubmit={saveProfile}>
+          <label htmlFor="profile-display-name">Display name</label>
+          <input
+            defaultValue={profile.displayName ?? ""}
+            id="profile-display-name"
+            maxLength={80}
+            name="displayName"
+          />
+          <label htmlFor="profile-organization">Organization</label>
+          <input
+            defaultValue={profile.organization ?? ""}
+            id="profile-organization"
+            maxLength={120}
+            name="organization"
+          />
+          <label htmlFor="profile-location">Location</label>
+          <input
+            defaultValue={profile.location ?? ""}
+            id="profile-location"
+            maxLength={120}
+            name="location"
+          />
+          <label htmlFor="profile-website">Website</label>
+          <input
+            defaultValue={profile.websiteUrl ?? ""}
+            id="profile-website"
+            inputMode="url"
+            maxLength={2048}
+            name="websiteUrl"
+            placeholder="https://example.com"
+            type="url"
+          />
+          <label htmlFor="profile-bio">About you</label>
+          <textarea
+            defaultValue={profile.bio ?? ""}
+            id="profile-bio"
+            maxLength={500}
+            name="bio"
+            rows={4}
+          />
+          <button className="button button-primary" disabled={busy} type="submit">
+            Save profile
+          </button>
+          </form>
+        </>
+      ) : (
+        <button className="button button-secondary" disabled={busy} onClick={() => void load()} type="button">
+          Try loading profile again
+        </button>
+      )}
+    </section>
+  );
+}
+
 function LearnerDataControls() {
-  const { apiFetch, signIn, signOut } = useAuth();
+  const { apiFetch, signIn } = useAuth();
   const [consents, setConsents] = useState<ConsentRecord[]>([]);
   const [deletions, setDeletions] = useState<DeletionRequest[]>([]);
   const [confirmation, setConfirmation] = useState("");
@@ -400,7 +895,6 @@ function LearnerDataControls() {
   }
 
   function reauthenticate() {
-    signOut();
     void signIn("/account");
   }
 
@@ -587,7 +1081,11 @@ export function AdminDashboard() {
           >
             Try again
           </button>
-          <button className="button button-secondary" onClick={signOut} type="button">
+          <button
+            className="button button-secondary"
+            onClick={() => void signOut()}
+            type="button"
+          >
             Clear this sign-in
           </button>
         </div>
@@ -617,6 +1115,14 @@ export function AdminDashboard() {
 export function OwnerAdministration() {
   const { apiFetch } = useAuth();
   const [accounts, setAccounts] = useState<Project42Account[]>([]);
+  const [accountStateFilter, setAccountStateFilter] =
+    useState<AccountStateFilter>("pending");
+  const [accountSearch, setAccountSearch] = useState("");
+  const [accountAction, setAccountAction] = useState<AccountStateAction | null>(
+    null,
+  );
+  const [accountActionReason, setAccountActionReason] = useState("");
+  const [accountActionConfirmation, setAccountActionConfirmation] = useState("");
   const [domains, setDomains] = useState<DomainRule[]>([]);
   const [automaticDomainApprovalEnabled, setAutomaticDomainApprovalEnabled] =
     useState(false);
@@ -625,6 +1131,48 @@ export function OwnerAdministration() {
   const [loadedAt, setLoadedAt] = useState(0);
   const [message, setMessage] = useState("Loading owner controls…");
   const [busy, setBusy] = useState(false);
+  const accountActionHeading = useRef<HTMLHeadingElement>(null);
+
+  const filteredAccounts = useMemo(() => {
+    const query = accountSearch.trim().toLocaleLowerCase();
+    return accounts.filter((candidate) => {
+      if (
+        accountStateFilter !== "all" &&
+        candidate.state !== accountStateFilter
+      ) {
+        return false;
+      }
+      if (!query) return true;
+      return [
+        candidate.displayName,
+        candidate.primaryEmail,
+        candidate.id,
+        candidate.state,
+        ...candidate.roles,
+      ].some((value) => value?.toLocaleLowerCase().includes(query));
+    });
+  }, [accountSearch, accountStateFilter, accounts]);
+
+  const accountCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        accountStateFilters.map((state) => [
+          state,
+          state === "all"
+            ? accounts.length
+            : accounts.filter((candidate) => candidate.state === state).length,
+        ]),
+      ) as Record<AccountStateFilter, number>,
+    [accounts],
+  );
+
+  const selectedAccount = accountAction
+    ? accounts.find((candidate) => candidate.id === accountAction.accountId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (accountAction) accountActionHeading.current?.focus();
+  }, [accountAction]);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -688,18 +1236,37 @@ export function OwnerAdministration() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  async function changeState(target: Project42Account, state: AccountState) {
-    const reason = window.prompt(
-      `Reason for changing ${target.displayName ?? target.id} from ${target.state} to ${state}:`,
-    );
-    if (!reason) return;
+  function beginStateChange(target: Project42Account, state: AccountState) {
+    setAccountAction({ accountId: target.id, nextState: state });
+    setAccountActionReason("");
+    setAccountActionConfirmation("");
+  }
+
+  function cancelStateChange() {
+    setAccountAction(null);
+    setAccountActionReason("");
+    setAccountActionConfirmation("");
+  }
+
+  async function changeState(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accountAction || !selectedAccount) return;
+    const reason = accountActionReason.trim();
+    if (
+      reason.length < 5 ||
+      reason.length > 500 ||
+      (accountAction.nextState === "revoked" &&
+        accountActionConfirmation !== "REVOKE")
+    ) {
+      return;
+    }
     setBusy(true);
     try {
       const response = await apiFetch(
-        `/v1/admin/accounts/${encodeURIComponent(target.id)}/state`,
+        `/v1/admin/accounts/${encodeURIComponent(selectedAccount.id)}/state`,
         {
           method: "PATCH",
-          body: JSON.stringify({ state, reason }),
+          body: JSON.stringify({ state: accountAction.nextState, reason }),
         },
       );
       const body = (await response.json()) as {
@@ -714,7 +1281,10 @@ export function OwnerAdministration() {
           candidate.id === body.account?.id ? body.account : candidate,
         ),
       );
-      setMessage(`Account changed to ${state}.`);
+      setMessage(
+        `${accountLabel(selectedAccount)} changed to ${accountAction.nextState}.`,
+      );
+      cancelStateChange();
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Account change failed.");
     } finally {
@@ -731,7 +1301,11 @@ export function OwnerAdministration() {
     try {
       const response = await apiFetch("/v1/admin/domains", {
         method: "POST",
-        body: JSON.stringify({ domain, reason, enabled: true }),
+        body: JSON.stringify({
+          domain,
+          reason,
+          enabled: automaticDomainApprovalEnabled,
+        }),
       });
       const body = (await response.json()) as {
         domain?: DomainRule;
@@ -746,7 +1320,11 @@ export function OwnerAdministration() {
         ),
       );
       event.currentTarget.reset();
-      setMessage(`Exact-domain approval enabled for ${body.domain.domain}.`);
+      setMessage(
+        body.domain.enabled
+          ? `Exact-domain approval enabled for ${body.domain.domain}.`
+          : `${body.domain.domain} staged as a disabled rule.`,
+      );
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Domain change failed.");
     } finally {
@@ -783,6 +1361,38 @@ export function OwnerAdministration() {
       setMessage(`Domain rule ${body.domain.enabled ? "enabled" : "disabled"}.`);
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Domain change failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeDomain(rule: DomainRule) {
+    const reason = window.prompt(
+      `Reason for removing the disabled ${rule.domain} rule:`,
+    );
+    if (!reason) return;
+    setBusy(true);
+    try {
+      const response = await apiFetch(
+        `/v1/admin/domains/${encodeURIComponent(rule.id)}`,
+        {
+          method: "DELETE",
+          body: JSON.stringify({ reason }),
+        },
+      );
+      const body = (await response.json()) as {
+        domain?: DomainRule;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.domain) {
+        throw new Error(body.error?.message ?? "Domain rule could not be removed.");
+      }
+      setDomains((current) =>
+        current.filter((candidate) => candidate.id !== body.domain?.id),
+      );
+      setMessage(`Removed ${body.domain.domain}.`);
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Domain removal failed.");
     } finally {
       setBusy(false);
     }
@@ -850,13 +1460,65 @@ export function OwnerAdministration() {
 
       <div className="admin-grid">
         <section className="profile-card">
-          <h3>Accounts</h3>
+          <div className="admin-account-heading">
+            <div>
+              <h3>Account approval queue</h3>
+              <p>
+                New registrations appear under Pending. Search by name, verified
+                email, role, state, or account identifier.
+              </p>
+            </div>
+            <strong aria-live="polite">
+              {filteredAccounts.length} of {accounts.length} shown
+            </strong>
+          </div>
+          <div className="admin-account-filters">
+            <div>
+              <label htmlFor="admin-account-search">Search accounts</label>
+              <input
+                id="admin-account-search"
+                onChange={(event) => setAccountSearch(event.target.value)}
+                placeholder="Name or verified email"
+                type="search"
+                value={accountSearch}
+              />
+            </div>
+            <div>
+              <label htmlFor="admin-account-state">Account state</label>
+              <select
+                id="admin-account-state"
+                onChange={(event) => {
+                  setAccountStateFilter(event.target.value as AccountStateFilter);
+                  cancelStateChange();
+                }}
+                value={accountStateFilter}
+              >
+                {accountStateFilters.map((state) => (
+                  <option key={state} value={state}>
+                    {state === "all"
+                      ? "All accounts"
+                      : state.charAt(0).toUpperCase() + state.slice(1)}{" "}
+                    ({accountCounts[state]})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="admin-account-list">
-            {accounts.map((candidate) => (
+            {filteredAccounts.length === 0 ? (
+              <p className="admin-empty-state">
+                No accounts match this state and search.
+              </p>
+            ) : null}
+            {filteredAccounts.map((candidate) => (
               <article key={candidate.id}>
                 <div>
-                  <strong>{candidate.displayName ?? candidate.primaryEmail ?? candidate.id}</strong>
+                  <strong>{accountLabel(candidate)}</strong>
                   <small>{candidate.primaryEmail ?? "No verified email"}</small>
+                  <small>
+                    {candidate.emailVerified ? "Verified email" : "Email not verified"} ·{" "}
+                    {candidate.roles.join(", ")}
+                  </small>
                 </div>
                 <span className={`account-state account-state-${candidate.state}`}>
                   {candidate.state}
@@ -867,13 +1529,97 @@ export function OwnerAdministration() {
                       className="button button-secondary"
                       disabled={busy}
                       key={next}
-                      onClick={() => void changeState(candidate, next)}
+                      onClick={() => beginStateChange(candidate, next)}
                       type="button"
                     >
-                      {next}
+                      {accountActionLabel(candidate.state, next)}
                     </button>
                   ))}
                 </div>
+                {accountAction?.accountId === candidate.id &&
+                selectedAccount ? (
+                  <form
+                    className={`admin-account-action${
+                      accountAction.nextState === "revoked"
+                        ? " admin-account-action-danger"
+                        : ""
+                    }`}
+                    onSubmit={(event) => void changeState(event)}
+                  >
+                    <h4 ref={accountActionHeading} tabIndex={-1}>
+                      {accountActionLabel(
+                        selectedAccount.state,
+                        accountAction.nextState,
+                      )}{" "}
+                      {accountLabel(selectedAccount)}
+                    </h4>
+                    <p>
+                      Change this account from <strong>{selectedAccount.state}</strong>{" "}
+                      to <strong>{accountAction.nextState}</strong>. The reason is
+                      written to the privileged audit record.
+                    </p>
+                    {accountAction.nextState === "revoked" ? (
+                      <p role="alert">
+                        Revocation is permanent for this identity. It cannot be
+                        restored from this console.
+                      </p>
+                    ) : null}
+                    <label htmlFor="admin-account-action-reason">Reason</label>
+                    <textarea
+                      id="admin-account-action-reason"
+                      maxLength={500}
+                      minLength={5}
+                      onChange={(event) =>
+                        setAccountActionReason(event.target.value)
+                      }
+                      required
+                      rows={3}
+                      value={accountActionReason}
+                    />
+                    {accountAction.nextState === "revoked" ? (
+                      <>
+                        <label htmlFor="admin-account-action-confirmation">
+                          Enter REVOKE to confirm
+                        </label>
+                        <input
+                          autoComplete="off"
+                          id="admin-account-action-confirmation"
+                          onChange={(event) =>
+                            setAccountActionConfirmation(event.target.value)
+                          }
+                          required
+                          value={accountActionConfirmation}
+                        />
+                      </>
+                    ) : null}
+                    <div className="button-row">
+                      <button
+                        className="button button-primary"
+                        disabled={
+                          busy ||
+                          accountActionReason.trim().length < 5 ||
+                          (accountAction.nextState === "revoked" &&
+                            accountActionConfirmation !== "REVOKE")
+                        }
+                        type="submit"
+                      >
+                        Confirm{" "}
+                        {accountActionLabel(
+                          selectedAccount.state,
+                          accountAction.nextState,
+                        ).toLocaleLowerCase()}
+                      </button>
+                      <button
+                        className="button button-secondary"
+                        disabled={busy}
+                        onClick={cancelStateChange}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </article>
             ))}
           </div>
@@ -888,13 +1634,12 @@ export function OwnerAdministration() {
           {!automaticDomainApprovalEnabled ? (
             <p role="status">
               Automatic approval remains locked until the deployment validates real
-              signed verified-email claims.
+              signed verified-email claims. You can safely stage disabled rules now.
             </p>
           ) : null}
           <form className="domain-form" onSubmit={(event) => void createDomain(event)}>
             <label htmlFor="approved-domain">Exact domain</label>
             <input
-              disabled={!automaticDomainApprovalEnabled}
               id="approved-domain"
               name="domain"
               placeholder="example.com"
@@ -902,7 +1647,6 @@ export function OwnerAdministration() {
             />
             <label htmlFor="domain-reason">Reason</label>
             <input
-              disabled={!automaticDomainApprovalEnabled}
               id="domain-reason"
               minLength={5}
               name="reason"
@@ -910,10 +1654,10 @@ export function OwnerAdministration() {
             />
             <button
               className="button button-primary"
-              disabled={busy || !automaticDomainApprovalEnabled}
+              disabled={busy}
               type="submit"
             >
-              Add enabled rule
+              {automaticDomainApprovalEnabled ? "Add enabled rule" : "Stage disabled rule"}
             </button>
           </form>
           <div className="domain-list">
@@ -926,16 +1670,26 @@ export function OwnerAdministration() {
                     {rule.policyVersion}
                   </small>
                 </div>
-                <button
-                  className="button button-secondary"
-                  disabled={
-                    busy || (!automaticDomainApprovalEnabled && !rule.enabled)
-                  }
-                  onClick={() => void toggleDomain(rule)}
-                  type="button"
-                >
-                  {rule.enabled ? "Disable" : "Enable"}
-                </button>
+                <div className="admin-actions">
+                  <button
+                    className="button button-secondary"
+                    disabled={
+                      busy || (!automaticDomainApprovalEnabled && !rule.enabled)
+                    }
+                    onClick={() => void toggleDomain(rule)}
+                    type="button"
+                  >
+                    {rule.enabled ? "Disable" : "Enable"}
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    disabled={busy || rule.enabled}
+                    onClick={() => void removeDomain(rule)}
+                    type="button"
+                  >
+                    Remove
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -979,6 +1733,11 @@ export function OwnerAdministration() {
             </div>
           )}
         </section>
+
+        <AccountMergeAdministration
+          accounts={accounts}
+          onAccountsChanged={load}
+        />
 
         <section className="profile-card">
           <h3>Privileged audit events</h3>

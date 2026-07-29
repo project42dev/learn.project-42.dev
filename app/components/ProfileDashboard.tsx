@@ -19,6 +19,7 @@ export function ProfileDashboard() {
   const { account, configured } = useAuth();
   const {
     progress,
+    migrationPreview,
     hydrated,
     storageStatus,
     syncStatus,
@@ -150,11 +151,98 @@ export function ProfileDashboard() {
         ) : syncStatus === "migration-available" ? (
           <>
             <p>
-              Your account has no server record yet, but this browser has progress.
-              Project 42 will upload it only after you confirm.
+              Review the browser and account records before anything is saved.
+              Project 42 keeps both copies recoverable until the account confirms
+              the import.
             </p>
+            {migrationPreview ? (
+              <>
+                <div
+                  aria-label="Progress migration preview"
+                  className="progress-migration-preview"
+                  role="group"
+                >
+                  <dl>
+                    <div>
+                      <dt>Record</dt>
+                      <dd>Browser / account / after import</dd>
+                    </div>
+                    <div>
+                      <dt>Completed modules</dt>
+                      <dd>
+                        {migrationPreview.local.completedModules} /{" "}
+                        {migrationPreview.remote.completedModules} /{" "}
+                        {migrationPreview.merged.completedModules}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Assessment attempts</dt>
+                      <dd>
+                        {migrationPreview.local.attempts} /{" "}
+                        {migrationPreview.remote.attempts} /{" "}
+                        {migrationPreview.merged.attempts}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Capstone submissions</dt>
+                      <dd>
+                        {migrationPreview.local.capstoneSubmissions} /{" "}
+                        {migrationPreview.remote.capstoneSubmissions} /{" "}
+                        {migrationPreview.merged.capstoneSubmissions}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Badges</dt>
+                      <dd>
+                        {migrationPreview.local.badges} /{" "}
+                        {migrationPreview.remote.badges} /{" "}
+                        {migrationPreview.merged.badges}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+                <p>
+                  The import adds {migrationPreview.localAdditions.attempts} browser
+                  assessment{" "}
+                  {migrationPreview.localAdditions.attempts === 1
+                    ? "attempt"
+                    : "attempts"}{" "}
+                  and {migrationPreview.localAdditions.completedModules} completed{" "}
+                  {migrationPreview.localAdditions.completedModules === 1
+                    ? "module"
+                    : "modules"}
+                  . Existing account attempts keep their original IDs and timestamps.
+                </p>
+                {migrationPreview.duplicateAttempts > 0 ||
+                migrationPreview.duplicateCapstoneSubmissions > 0 ? (
+                  <p>
+                    Matching duplicate evidence will be kept once; retrying this
+                    import uses the same receipt and does not duplicate attempts.
+                  </p>
+                ) : null}
+                {migrationPreview.conflicts.length > 0 ? (
+                  <div className="storage-warning" role="alert">
+                    <strong>Conflicting immutable evidence needs attention.</strong>
+                    <ul>
+                      {migrationPreview.conflicts.map((conflict) => (
+                        <li key={`${conflict.kind}-${conflict.id}`}>
+                          {conflict.message}
+                        </li>
+                      ))}
+                    </ul>
+                    <p>
+                      Nothing has been changed. Download both records and contact
+                      support before continuing.
+                    </p>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
             <button
               className="button button-primary"
+              disabled={
+                !migrationPreview || migrationPreview.conflicts.length > 0
+              }
               onClick={() => {
                 setMigrationError(null);
                 void migrateLocalToAccount().catch((caught) => {
@@ -167,7 +255,7 @@ export function ProfileDashboard() {
               }}
               type="button"
             >
-              Save this browser progress to my account
+              Confirm and merge into my account
             </button>
           </>
         ) : (

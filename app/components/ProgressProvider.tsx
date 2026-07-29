@@ -20,9 +20,17 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  createProgressImportId,
+  createProgressMigrationPreview,
+  hasLearningEvidence,
+  needsProgressMigration,
+  type ProgressMigrationPreview,
+} from "../lib/progressMigration";
 import { useAuth } from "./AuthProvider";
 
 const storageKey = "project42.progress.v1";
+const migrationRecoveryKey = "project42.progress.migration.recovery.v1";
 type StorageStatus = "ready" | "unavailable" | "write-error";
 type SyncStatus =
   | "local-only"
@@ -35,6 +43,7 @@ type SyncStatus =
 
 interface ProgressContextValue {
   progress: LearnerProgress;
+  migrationPreview: ProgressMigrationPreview | null;
   hydrated: boolean;
   storageStatus: StorageStatus;
   syncStatus: SyncStatus;
@@ -84,9 +93,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [storageStatus, setStorageStatus] = useState<StorageStatus>("ready");
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("local-only");
+  const [migrationPreview, setMigrationPreview] =
+    useState<ProgressMigrationPreview | null>(null);
   const synchronizationEnabled = useRef(false);
   const lastSynchronized = useRef("");
   const currentProgress = useRef(progress);
+  const remoteProgress = useRef<LearnerProgress | null>(null);
 
   useEffect(() => {
     currentProgress.current = progress;
@@ -117,8 +129,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     synchronizationEnabled.current = false;
     lastSynchronized.current = "";
+    remoteProgress.current = null;
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
+      setMigrationPreview(null);
       if (!hydrated || !account) {
         setSyncStatus("local-only");
         return;
@@ -143,12 +157,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           }
           const remote = body.progress;
           const local = currentProgress.current;
-          const localHasProgress =
-            local.completedModuleIds.length > 0 ||
-            local.attempts.length > 0 ||
-            (local.capstoneSubmissions?.length ?? 0) > 0 ||
-            local.badges.length > 0;
-          if (remote.revision === 0 && localHasProgress) {
+          remoteProgress.current = remote.progress;
+          const preview = createProgressMigrationPreview(local, remote.progress);
+          if (hasLearningEvidence(local) && needsProgressMigration(preview)) {
+            setMigrationPreview(preview);
             setSyncStatus("migration-available");
             return;
           }
@@ -162,6 +174,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           } else {
             lastSynchronized.current = JSON.stringify(local);
           }
+          setMigrationPreview(null);
           synchronizationEnabled.current = true;
           setSyncStatus("synced");
         })
@@ -285,9 +298,32 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const replaceProgress = useCallback((replacement: LearnerProgress) => {
-    setProgress(structuredClone(replacement));
-  }, []);
+  const replaceProgress = useCallback(
+    (replacement: LearnerProgress) => {
+      const next = structuredClone(replacement);
+      if (account?.state === "approved" && remoteProgress.current) {
+        const preview = createProgressMigrationPreview(
+          next,
+          remoteProgress.current,
+        );
+        if (needsProgressMigration(preview)) {
+          setProgress(next);
+          synchronizationEnabled.current = false;
+          setMigrationPreview(preview);
+          setSyncStatus("migration-available");
+          return;
+        }
+        const authoritative = structuredClone(remoteProgress.current);
+        setProgress(authoritative);
+        lastSynchronized.current = JSON.stringify(authoritative);
+        setMigrationPreview(null);
+        setSyncStatus("synced");
+        return;
+      }
+      setProgress(next);
+    },
+    [account],
+  );
 
   const reset = useCallback(() => {
     setProgress(createEmptyProgress());
@@ -297,29 +333,80 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     if (!account || account.state !== "approved") {
       throw new Error("An approved account is required.");
     }
-    setSyncStatus("syncing");
-    const serialized = JSON.stringify(progress);
-    const response = await apiFetch("/v1/me/progress", {
-      method: "POST",
-      body: JSON.stringify({
-        importId: crypto.randomUUID(),
-        source: "browser-local-v1",
-        progress,
-      }),
-    });
-    if (!response.ok) {
-      setSyncStatus("error");
-      const body = (await response.json()) as { error?: { message?: string } };
-      throw new Error(body.error?.message ?? "Progress could not be migrated.");
+    if (!migrationPreview) {
+      throw new Error("No browser progress is waiting to be migrated.");
     }
-    lastSynchronized.current = serialized;
-    synchronizationEnabled.current = true;
-    setSyncStatus("synced");
-  }, [account, apiFetch, progress]);
+    if (migrationPreview.conflicts.length > 0) {
+      throw new Error(
+        "Resolve the conflicting assessment or capstone evidence before importing.",
+      );
+    }
+    setSyncStatus("syncing");
+    const importId = await createProgressImportId(progress);
+    try {
+      window.localStorage.setItem(
+        migrationRecoveryKey,
+        JSON.stringify({
+          schemaVersion: 1,
+          importId,
+          localProgress: progress,
+          remoteProgress: remoteProgress.current,
+          mergedProgress: migrationPreview.mergedProgress,
+          createdAt: new Date().toISOString(),
+          state: "pending",
+        }),
+      );
+      const response = await apiFetch("/v1/me/progress", {
+        method: "POST",
+        body: JSON.stringify({
+          importId,
+          source: "browser-local-v1",
+          progress: migrationPreview.mergedProgress,
+        }),
+      });
+      const body = (await response.json()) as {
+        progress?: {
+          revision: number;
+          progress: LearnerProgress;
+        };
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.progress) {
+        throw new Error(body.error?.message ?? "Progress could not be migrated.");
+      }
+      const synchronized = {
+        ...body.progress.progress,
+        capstoneSubmissions: body.progress.progress.capstoneSubmissions ?? [],
+      };
+      window.localStorage.setItem(
+        migrationRecoveryKey,
+        JSON.stringify({
+          schemaVersion: 1,
+          importId,
+          localProgress: progress,
+          remoteProgress: remoteProgress.current,
+          mergedProgress: synchronized,
+          completedAt: new Date().toISOString(),
+          state: "completed",
+        }),
+      );
+      remoteProgress.current = synchronized;
+      lastSynchronized.current = JSON.stringify(synchronized);
+      currentProgress.current = synchronized;
+      setProgress(synchronized);
+      setMigrationPreview(null);
+      synchronizationEnabled.current = true;
+      setSyncStatus("synced");
+    } catch (caught) {
+      setSyncStatus("migration-available");
+      throw caught;
+    }
+  }, [account, apiFetch, migrationPreview, progress]);
 
   const value = useMemo(
     () => ({
       progress,
+      migrationPreview,
       hydrated,
       storageStatus,
       syncStatus,
@@ -333,6 +420,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }),
     [
       progress,
+      migrationPreview,
       hydrated,
       storageStatus,
       syncStatus,

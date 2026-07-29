@@ -65,9 +65,11 @@ export default function LearnerDataPage() {
           <p className="eyebrow">Identity</p>
           <h2 id="identity-heading">An email address is never your account key.</h2>
           <p>
-            Future accounts use OpenID Connect Authorization Code with PKCE. Project
-            42 binds the provider&apos;s stable issuer and subject to an internal learner
-            ID. Changing an email cannot create or merge accounts.
+            Accounts use OpenID Connect Authorization Code with PKCE through the
+            account API. Learn receives only an opaque HttpOnly session cookie and
+            never stores provider tokens. Project 42 binds the provider&apos;s stable
+            issuer and subject to an internal learner ID. Changing an email cannot
+            create or merge accounts.
           </p>
         </div>
         <div className="policy-fact-grid">

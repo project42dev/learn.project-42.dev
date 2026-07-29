@@ -2513,6 +2513,36 @@ a {
   text-align: right;
 }
 
+.progress-migration-preview {
+  overflow-x: auto;
+}
+
+.progress-migration-preview dl {
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  margin: 1rem 0;
+  min-width: 32rem;
+}
+
+.progress-migration-preview dl > div {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(10rem, 1fr) minmax(13rem, 1fr);
+  padding: 0.75rem 1rem;
+}
+
+.progress-migration-preview dl > div + div {
+  border-top: 1px solid var(--line);
+}
+
+.progress-migration-preview dt {
+  font-weight: 700;
+}
+
+.progress-migration-preview dd {
+  margin: 0;
+}
+
 .import-status {
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
@@ -3587,6 +3617,86 @@ a {
   grid-template-columns: minmax(0, 1fr) auto minmax(160px, auto);
 }
 
+.admin-account-heading {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.admin-account-heading h3,
+.admin-account-heading p {
+  margin-top: 0;
+}
+
+.admin-account-heading strong {
+  white-space: nowrap;
+}
+
+.admin-account-filters {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+  margin-top: 1rem;
+}
+
+.admin-account-filters > div,
+.admin-account-action {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-account-filters label,
+.admin-account-action label {
+  font-weight: 750;
+}
+
+.admin-account-filters input,
+.admin-account-filters select,
+.admin-account-action input,
+.admin-account-action textarea {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.admin-account-action {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  grid-column: 1 / -1;
+  padding: 1rem;
+}
+
+.admin-account-action-danger {
+  border-color: #b42318;
+}
+
+.admin-account-action h4,
+.admin-account-action p {
+  margin: 0;
+}
+
+.admin-account-action h4:focus {
+  outline: 3px solid var(--violet);
+  outline-offset: 4px;
+}
+
+.admin-account-action textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.admin-empty-state {
+  border-top: 1px solid var(--line);
+  margin: 0;
+  padding-top: 0.85rem;
+}
+
 .admin-account-list small,
 .domain-list small,
 .audit-event-list small {
@@ -3622,6 +3732,246 @@ a {
   padding: 0.75rem;
 }
 
+.account-profile-form {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.account-profile-form input,
+.account-profile-form textarea {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.account-profile-form textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.account-profile-form .button {
+  justify-self: start;
+  margin-top: 0.35rem;
+}
+
+.account-photo-editor {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  margin-top: 1rem;
+}
+
+.account-photo-editor form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.account-photo-editor input[type="file"] {
+  max-width: 100%;
+}
+
+.account-photo-preview {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  display: flex;
+  font-size: 1.8rem;
+  font-weight: 700;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.account-photo-preview img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.linked-identity-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.linked-identity-list article {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-top: 0.85rem;
+}
+
+.linked-identity-list span,
+.linked-identity-list small {
+  color: var(--ink-soft);
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.linked-identity-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-end;
+}
+
+.linked-identity-actions .account-state {
+  color: var(--ink);
+  margin: 0;
+}
+
+.linked-identity-actions .button {
+  padding: 0.55rem 0.75rem;
+}
+
+.account-merge-console {
+  grid-column: 1 / -1;
+}
+
+.account-merge-form,
+.account-merge-review,
+.account-merge-receipt {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-merge-account-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-merge-account-grid > fieldset,
+.account-merge-review > form > fieldset,
+.account-merge-conflict {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.account-merge-account-grid legend,
+.account-merge-review legend {
+  font-weight: 800;
+  padding: 0 0.35rem;
+}
+
+.account-merge-account-grid select,
+.account-merge-account-grid input,
+.account-merge-account-grid textarea,
+.account-merge-review input,
+.account-merge-review textarea,
+.account-merge-receipt input,
+.account-merge-receipt textarea {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.account-recovery-details {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+
+.account-recovery-details summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.account-recovery-details[open] {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.recovery-method-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.recovery-method-list label,
+.account-merge-conflict label {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.recovery-method-list input,
+.account-merge-conflict input {
+  margin-top: 0.2rem;
+  width: auto;
+}
+
+.account-merge-proof-status,
+.account-merge-warning,
+.account-merge-consequences,
+.account-merge-receipt {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+}
+
+.account-merge-warning {
+  border-color: #b57c00;
+}
+
+.account-merge-evidence,
+.account-merge-receipt dl {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.account-merge-evidence div,
+.account-merge-receipt dl div {
+  min-width: 0;
+}
+
+.account-merge-evidence dt,
+.account-merge-receipt dt {
+  font-weight: 800;
+}
+
+.account-merge-evidence dd,
+.account-merge-receipt dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.account-merge-records {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.account-merge-records span {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+}
+
+.account-merge-consequences ul {
+  margin-bottom: 0;
+}
+
 .account-sync-card a {
   font-weight: 800;
   text-decoration: underline;
@@ -3638,8 +3988,27 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .admin-account-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .account-merge-account-grid,
+  .account-merge-evidence,
+  .account-merge-receipt dl {
+    grid-template-columns: 1fr;
+  }
+
   .admin-account-list article {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .linked-identity-list article {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .linked-identity-actions {
+    justify-content: flex-start;
   }
 
   .audit-event-list article {
