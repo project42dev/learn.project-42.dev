@@ -32,6 +32,16 @@
       "expires": "2026-10-31"
     },
     {
+      "targetPattern": "https://docs.vllm.ai/en/latest/serving/openai_compatible_server/",
+      "expectedStatuses": [
+        429
+      ],
+      "reason": "The documentation is public and passed the bounded checker locally, but its host rate-limited the GitHub Actions client after all configured retries.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-07-29",
+      "expires": "2026-10-31"
+    },
+    {
       "targetPattern": "https://project-42.dev/legal-transparency*",
       "expectedStatuses": [
         404
