@@ -775,6 +775,20 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
     page.getByRole("heading", { name: "Retained migration evidence" }),
   ).toBeVisible();
   await expect(page.getByText("pending", { exact: true })).toBeVisible();
+  const pendingRecovery = await page.evaluate(() =>
+    JSON.parse(
+      window.localStorage.getItem(
+        "project42.progress.migration.recovery.v1",
+      ) ?? "null",
+    ),
+  );
+  expect(pendingRecovery).toMatchObject({
+    schemaVersion: 1,
+    state: "pending",
+  });
+  expect(pendingRecovery.createdAt).toMatch(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+  );
   await expect(confirm).toBeEnabled();
   await confirm.click();
   await expect(
@@ -803,10 +817,17 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
     importId: imports[0].importId,
     schemaVersion: 1,
     state: "completed",
+    createdAt: pendingRecovery.createdAt,
   });
   await expect(
     page.getByRole("heading", { name: "Retained migration evidence" }),
   ).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Retained migration evidence" }),
+  ).toBeVisible();
+  expect(imports).toHaveLength(2);
 
   const exportDownloadPromise = page.waitForEvent("download");
   await page
@@ -824,6 +845,58 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(accessibility.violations).toEqual([]);
+
+  const verifiedRecovery = await page.evaluate(() =>
+    JSON.parse(
+      window.localStorage.getItem(
+        "project42.progress.migration.recovery.v1",
+      ) ?? "null",
+    ),
+  );
+  const invalidRecoveries = [
+    {
+      ...verifiedRecovery,
+      importId: verifiedRecovery.importId.endsWith("0")
+        ? `${verifiedRecovery.importId.slice(0, -1)}1`
+        : `${verifiedRecovery.importId.slice(0, -1)}0`,
+    },
+    {
+      ...verifiedRecovery,
+      completedAt: new Date(
+        Date.parse(verifiedRecovery.createdAt) - 1_000,
+      ).toISOString(),
+    },
+    {
+      ...verifiedRecovery,
+      unsupportedTenantHint: "must-not-load",
+    },
+  ];
+  for (const invalidRecovery of invalidRecoveries) {
+    await page.evaluate((storedRecovery) => {
+      window.localStorage.setItem(
+        "project42.progress.migration.recovery.v1",
+        JSON.stringify(storedRecovery),
+      );
+    }, invalidRecovery);
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Progress is synchronized" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Retained migration evidence" }),
+    ).toHaveCount(0);
+  }
+
+  await page.evaluate((storedRecovery) => {
+    window.localStorage.setItem(
+      "project42.progress.migration.recovery.v1",
+      JSON.stringify(storedRecovery),
+    );
+  }, verifiedRecovery);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Retained migration evidence" }),
+  ).toBeVisible();
 
   await page
     .getByLabel(/I understand that removing this retained backup/i)

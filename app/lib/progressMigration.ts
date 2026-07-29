@@ -475,29 +475,70 @@ export function buildProgressReconciliationPackage(
   };
 }
 
-export interface ProgressMigrationRecoveryEnvelope {
+interface ProgressMigrationRecoveryBase {
   schemaVersion: 1;
   importId: string;
   localProgress: LearnerProgress;
   remoteProgress: LearnerProgress;
   mergedProgress: LearnerProgress;
-  state: "pending" | "completed";
-  createdAt?: string;
-  completedAt?: string;
+  createdAt: string;
+}
+
+export interface PendingProgressMigrationRecoveryEnvelope
+  extends ProgressMigrationRecoveryBase {
+  state: "pending";
+  completedAt?: never;
+  verifiedExportAt?: never;
+  verifiedRevision?: never;
+}
+
+export interface CompletedProgressMigrationRecoveryEnvelope
+  extends ProgressMigrationRecoveryBase {
+  state: "completed";
+  completedAt: string;
   verifiedExportAt?: string;
   verifiedRevision?: number;
 }
+
+export type ProgressMigrationRecoveryEnvelope =
+  | PendingProgressMigrationRecoveryEnvelope
+  | CompletedProgressMigrationRecoveryEnvelope;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function parseProgressMigrationRecovery(
+const progressMigrationRecoveryProperties = new Set([
+  "schemaVersion",
+  "importId",
+  "localProgress",
+  "remoteProgress",
+  "mergedProgress",
+  "state",
+  "createdAt",
+  "completedAt",
+  "verifiedExportAt",
+  "verifiedRevision",
+]);
+
+function isCanonicalIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const milliseconds = Date.parse(value);
+  return (
+    !Number.isNaN(milliseconds) &&
+    new Date(milliseconds).toISOString() === value
+  );
+}
+
+export async function parseProgressMigrationRecovery(
   value: unknown,
   catalog: Catalog,
-): ProgressMigrationRecoveryEnvelope | null {
+): Promise<ProgressMigrationRecoveryEnvelope | null> {
   if (
     !isRecord(value) ||
+    Object.keys(value).some(
+      (property) => !progressMigrationRecoveryProperties.has(property),
+    ) ||
     value.schemaVersion !== 1 ||
     typeof value.importId !== "string" ||
     !/^browser-local-v1-[0-9a-f]{64}$/.test(value.importId) ||
@@ -519,16 +560,15 @@ export function parseProgressMigrationRecovery(
   ) {
     return null;
   }
+  if ((await createProgressImportId(local.progress)) !== value.importId) {
+    return null;
+  }
+  if (!isCanonicalIsoTimestamp(value.createdAt)) return null;
   if (
-    (value.createdAt !== undefined &&
-      (typeof value.createdAt !== "string" ||
-        Number.isNaN(Date.parse(value.createdAt)))) ||
     (value.completedAt !== undefined &&
-      (typeof value.completedAt !== "string" ||
-        Number.isNaN(Date.parse(value.completedAt)))) ||
+      !isCanonicalIsoTimestamp(value.completedAt)) ||
     (value.verifiedExportAt !== undefined &&
-      (typeof value.verifiedExportAt !== "string" ||
-        Number.isNaN(Date.parse(value.verifiedExportAt)))) ||
+      !isCanonicalIsoTimestamp(value.verifiedExportAt)) ||
     (value.verifiedRevision !== undefined &&
       (typeof value.verifiedRevision !== "number" ||
         !Number.isInteger(value.verifiedRevision) ||
@@ -537,34 +577,45 @@ export function parseProgressMigrationRecovery(
     return null;
   }
   if (
-    (value.state === "pending" &&
-      (typeof value.createdAt !== "string" ||
-        value.completedAt !== undefined ||
-        value.verifiedExportAt !== undefined ||
-        value.verifiedRevision !== undefined)) ||
-    (value.state === "completed" && typeof value.completedAt !== "string") ||
-    ((value.verifiedExportAt === undefined) !==
-      (value.verifiedRevision === undefined))
+    (value.verifiedExportAt === undefined) !==
+    (value.verifiedRevision === undefined)
   ) {
     return null;
   }
-  return {
+  const base: ProgressMigrationRecoveryBase = {
     schemaVersion: 1,
     importId: value.importId,
     localProgress: local.progress,
     remoteProgress: remote.progress,
     mergedProgress: merged.progress,
-    state: value.state,
-    ...(typeof value.createdAt === "string"
-      ? { createdAt: value.createdAt }
-      : {}),
-    ...(typeof value.completedAt === "string"
-      ? { completedAt: value.completedAt }
-      : {}),
-    ...(typeof value.verifiedExportAt === "string"
+    createdAt: value.createdAt,
+  };
+  if (value.state === "pending") {
+    if (
+      value.completedAt !== undefined ||
+      value.verifiedExportAt !== undefined ||
+      value.verifiedRevision !== undefined
+    ) {
+      return null;
+    }
+    return { ...base, state: "pending" };
+  }
+  if (
+    !isCanonicalIsoTimestamp(value.completedAt) ||
+    Date.parse(value.completedAt) < Date.parse(value.createdAt) ||
+    (value.verifiedExportAt !== undefined &&
+      Date.parse(value.verifiedExportAt) < Date.parse(value.completedAt))
+  ) {
+    return null;
+  }
+  return {
+    ...base,
+    state: "completed",
+    completedAt: value.completedAt,
+    ...(value.verifiedExportAt !== undefined
       ? { verifiedExportAt: value.verifiedExportAt }
       : {}),
-    ...(typeof value.verifiedRevision === "number"
+    ...(value.verifiedRevision !== undefined
       ? { verifiedRevision: value.verifiedRevision }
       : {}),
   };

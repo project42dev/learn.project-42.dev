@@ -7,6 +7,7 @@ import {
 import {
   buildProgressMigrationItems,
   buildProgressReconciliationPackage,
+  createProgressImportId,
   createProgressMigrationPreview,
   parseProgressMigrationRecovery,
 } from "../app/lib/progressMigration.ts";
@@ -115,15 +116,16 @@ test("builds a portable report with replace risk and projected transcript", () =
   }
 });
 
-test("accepts a valid retained backup and rejects tampered progress", () => {
+test("accepts only cryptographically bound, chronological, strict retained backups", async () => {
   const { account, browser } = progressRecords();
   const preview = createProgressMigrationPreview(browser, account);
   const recovery = {
     schemaVersion: 1,
-    importId: `browser-local-v1-${"a".repeat(64)}`,
+    importId: await createProgressImportId(browser),
     localProgress: browser,
     remoteProgress: account,
     mergedProgress: preview.mergedProgress,
+    createdAt: "2026-07-29T02:59:00.000Z",
     completedAt: "2026-07-29T03:00:00.000Z",
     state: "completed",
     verifiedExportAt: "2026-07-29T03:05:00.000Z",
@@ -131,11 +133,11 @@ test("accepts a valid retained backup and rejects tampered progress", () => {
   };
 
   assert.deepEqual(
-    parseProgressMigrationRecovery(recovery, starterCatalog),
+    await parseProgressMigrationRecovery(recovery, starterCatalog),
     recovery,
   );
   assert.equal(
-    parseProgressMigrationRecovery(
+    await parseProgressMigrationRecovery(
       {
         ...recovery,
         mergedProgress: account,
@@ -145,10 +147,50 @@ test("accepts a valid retained backup and rejects tampered progress", () => {
     null,
   );
   assert.equal(
-    parseProgressMigrationRecovery(
+    await parseProgressMigrationRecovery(
       {
         ...recovery,
         verifiedRevision: undefined,
+      },
+      starterCatalog,
+    ),
+    null,
+  );
+  assert.equal(
+    await parseProgressMigrationRecovery(
+      {
+        ...recovery,
+        importId: `browser-local-v1-${"0".repeat(64)}`,
+      },
+      starterCatalog,
+    ),
+    null,
+  );
+  assert.equal(
+    await parseProgressMigrationRecovery(
+      {
+        ...recovery,
+        completedAt: "2026-07-29T02:58:00.000Z",
+      },
+      starterCatalog,
+    ),
+    null,
+  );
+  assert.equal(
+    await parseProgressMigrationRecovery(
+      {
+        ...recovery,
+        verifiedExportAt: "2026-07-29T02:59:30.000Z",
+      },
+      starterCatalog,
+    ),
+    null,
+  );
+  assert.equal(
+    await parseProgressMigrationRecovery(
+      {
+        ...recovery,
+        unsupportedTenantHint: "must-not-load",
       },
       starterCatalog,
     ),

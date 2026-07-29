@@ -76,14 +76,21 @@ interface ProgressContextValue {
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
-function safeReadMigrationRecovery(): ProgressMigrationRecoveryEnvelope | null {
+async function safeReadMigrationRecovery(): Promise<ProgressMigrationRecoveryEnvelope | null> {
   try {
     const raw = window.localStorage.getItem(migrationRecoveryKey);
     if (!raw) return null;
-    return parseProgressMigrationRecovery(JSON.parse(raw), starterCatalog);
+    return await parseProgressMigrationRecovery(
+      JSON.parse(raw),
+      starterCatalog,
+    );
   } catch {
     return null;
   }
+}
+
+function timestampNotBefore(earliest: string): string {
+  return new Date(Math.max(Date.now(), Date.parse(earliest))).toISOString();
 }
 
 function safeReadProgress(): {
@@ -144,16 +151,23 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }, [progress]);
 
   useEffect(() => {
+    let cancelled = false;
     const hydrationTimer = window.setTimeout(() => {
       const stored = safeReadProgress();
-      localPersistenceBlocked.current = Boolean(stored.localRecordRecovery);
-      setProgress(stored.progress);
-      setStorageStatus(stored.storageStatus);
-      setLocalRecordRecovery(stored.localRecordRecovery);
-      setMigrationRecovery(safeReadMigrationRecovery());
-      setHydrated(true);
+      void safeReadMigrationRecovery().then((storedMigrationRecovery) => {
+        if (cancelled) return;
+        localPersistenceBlocked.current = Boolean(stored.localRecordRecovery);
+        setProgress(stored.progress);
+        setStorageStatus(stored.storageStatus);
+        setLocalRecordRecovery(stored.localRecordRecovery);
+        setMigrationRecovery(storedMigrationRecovery);
+        setHydrated(true);
+      });
     }, 0);
-    return () => window.clearTimeout(hydrationTimer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(hydrationTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -403,13 +417,18 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     setSyncStatus("syncing");
     const importId = await createProgressImportId(progress);
     try {
+      const createdAt =
+        migrationRecovery?.state === "pending" &&
+        migrationRecovery.importId === importId
+          ? migrationRecovery.createdAt
+          : new Date().toISOString();
       const pendingRecovery: ProgressMigrationRecoveryEnvelope = {
         schemaVersion: 1,
         importId,
         localProgress: progress,
         remoteProgress: accountProgress,
         mergedProgress: migrationPreview.mergedProgress,
-        createdAt: new Date().toISOString(),
+        createdAt,
         state: "pending",
       };
       window.localStorage.setItem(
@@ -445,7 +464,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         localProgress: progress,
         remoteProgress: accountProgress,
         mergedProgress: synchronized,
-        completedAt: new Date().toISOString(),
+        createdAt: pendingRecovery.createdAt,
+        completedAt: timestampNotBefore(pendingRecovery.createdAt),
         state: "completed",
       };
       window.localStorage.setItem(
@@ -464,7 +484,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setSyncStatus("migration-available");
       throw caught;
     }
-  }, [account, apiFetch, migrationPreview, progress]);
+  }, [account, apiFetch, migrationPreview, migrationRecovery, progress]);
 
   const verifyMigrationExport = useCallback(async (): Promise<unknown> => {
     if (!account || account.state !== "approved") {
@@ -509,7 +529,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }
     const verified: ProgressMigrationRecoveryEnvelope = {
       ...migrationRecovery,
-      verifiedExportAt: new Date().toISOString(),
+      verifiedExportAt: timestampNotBefore(migrationRecovery.completedAt),
       verifiedRevision: exported.progress.revision,
     };
     window.localStorage.setItem(

@@ -45,6 +45,11 @@ stored record.
 The recovery envelope uses the key
 `project42.progress.migration.recovery.v1`. It contains learning data but no access
 token, identity-provider token, tenant identifier, issuer, subject, or email.
+Learn accepts only the documented versioned properties, recomputes the
+SHA-256-based import receipt from the retained browser record whenever the
+envelope is loaded, and rejects evidence whose creation, completion, or export
+verification timestamps are out of order. The original creation timestamp is
+preserved across retries and the pending-to-completed transition.
 
 The learner can download a versioned
 `project42/progress-reconciliation` JSON package before import and while a
