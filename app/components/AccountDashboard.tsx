@@ -103,6 +103,11 @@ interface AccountStateAction {
   nextState: AccountState;
 }
 
+interface DomainRuleAction {
+  kind: "enable" | "disable" | "remove";
+  ruleId: string;
+}
+
 const accountStateFilters: AccountStateFilter[] = [
   "pending",
   "all",
@@ -1124,14 +1129,21 @@ export function OwnerAdministration() {
   const [accountActionReason, setAccountActionReason] = useState("");
   const [accountActionConfirmation, setAccountActionConfirmation] = useState("");
   const [domains, setDomains] = useState<DomainRule[]>([]);
+  const [domainAction, setDomainAction] = useState<DomainRuleAction | null>(null);
+  const [domainActionReason, setDomainActionReason] = useState("");
   const [automaticDomainApprovalEnabled, setAutomaticDomainApprovalEnabled] =
     useState(false);
   const [deletionRequests, setDeletionRequests] = useState<OwnerDeletionRequest[]>([]);
+  const [deletionActionId, setDeletionActionId] = useState<string | null>(null);
+  const [deletionActionReason, setDeletionActionReason] = useState("");
+  const [deletionActionConfirmation, setDeletionActionConfirmation] = useState("");
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [loadedAt, setLoadedAt] = useState(0);
   const [message, setMessage] = useState("Loading owner controls…");
   const [busy, setBusy] = useState(false);
   const accountActionHeading = useRef<HTMLHeadingElement>(null);
+  const domainActionHeading = useRef<HTMLHeadingElement>(null);
+  const deletionActionHeading = useRef<HTMLHeadingElement>(null);
 
   const filteredAccounts = useMemo(() => {
     const query = accountSearch.trim().toLocaleLowerCase();
@@ -1169,10 +1181,24 @@ export function OwnerAdministration() {
   const selectedAccount = accountAction
     ? accounts.find((candidate) => candidate.id === accountAction.accountId) ?? null
     : null;
+  const selectedDomain = domainAction
+    ? domains.find((candidate) => candidate.id === domainAction.ruleId) ?? null
+    : null;
+  const selectedDeletionRequest = deletionActionId
+    ? deletionRequests.find((candidate) => candidate.id === deletionActionId) ?? null
+    : null;
 
   useEffect(() => {
     if (accountAction) accountActionHeading.current?.focus();
   }, [accountAction]);
+
+  useEffect(() => {
+    if (domainAction) domainActionHeading.current?.focus();
+  }, [domainAction]);
+
+  useEffect(() => {
+    if (deletionActionId) deletionActionHeading.current?.focus();
+  }, [deletionActionId]);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -1332,18 +1358,36 @@ export function OwnerAdministration() {
     }
   }
 
-  async function toggleDomain(rule: DomainRule) {
-    const reason = window.prompt(
-      `Reason for ${rule.enabled ? "disabling" : "enabling"} ${rule.domain}:`,
-    );
-    if (!reason) return;
+  function beginDomainAction(
+    rule: DomainRule,
+    kind: DomainRuleAction["kind"],
+  ) {
+    setDomainAction({ kind, ruleId: rule.id });
+    setDomainActionReason("");
+  }
+
+  function cancelDomainAction() {
+    setDomainAction(null);
+    setDomainActionReason("");
+  }
+
+  async function submitDomainAction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!domainAction || !selectedDomain) return;
+    const reason = domainActionReason.trim();
+    if (reason.length < 5 || reason.length > 500) return;
+    const remove = domainAction.kind === "remove";
     setBusy(true);
     try {
       const response = await apiFetch(
-        `/v1/admin/domains/${encodeURIComponent(rule.id)}`,
+        `/v1/admin/domains/${encodeURIComponent(selectedDomain.id)}`,
         {
-          method: "PATCH",
-          body: JSON.stringify({ enabled: !rule.enabled, reason }),
+          method: remove ? "DELETE" : "PATCH",
+          body: JSON.stringify(
+            remove
+              ? { reason }
+              : { enabled: domainAction.kind === "enable", reason },
+          ),
         },
       );
       const body = (await response.json()) as {
@@ -1351,62 +1395,67 @@ export function OwnerAdministration() {
         error?: { message?: string };
       };
       if (!response.ok || !body.domain) {
-        throw new Error(body.error?.message ?? "Domain rule could not be changed.");
+        throw new Error(
+          body.error?.message ??
+            (remove
+              ? "Domain rule could not be removed."
+              : "Domain rule could not be changed."),
+        );
       }
-      setDomains((current) =>
-        current.map((candidate) =>
-          candidate.id === body.domain?.id ? body.domain : candidate,
-        ),
-      );
-      setMessage(`Domain rule ${body.domain.enabled ? "enabled" : "disabled"}.`);
+      if (remove) {
+        setDomains((current) =>
+          current.filter((candidate) => candidate.id !== body.domain?.id),
+        );
+        setMessage(`Removed ${body.domain.domain}.`);
+      } else {
+        setDomains((current) =>
+          current.map((candidate) =>
+            candidate.id === body.domain?.id ? body.domain : candidate,
+          ),
+        );
+        setMessage(`Domain rule ${body.domain.enabled ? "enabled" : "disabled"}.`);
+      }
+      cancelDomainAction();
     } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Domain change failed.");
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : remove
+            ? "Domain removal failed."
+            : "Domain change failed.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
-  async function removeDomain(rule: DomainRule) {
-    const reason = window.prompt(
-      `Reason for removing the disabled ${rule.domain} rule:`,
-    );
-    if (!reason) return;
-    setBusy(true);
-    try {
-      const response = await apiFetch(
-        `/v1/admin/domains/${encodeURIComponent(rule.id)}`,
-        {
-          method: "DELETE",
-          body: JSON.stringify({ reason }),
-        },
-      );
-      const body = (await response.json()) as {
-        domain?: DomainRule;
-        error?: { message?: string };
-      };
-      if (!response.ok || !body.domain) {
-        throw new Error(body.error?.message ?? "Domain rule could not be removed.");
-      }
-      setDomains((current) =>
-        current.filter((candidate) => candidate.id !== body.domain?.id),
-      );
-      setMessage(`Removed ${body.domain.domain}.`);
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Domain removal failed.");
-    } finally {
-      setBusy(false);
-    }
+  function beginDeletionAction(request: OwnerDeletionRequest) {
+    setDeletionActionId(request.id);
+    setDeletionActionReason("");
+    setDeletionActionConfirmation("");
   }
 
-  async function completeDeletion(request: OwnerDeletionRequest) {
-    const reason = window.prompt(
-      `Reason for permanently deleting ${request.displayName ?? request.primaryEmail ?? request.userId}:`,
-    );
-    if (!reason) return;
+  function cancelDeletionAction() {
+    setDeletionActionId(null);
+    setDeletionActionReason("");
+    setDeletionActionConfirmation("");
+  }
+
+  async function completeDeletion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedDeletionRequest) return;
+    const reason = deletionActionReason.trim();
+    if (
+      reason.length < 5 ||
+      reason.length > 500 ||
+      deletionActionConfirmation !== "DELETE"
+    ) {
+      return;
+    }
     setBusy(true);
     try {
       const response = await apiFetch(
-        `/v1/admin/deletions/${encodeURIComponent(request.id)}/complete`,
+        `/v1/admin/deletions/${encodeURIComponent(selectedDeletionRequest.id)}/complete`,
         {
           method: "POST",
           body: JSON.stringify({ reason }),
@@ -1425,12 +1474,13 @@ export function OwnerAdministration() {
         throw new Error(body.error?.message ?? "Deletion could not be completed.");
       }
       setDeletionRequests((current) =>
-        current.filter((candidate) => candidate.id !== request.id),
+        current.filter((candidate) => candidate.id !== selectedDeletionRequest.id),
       );
       setAccounts((current) =>
-        current.filter((candidate) => candidate.id !== request.userId),
+        current.filter((candidate) => candidate.id !== selectedDeletionRequest.userId),
       );
       setMessage("Account and learner data deletion completed.");
+      cancelDeletionAction();
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Deletion completion failed.");
     } finally {
@@ -1676,7 +1726,9 @@ export function OwnerAdministration() {
                     disabled={
                       busy || (!automaticDomainApprovalEnabled && !rule.enabled)
                     }
-                    onClick={() => void toggleDomain(rule)}
+                    onClick={() =>
+                      beginDomainAction(rule, rule.enabled ? "disable" : "enable")
+                    }
                     type="button"
                   >
                     {rule.enabled ? "Disable" : "Enable"}
@@ -1684,12 +1736,66 @@ export function OwnerAdministration() {
                   <button
                     className="button button-secondary"
                     disabled={busy || rule.enabled}
-                    onClick={() => void removeDomain(rule)}
+                    onClick={() => beginDomainAction(rule, "remove")}
                     type="button"
                   >
                     Remove
                   </button>
                 </div>
+                {domainAction?.ruleId === rule.id && selectedDomain ? (
+                  <form
+                    className={`admin-account-action${
+                      domainAction.kind === "remove"
+                        ? " admin-account-action-danger"
+                        : ""
+                    }`}
+                    onSubmit={(event) => void submitDomainAction(event)}
+                  >
+                    <h4 ref={domainActionHeading} tabIndex={-1}>
+                      {domainAction.kind === "remove"
+                        ? "Remove"
+                        : domainAction.kind === "enable"
+                          ? "Enable"
+                          : "Disable"}{" "}
+                      {selectedDomain.domain}
+                    </h4>
+                    <p>
+                      {domainAction.kind === "remove"
+                        ? "Remove this disabled exact-domain rule. The rule must be recreated before it can be used again."
+                        : `${domainAction.kind === "enable" ? "Enable" : "Disable"} automatic approval for this exact verified-email domain.`}{" "}
+                      The reason is written to the privileged audit record.
+                    </p>
+                    <label htmlFor="admin-domain-action-reason">Reason</label>
+                    <textarea
+                      id="admin-domain-action-reason"
+                      maxLength={500}
+                      minLength={5}
+                      onChange={(event) =>
+                        setDomainActionReason(event.target.value)
+                      }
+                      required
+                      rows={3}
+                      value={domainActionReason}
+                    />
+                    <div className="button-row">
+                      <button
+                        className="button button-primary"
+                        disabled={busy || domainActionReason.trim().length < 5}
+                        type="submit"
+                      >
+                        Confirm {domainAction.kind}
+                      </button>
+                      <button
+                        className="button button-secondary"
+                        disabled={busy}
+                        onClick={cancelDomainAction}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </article>
             ))}
           </div>
@@ -1721,12 +1827,76 @@ export function OwnerAdministration() {
                       <button
                         className="button button-secondary"
                         disabled={busy || cancellationOpen}
-                        onClick={() => void completeDeletion(request)}
+                        onClick={() => beginDeletionAction(request)}
                         type="button"
                       >
                         Complete deletion
                       </button>
                     </div>
+                    {deletionActionId === request.id &&
+                    selectedDeletionRequest ? (
+                      <form
+                        className="admin-account-action admin-account-action-danger"
+                        onSubmit={(event) => void completeDeletion(event)}
+                      >
+                        <h4 ref={deletionActionHeading} tabIndex={-1}>
+                          Permanently delete{" "}
+                          {selectedDeletionRequest.displayName ??
+                            selectedDeletionRequest.primaryEmail ??
+                            selectedDeletionRequest.userId}
+                        </h4>
+                        <p role="alert">
+                          This completes the approved deletion request and removes
+                          the account and learner data. The reason is written to the
+                          privileged audit record.
+                        </p>
+                        <label htmlFor="admin-deletion-action-reason">Reason</label>
+                        <textarea
+                          id="admin-deletion-action-reason"
+                          maxLength={500}
+                          minLength={5}
+                          onChange={(event) =>
+                            setDeletionActionReason(event.target.value)
+                          }
+                          required
+                          rows={3}
+                          value={deletionActionReason}
+                        />
+                        <label htmlFor="admin-deletion-action-confirmation">
+                          Enter DELETE to confirm
+                        </label>
+                        <input
+                          autoComplete="off"
+                          id="admin-deletion-action-confirmation"
+                          onChange={(event) =>
+                            setDeletionActionConfirmation(event.target.value)
+                          }
+                          required
+                          value={deletionActionConfirmation}
+                        />
+                        <div className="button-row">
+                          <button
+                            className="button button-primary"
+                            disabled={
+                              busy ||
+                              deletionActionReason.trim().length < 5 ||
+                              deletionActionConfirmation !== "DELETE"
+                            }
+                            type="submit"
+                          >
+                            Confirm permanent deletion
+                          </button>
+                          <button
+                            className="button button-secondary"
+                            disabled={busy}
+                            onClick={cancelDeletionAction}
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : null}
                   </article>
                 );
               })}

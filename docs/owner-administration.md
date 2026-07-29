@@ -33,13 +33,16 @@ deployment has not enabled automatic domain approval, owners may stage disabled
 rules but cannot enable them. This launch lock remains in force until the
 deployment validates its signed verified-email token contract.
 
-Every domain creation, state change, and removal requires an audit reason. Disabled
+Every domain creation, state change, and removal requires an audit reason. Enable,
+disable, and removal actions open an in-page review form that names the exact rule,
+explains the consequence, and returns keyboard focus to a visible heading. Disabled
 rules can be removed without exposing deployment configuration to Learn.
 
 ## Evidence and recovery
 
 The same route shows eligible deletion requests, owner-assisted account-merge
-controls, and request-correlated privileged audit events. Sensitive completion
-actions may require a recent sign-in. Deployment identifiers, owner bindings,
-secrets, rollback records, and production evidence belong only in the private
-operations repository.
+controls, and request-correlated privileged audit events. Permanent deletion uses
+an in-page review form with an audit reason and an explicit `DELETE` confirmation;
+it never relies on a browser prompt. Sensitive completion actions may require a
+recent sign-in. Deployment identifiers, owner bindings, secrets, rollback records,
+and production evidence belong only in the private operations repository.
