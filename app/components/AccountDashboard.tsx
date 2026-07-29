@@ -19,6 +19,7 @@ import {
   useAuth,
   type AccountState,
   type Project42Account,
+  type RegistrationExperience,
 } from "./AuthProvider";
 import { AccountMergeAdministration } from "./AccountMergeAdministration";
 import {
@@ -227,14 +228,298 @@ function accountActionLabel(
   return "Revoke";
 }
 
+function useRetryCountdown(retryAt: string | null): number {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!retryAt || Date.parse(retryAt) <= Date.now()) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [retryAt]);
+
+  if (!retryAt) return 0;
+  const parsed = Date.parse(retryAt);
+  return Number.isFinite(parsed)
+    ? Math.max(0, Math.ceil((parsed - now) / 1_000))
+    : 0;
+}
+
+function AccountExpectationLinks() {
+  return (
+    <p className="account-policy-note">
+      Review{" "}
+      <Link href="/learner-data">
+        learner data, consent, retention, and recovery
+      </Link>{" "}
+      and the{" "}
+      <a href="https://project-42.dev/legal-transparency">
+        Legal &amp; Transparency page
+      </a>{" "}
+      before continuing. Hosted identity or record services may sometimes be
+      unavailable.
+    </p>
+  );
+}
+
+function AccountRequestCard({
+  signIn,
+}: {
+  signIn: (returnPath?: string) => Promise<void>;
+}) {
+  return (
+    <section
+      className="profile-card account-card registration-card"
+      aria-labelledby="request-access-title"
+    >
+      <p className="eyebrow">Project 42 access</p>
+      <h2 id="request-access-title">Request a Project 42 account</h2>
+      <p>
+        Continue to the identity provider configured by this deployment. It
+        verifies who you are; Project 42 Learn never receives your password,
+        provider token, or private status receipt.
+      </p>
+      <ul className="registration-expectations">
+        <li>
+          A new request starts as pending and does not create an authenticated
+          learner session.
+        </li>
+        <li>
+          Browser-local learning remains available while an owner reviews the
+          request.
+        </li>
+        <li>
+          Hosted progress, scores, transcripts, and badges become available only
+          after approval and a new secure sign-in.
+        </li>
+        <li>
+          A reviewed exact-domain rule may approve a verified address
+          automatically; otherwise an owner decides the request.
+        </li>
+      </ul>
+      <AccountExpectationLinks />
+      <div className="button-row">
+        <button
+          className="button button-primary"
+          onClick={() => void signIn("/account")}
+          type="button"
+        >
+          Continue to sign in or request access
+        </button>
+        <Link className="button button-secondary" href="/learn/ai-foundations">
+          Keep learning in this browser
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function RegistrationStatusCard({
+  registration,
+  refreshRegistration,
+  signIn,
+}: {
+  registration: RegistrationExperience;
+  refreshRegistration: () => Promise<void>;
+  signIn: (returnPath?: string) => Promise<void>;
+}) {
+  const { formatDateTime } = useProfilePreferences();
+  const retrySeconds = useRetryCountdown(registration.retryAt);
+  const checking = registration.phase === "checking";
+  const receipt = registration.receipt;
+
+  if (checking && !receipt) {
+    return (
+      <section
+        className="profile-card account-card registration-card"
+        aria-labelledby="registration-check-title"
+        aria-live="polite"
+      >
+        <p className="eyebrow">Private request receipt</p>
+        <h2 id="registration-check-title">Checking your access request…</h2>
+        <p>
+          Project 42 is reading only the status attached to this browser’s
+          HttpOnly receipt.
+        </p>
+      </section>
+    );
+  }
+
+  if (receipt) {
+    const pending = receipt.state === "pending";
+    const approved = receipt.state === "approved";
+    const title = pending
+      ? "Your access request is waiting for review"
+      : approved
+        ? "Your access is ready"
+        : "Your access request was not approved";
+    return (
+      <section
+        className="profile-card account-card registration-card"
+        aria-labelledby="registration-status-title"
+      >
+        <p className="eyebrow">Private request receipt</p>
+        <div className="account-heading">
+          <div>
+            <h2 id="registration-status-title">{title}</h2>
+            <p>
+              This page intentionally shows no name, email address, identity
+              provider, subject identifier, or learner record.
+            </p>
+          </div>
+          <span className={`account-state account-state-${receipt.state}`}>
+            {receipt.state}
+          </span>
+        </div>
+        <dl className="registration-status-grid">
+          <div>
+            <dt>Requested</dt>
+            <dd>
+              <time dateTime={receipt.requestedAt}>
+                {formatDateTime(receipt.requestedAt)}
+              </time>
+            </dd>
+          </div>
+          <div>
+            <dt>Last status change</dt>
+            <dd>
+              <time dateTime={receipt.updatedAt}>
+                {formatDateTime(receipt.updatedAt)}
+              </time>
+            </dd>
+          </div>
+        </dl>
+        {pending ? (
+          <p className="registration-notice" role="status">
+            No hosted learner session exists yet. You can keep learning in this
+            browser while the owner reviews the request. Project 42 does not poll
+            automatically.
+          </p>
+        ) : null}
+        {receipt.state === "rejected" ? (
+          <p className="registration-notice" role="status">
+            This receipt does not expose a private review reason. Use the
+            deployment’s published support path if you believe the decision
+            should be reconsidered.
+          </p>
+        ) : null}
+        {approved ? (
+          <p className="registration-notice" role="status">
+            Start a new sign-in to create the approved secure learner session.
+            The private request receipt cannot authorize learner data.
+          </p>
+        ) : null}
+        <AccountExpectationLinks />
+        <div className="button-row">
+          {approved ? (
+            <button
+              className="button button-primary"
+              onClick={() => void signIn("/account")}
+              type="button"
+            >
+              Sign in to continue
+            </button>
+          ) : (
+            <button
+              className="button button-primary"
+              disabled={checking || retrySeconds > 0}
+              onClick={() => void refreshRegistration()}
+              type="button"
+            >
+              {checking
+                ? "Checking request status…"
+                : retrySeconds > 0
+                  ? `Check again in ${retrySeconds} seconds`
+                  : "Check request status"}
+            </button>
+          )}
+          <Link className="button button-secondary" href="/learn/ai-foundations">
+            Keep learning in this browser
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  let content: { title: string; detail: string; action: string };
+  switch (registration.phase) {
+    case "expired":
+      content = {
+        title: "This private request receipt is no longer valid",
+        detail:
+          "It may have expired, been replaced, or been invalidated after an owner decision. That does not reveal whether access was approved.",
+        action: "Sign in to check access",
+      };
+      break;
+    case "provider-error":
+      content = {
+        title: "The identity provider did not complete the request",
+        detail:
+          "No learner session was created. Start again when you are ready; browser-local progress is unchanged.",
+        action: "Try the identity provider again",
+      };
+      break;
+    case "account-unavailable":
+      content = {
+        title: "Hosted account access is unavailable",
+        detail:
+          "Project 42 cannot issue a learner session or private status receipt for this account. Use the deployment’s published support path before trying again.",
+        action: "Try sign-in again",
+      };
+      break;
+    case "temporarily-unavailable":
+      content = {
+        title: "Request status is temporarily unavailable",
+        detail:
+          "The service did not disclose account details. Wait for the retry window, then check the private receipt again.",
+        action: "Check request status",
+      };
+      break;
+    default:
+      return null;
+  }
+  const retrying = registration.phase === "temporarily-unavailable";
+  return (
+    <section
+      className="profile-card account-card registration-card"
+      aria-labelledby="registration-recovery-title"
+    >
+      <p className="eyebrow">Account request</p>
+      <h2 id="registration-recovery-title">{content.title}</h2>
+      <p className="registration-notice" role="alert">
+        {content.detail}
+      </p>
+      <AccountExpectationLinks />
+      <div className="button-row">
+        <button
+          className="button button-primary"
+          disabled={retrying && retrySeconds > 0}
+          onClick={() =>
+            void (retrying ? refreshRegistration() : signIn("/account"))
+          }
+          type="button"
+        >
+          {retrying && retrySeconds > 0
+            ? `Try again in ${retrySeconds} seconds`
+            : content.action}
+        </button>
+        <Link className="button button-secondary" href="/learn/ai-foundations">
+          Keep learning in this browser
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export function AccountDashboard() {
   const {
     configured,
     status,
     account,
+    registration,
     error,
     signIn,
     signOut,
+    refreshRegistration,
     refreshAccount,
   } = useAuth();
 
@@ -264,33 +549,27 @@ export function AccountDashboard() {
   }
 
   if (status === "loading" || status === "signing-in") {
-    return <div className="profile-loading">Loading your Project 42 account…</div>;
+    return (
+      <div className="profile-loading" role="status" aria-live="polite">
+        {status === "signing-in"
+          ? "Opening the configured identity provider…"
+          : "Loading your Project 42 account…"}
+      </div>
+    );
   }
 
   if (status === "signed-out") {
     return (
       <div className="account-dashboard">
-        <section className="profile-card account-card">
-          <p className="eyebrow">Project 42 account</p>
-          <h2>Keep your progress across devices</h2>
-          <p>
-            Sign in through the configured identity provider. New accounts remain
-            pending until an owner approves them or a verified email matches an exact
-            approved-domain rule.
-          </p>
-          <p>
-            Before requesting access, review{" "}
-            <Link href="/learner-data">learner data, consent, retention, and recovery</Link>
-            {" "}and the{" "}
-            <a href="https://project-42.dev/legal-transparency">
-              Legal &amp; Transparency page
-            </a>
-            . Hosted sign-in and records may be temporarily unavailable.
-          </p>
-          <button className="button button-primary" onClick={() => void signIn()} type="button">
-            Sign in or request access
-          </button>
-        </section>
+        {registration.phase === "none" ? (
+          <AccountRequestCard signIn={signIn} />
+        ) : (
+          <RegistrationStatusCard
+            refreshRegistration={refreshRegistration}
+            registration={registration}
+            signIn={signIn}
+          />
+        )}
         <ProfilePreferencesEditor hosted={false} />
       </div>
     );
@@ -1093,7 +1372,7 @@ function ProfilePreferencesEditor({ hosted }: { hosted: boolean }) {
       : hostedState === "ready"
         ? "These preferences are synchronized with your approved account. A browser copy remains available if the account service is temporarily offline."
         : hostedState === "legacy"
-          ? "The hosted account API does not yet expose preference fields. Changes use the browser-local fallback until the v0.63.0 contract is deployed."
+          ? "The hosted account API does not yet expose preference fields. Changes use the browser-local fallback until a compatible preference contract is deployed."
           : hostedState === "offline"
             ? "Hosted preferences could not be reached. Browser-local fallback remains available and no account preference was changed."
             : "These preferences are stored in this browser until you sign in with an approved account.");

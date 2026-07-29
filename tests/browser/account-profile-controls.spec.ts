@@ -676,6 +676,14 @@ test.describe("hosted profile and learner-data controls", () => {
         await fulfillJson(route, { error: { code: "unauthorized" } }, 401);
         return;
       }
+      if (pathname === "/v1/registration/status") {
+        await fulfillJson(
+          route,
+          { error: { code: "registration_receipt_invalid" } },
+          401,
+        );
+        return;
+      }
       if (pathname === "/v1/deletion-status" && request.method() === "POST") {
         const body = request.postDataJSON() as Record<string, unknown>;
         if (
@@ -710,7 +718,7 @@ test.describe("hosted profile and learner-data controls", () => {
 
     await page.goto("/account");
     await expect(
-      page.getByRole("heading", { name: "Keep your progress across devices" }),
+      page.getByRole("heading", { name: "Request a Project 42 account" }),
     ).toBeVisible();
     await page.getByLabel("Request ID").fill("deletion-after-account");
     await page.getByLabel("Private status token").fill(privateToken);

@@ -47,7 +47,7 @@ accessibility, and security contract.
 ## Current release facts
 
 - Site release `0.9.0`
-- Platform package `0.63.0`
+- Platform package `0.65.0`
 - Content release `0.42.0`
 - 8 learning paths, 72 assessed modules, 69 evidence activities, and 363 reviewed questions
 - 8 dedicated learning paths and 4 provider scopes
@@ -91,8 +91,11 @@ The protected owner workflow, account-state safeguards, trusted-domain launch
 lock, and evidence boundary are documented in
 [`docs/owner-administration.md`](docs/owner-administration.md).
 The [secure browser-session contract](docs/secure-browser-sessions.md) documents
-the API-owned OIDC flow, HttpOnly cookie boundary, renewal, sign-out, and failure
-recovery.
+the API-owned OIDC flow, HttpOnly session and registration-receipt boundaries,
+PII-free pending and rejected status, bounded retry, renewal, sign-out, and
+failure recovery. A new identity request never creates a learner session:
+approved users must complete a new secure sign-in before hosted learner records
+become available.
 The [browser-to-account migration contract](docs/progress-migration.md) documents
 preview, deterministic merge, immutable-evidence conflicts, retry, and recovery.
 
