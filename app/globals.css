@@ -3697,6 +3697,28 @@ a {
   padding-top: 0.85rem;
 }
 
+.admin-pagination {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.admin-pagination .button-row {
+  margin-top: 0;
+}
+
+.admin-pagination-status {
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.admin-pagination-status:focus {
+  outline: 3px solid var(--violet);
+  outline-offset: 4px;
+}
+
 .admin-account-list small,
 .domain-list small,
 .audit-event-list small {

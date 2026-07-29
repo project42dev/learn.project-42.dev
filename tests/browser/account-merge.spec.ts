@@ -262,6 +262,11 @@ test("owner reviews, confirms, and recovers a duplicate-account merge", async ({
   );
   const api = await installOwnerApi(page);
   await page.goto("/admin");
+  await expect(
+    page.getByText(
+      "The current account service returned all matching accounts without continuation metadata.",
+    ),
+  ).toBeVisible();
 
   const sourceGroup = page.getByRole("group", {
     name: "Duplicate account to retire",
