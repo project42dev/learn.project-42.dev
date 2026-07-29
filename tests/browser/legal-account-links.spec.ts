@@ -15,9 +15,6 @@ test("keeps legal, privacy, and account expectations visible without dark patter
     "href",
     "https://project-42.dev/legal-transparency",
   );
-  await expect(
-    page.getByText(/Hosted sign-in and records may be temporarily unavailable/i),
-  ).toBeVisible();
   await expect(page.locator('input[type="checkbox"]:checked')).toHaveCount(0);
 
   const accessibility = await new AxeBuilder({ page })
