@@ -3739,7 +3739,8 @@ a {
 }
 
 .account-profile-form input,
-.account-profile-form textarea {
+.account-profile-form textarea,
+.account-profile-form select {
   border: 1px solid var(--line);
   border-radius: 0.75rem;
   color: var(--ink);
@@ -3753,9 +3754,129 @@ a {
   resize: vertical;
 }
 
+.account-profile-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.4rem 0 0;
+  padding: 1rem;
+}
+
+.account-profile-form legend {
+  font-weight: 750;
+  padding-inline: 0.35rem;
+}
+
+.account-profile-form > small,
+.account-checkbox small {
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.account-checkbox {
+  align-items: start;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 44px;
+  padding: 0.5rem;
+}
+
+.account-checkbox:hover {
+  border-color: var(--line);
+}
+
+.account-checkbox input {
+  height: 1.25rem;
+  margin: 0.15rem 0 0;
+  width: 1.25rem;
+}
+
+.account-checkbox span {
+  display: grid;
+  gap: 0.2rem;
+}
+
 .account-profile-form .button {
   justify-self: start;
   margin-top: 0.35rem;
+}
+
+.account-preferences-form .button-row {
+  margin-top: 0.5rem;
+}
+
+.account-history {
+  border-top: 1px solid var(--line);
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+}
+
+.account-history h4 {
+  margin: 0 0 0.8rem;
+}
+
+.account-history-table-wrap {
+  overflow-x: auto;
+}
+
+.account-history table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  min-width: 38rem;
+  width: 100%;
+}
+
+.account-history caption {
+  color: var(--ink-soft);
+  margin-bottom: 0.6rem;
+  text-align: left;
+}
+
+.account-history th,
+.account-history td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.65rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.account-history th {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.deletion-history {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.deletion-history li {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem;
+}
+
+.deletion-history li > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.deletion-history span,
+.deletion-history code {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
 }
 
 .account-photo-editor {
@@ -4021,6 +4142,62 @@ a {
   }
 }
 
+html[data-project42-reduced-motion="true"] {
+  scroll-behavior: auto;
+}
+
+html[data-project42-reduced-motion="true"] *,
+html[data-project42-reduced-motion="true"] *::before,
+html[data-project42-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+@media (forced-colors: none) {
+  html[data-project42-high-contrast="true"] {
+    --ink: #000;
+    --ink-soft: #202020;
+    --navy: #000;
+    --navy-2: #111;
+    --paper: #fff;
+    --paper-strong: #fff;
+    --line: #000;
+    --danger: #8b0000;
+  }
+
+  html[data-project42-high-contrast="true"] body {
+    background: var(--paper);
+  }
+
+  html[data-project42-high-contrast="true"] .profile-card,
+  html[data-project42-high-contrast="true"] input,
+  html[data-project42-high-contrast="true"] textarea,
+  html[data-project42-high-contrast="true"] select,
+  html[data-project42-high-contrast="true"] button {
+    border-color: var(--ink);
+    box-shadow: none;
+  }
+}
+
+@media (prefers-contrast: more) and (forced-colors: none) {
+  :root {
+    --ink: #000;
+    --ink-soft: #202020;
+    --navy: #000;
+    --navy-2: #111;
+    --paper: #fff;
+    --paper-strong: #fff;
+    --line: #000;
+    --danger: #8b0000;
+  }
+
+  body {
+    background: var(--paper);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -4029,6 +4206,8 @@ a {
   *,
   *::before,
   *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }

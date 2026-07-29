@@ -4,6 +4,7 @@ import { SiteFooter } from "./components/SiteFooter";
 import { SiteHeader } from "./components/SiteHeader";
 import { ProgressProvider } from "./components/ProgressProvider";
 import { AuthProvider } from "./components/AuthProvider";
+import { ProfilePreferencesProvider } from "./components/ProfilePreferencesProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://learn.project-42.dev"),
@@ -94,13 +95,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Skip to content
         </a>
         <AuthProvider>
-          <ProgressProvider>
-            <SiteHeader />
-            <div id="main-content" tabIndex={-1}>
-              {children}
-            </div>
-            <SiteFooter />
-          </ProgressProvider>
+          <ProfilePreferencesProvider>
+            <ProgressProvider>
+              <SiteHeader />
+              <div id="main-content" tabIndex={-1}>
+                {children}
+              </div>
+              <SiteFooter />
+            </ProgressProvider>
+          </ProfilePreferencesProvider>
         </AuthProvider>
       </body>
     </html>
