@@ -30,7 +30,7 @@ export type DeviceLocalProgressReadResult =
       quarantineStored: boolean;
     };
 
-function validateProgress(
+export function validateDeviceLocalProgressValue(
   value: unknown,
   catalog: Catalog,
 ): { valid: true; progress: LearnerProgress } | { valid: false; errors: string[] } {
@@ -139,7 +139,7 @@ export function readDeviceLocalProgress(
     );
   }
 
-  const validation = validateProgress(parsed, catalog);
+  const validation = validateDeviceLocalProgressValue(parsed, catalog);
   if (!validation.valid) {
     return quarantine(
       storage,

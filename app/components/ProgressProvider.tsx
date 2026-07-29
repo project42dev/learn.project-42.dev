@@ -21,11 +21,14 @@ import {
   type ReactNode,
 } from "react";
 import {
+  canonicalProgressValue,
   createProgressImportId,
   createProgressMigrationPreview,
   hasLearningEvidence,
   needsProgressMigration,
+  parseProgressMigrationRecovery,
   type ProgressMigrationPreview,
+  type ProgressMigrationRecoveryEnvelope,
 } from "../lib/progressMigration";
 import {
   deviceLocalProgressKey,
@@ -50,10 +53,13 @@ interface ProgressContextValue {
   progress: LearnerProgress;
   migrationPreview: ProgressMigrationPreview | null;
   localRecordRecovery: DeviceLocalProgressRecovery | null;
+  migrationRecovery: ProgressMigrationRecoveryEnvelope | null;
   hydrated: boolean;
   storageStatus: StorageStatus;
   syncStatus: SyncStatus;
   migrateLocalToAccount: () => Promise<void>;
+  verifyMigrationExport: () => Promise<unknown>;
+  removeMigrationRecovery: () => void;
   recordResult: (pathId: string, moduleId: string, result: AssessmentResult) => void;
   recordCapstone: (
     pathId: string,
@@ -69,6 +75,23 @@ interface ProgressContextValue {
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
+
+async function safeReadMigrationRecovery(): Promise<ProgressMigrationRecoveryEnvelope | null> {
+  try {
+    const raw = window.localStorage.getItem(migrationRecoveryKey);
+    if (!raw) return null;
+    return await parseProgressMigrationRecovery(
+      JSON.parse(raw),
+      starterCatalog,
+    );
+  } catch {
+    return null;
+  }
+}
+
+function timestampNotBefore(earliest: string): string {
+  return new Date(Math.max(Date.now(), Date.parse(earliest))).toISOString();
+}
 
 function safeReadProgress(): {
   progress: LearnerProgress;
@@ -115,6 +138,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     useState<ProgressMigrationPreview | null>(null);
   const [localRecordRecovery, setLocalRecordRecovery] =
     useState<DeviceLocalProgressRecovery | null>(null);
+  const [migrationRecovery, setMigrationRecovery] =
+    useState<ProgressMigrationRecoveryEnvelope | null>(null);
   const localPersistenceBlocked = useRef(false);
   const synchronizationEnabled = useRef(false);
   const lastSynchronized = useRef("");
@@ -126,15 +151,23 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }, [progress]);
 
   useEffect(() => {
+    let cancelled = false;
     const hydrationTimer = window.setTimeout(() => {
       const stored = safeReadProgress();
-      localPersistenceBlocked.current = Boolean(stored.localRecordRecovery);
-      setProgress(stored.progress);
-      setStorageStatus(stored.storageStatus);
-      setLocalRecordRecovery(stored.localRecordRecovery);
-      setHydrated(true);
+      void safeReadMigrationRecovery().then((storedMigrationRecovery) => {
+        if (cancelled) return;
+        localPersistenceBlocked.current = Boolean(stored.localRecordRecovery);
+        setProgress(stored.progress);
+        setStorageStatus(stored.storageStatus);
+        setLocalRecordRecovery(stored.localRecordRecovery);
+        setMigrationRecovery(storedMigrationRecovery);
+        setHydrated(true);
+      });
     }, 0);
-    return () => window.clearTimeout(hydrationTimer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(hydrationTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -377,21 +410,32 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         "Resolve the conflicting assessment or capstone evidence before importing.",
       );
     }
+    const accountProgress = remoteProgress.current;
+    if (!accountProgress) {
+      throw new Error("The account progress record is not available.");
+    }
     setSyncStatus("syncing");
     const importId = await createProgressImportId(progress);
     try {
+      const createdAt =
+        migrationRecovery?.state === "pending" &&
+        migrationRecovery.importId === importId
+          ? migrationRecovery.createdAt
+          : new Date().toISOString();
+      const pendingRecovery: ProgressMigrationRecoveryEnvelope = {
+        schemaVersion: 1,
+        importId,
+        localProgress: progress,
+        remoteProgress: accountProgress,
+        mergedProgress: migrationPreview.mergedProgress,
+        createdAt,
+        state: "pending",
+      };
       window.localStorage.setItem(
         migrationRecoveryKey,
-        JSON.stringify({
-          schemaVersion: 1,
-          importId,
-          localProgress: progress,
-          remoteProgress: remoteProgress.current,
-          mergedProgress: migrationPreview.mergedProgress,
-          createdAt: new Date().toISOString(),
-          state: "pending",
-        }),
+        JSON.stringify(pendingRecovery),
       );
+      setMigrationRecovery(pendingRecovery);
       const response = await apiFetch("/v1/me/progress", {
         method: "POST",
         body: JSON.stringify({
@@ -414,18 +458,21 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         ...body.progress.progress,
         capstoneSubmissions: body.progress.progress.capstoneSubmissions ?? [],
       };
+      const completedRecovery: ProgressMigrationRecoveryEnvelope = {
+        schemaVersion: 1,
+        importId,
+        localProgress: progress,
+        remoteProgress: accountProgress,
+        mergedProgress: synchronized,
+        createdAt: pendingRecovery.createdAt,
+        completedAt: timestampNotBefore(pendingRecovery.createdAt),
+        state: "completed",
+      };
       window.localStorage.setItem(
         migrationRecoveryKey,
-        JSON.stringify({
-          schemaVersion: 1,
-          importId,
-          localProgress: progress,
-          remoteProgress: remoteProgress.current,
-          mergedProgress: synchronized,
-          completedAt: new Date().toISOString(),
-          state: "completed",
-        }),
+        JSON.stringify(completedRecovery),
       );
+      setMigrationRecovery(completedRecovery);
       remoteProgress.current = synchronized;
       lastSynchronized.current = JSON.stringify(synchronized);
       currentProgress.current = synchronized;
@@ -437,17 +484,79 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setSyncStatus("migration-available");
       throw caught;
     }
-  }, [account, apiFetch, migrationPreview, progress]);
+  }, [account, apiFetch, migrationPreview, migrationRecovery, progress]);
+
+  const verifyMigrationExport = useCallback(async (): Promise<unknown> => {
+    if (!account || account.state !== "approved") {
+      throw new Error("An approved account is required.");
+    }
+    if (!migrationRecovery || migrationRecovery.state !== "completed") {
+      throw new Error("A completed browser migration backup is required.");
+    }
+    const response = await apiFetch("/v1/me/export");
+    const body = (await response.json()) as {
+      export?: unknown;
+      error?: { code?: string; message?: string };
+    };
+    if (!response.ok || !body.export) {
+      if (body.error?.code === "recent_authentication_required") {
+        throw new Error(
+          "Sign out and sign in again before verifying this sensitive export.",
+        );
+      }
+      throw new Error(
+        body.error?.message ?? "The account export could not be verified.",
+      );
+    }
+    const exported = body.export;
+    if (
+      !exported ||
+      typeof exported !== "object" ||
+      !("progress" in exported) ||
+      !exported.progress ||
+      typeof exported.progress !== "object" ||
+      !("revision" in exported.progress) ||
+      typeof exported.progress.revision !== "number" ||
+      !Number.isInteger(exported.progress.revision) ||
+      exported.progress.revision < 1 ||
+      !("progress" in exported.progress) ||
+      canonicalProgressValue(exported.progress.progress) !==
+        canonicalProgressValue(migrationRecovery.mergedProgress)
+    ) {
+      throw new Error(
+        "The account export does not match the retained browser migration record.",
+      );
+    }
+    const verified: ProgressMigrationRecoveryEnvelope = {
+      ...migrationRecovery,
+      verifiedExportAt: timestampNotBefore(migrationRecovery.completedAt),
+      verifiedRevision: exported.progress.revision,
+    };
+    window.localStorage.setItem(
+      migrationRecoveryKey,
+      JSON.stringify(verified),
+    );
+    setMigrationRecovery(verified);
+    return exported;
+  }, [account, apiFetch, migrationRecovery]);
+
+  const removeMigrationRecovery = useCallback(() => {
+    window.localStorage.removeItem(migrationRecoveryKey);
+    setMigrationRecovery(null);
+  }, []);
 
   const value = useMemo(
     () => ({
       progress,
       migrationPreview,
       localRecordRecovery,
+      migrationRecovery,
       hydrated,
       storageStatus,
       syncStatus,
       migrateLocalToAccount,
+      verifyMigrationExport,
+      removeMigrationRecovery,
       recordResult,
       recordCapstone,
       recordVisit,
@@ -459,10 +568,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       progress,
       migrationPreview,
       localRecordRecovery,
+      migrationRecovery,
       hydrated,
       storageStatus,
       syncStatus,
       migrateLocalToAccount,
+      verifyMigrationExport,
+      removeMigrationRecovery,
       recordResult,
       recordCapstone,
       recordVisit,

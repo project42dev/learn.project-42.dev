@@ -696,6 +696,24 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
         });
         return;
       }
+      if (pathname === "/v1/me/export" && request.method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            export: {
+              schemaVersion: 1,
+              exportedAt: "2026-07-28T01:02:00.000Z",
+              progress: {
+                revision: 3,
+                progress: remoteProgress,
+                synchronizedAt: "2026-07-28T01:01:00.000Z",
+              },
+            },
+          }),
+        });
+        return;
+      }
       await route.fulfill({
         status: 404,
         headers,
@@ -711,6 +729,39 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
   await expect(
     page.getByRole("group", { name: "Progress migration preview" }),
   ).toContainText("1 / 1 / 2");
+  await expect(page.getByText("Exact browser evidence review")).toBeVisible();
+  await expect(page.getByText("local-attempt")).toBeVisible();
+  await expect(
+    page.getByText("Replacing the account is unavailable"),
+  ).toContainText("1 completion");
+
+  const previewDownloadPromise = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Download reconciliation package" })
+    .click();
+  const previewDownload = await previewDownloadPromise;
+  const previewPath = await previewDownload.path();
+  if (!previewPath) throw new Error("Reconciliation download path is unavailable");
+  const previewPackage = JSON.parse(await readFile(previewPath, "utf8"));
+  expect(previewPackage).toMatchObject({
+    format: "project42/progress-reconciliation",
+    formatVersion: "1.0",
+    state: "preview",
+    mergeBehavior: {
+      accountOnlyEvidenceRetained: true,
+      replaceAvailable: false,
+    },
+  });
+  expect(
+    previewPackage.items.find(
+      (item: { id: string }) => item.id === "local-attempt",
+    ),
+  ).toMatchObject({ disposition: "will-add" });
+  expect(previewPackage.records.browser.learner.attempts).toHaveLength(1);
+  expect(previewPackage.records.account.learner.attempts).toHaveLength(1);
+  expect(JSON.stringify(previewPackage)).not.toContain("migration-subject");
+  expect(JSON.stringify(previewPackage)).not.toContain("learner@example.test");
+
   const confirm = page.getByRole("button", {
     name: "Confirm and merge into my account",
   });
@@ -719,6 +770,24 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
   await confirm.click();
   await expect(page.getByRole("alert")).toContainText(
     "Temporary migration failure.",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Retained migration evidence" }),
+  ).toBeVisible();
+  await expect(page.getByText("pending", { exact: true })).toBeVisible();
+  const pendingRecovery = await page.evaluate(() =>
+    JSON.parse(
+      window.localStorage.getItem(
+        "project42.progress.migration.recovery.v1",
+      ) ?? "null",
+    ),
+  );
+  expect(pendingRecovery).toMatchObject({
+    schemaVersion: 1,
+    state: "pending",
+  });
+  expect(pendingRecovery.createdAt).toMatch(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
   );
   await expect(confirm).toBeEnabled();
   await confirm.click();
@@ -748,18 +817,109 @@ test("previews, safely retries, and deduplicates a browser-to-account merge", as
     importId: imports[0].importId,
     schemaVersion: 1,
     state: "completed",
+    createdAt: pendingRecovery.createdAt,
   });
+  await expect(
+    page.getByRole("heading", { name: "Retained migration evidence" }),
+  ).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Retained migration evidence" }),
+  ).toBeVisible();
+  expect(imports).toHaveLength(2);
+
+  const exportDownloadPromise = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Verify and download account export" })
+    .click();
+  const exportDownload = await exportDownloadPromise;
+  const exportPath = await exportDownload.path();
+  if (!exportPath) throw new Error("Verified export path is unavailable");
+  const verifiedExport = JSON.parse(await readFile(exportPath, "utf8"));
+  expect(verifiedExport.progress.revision).toBe(3);
+  await expect(page.getByText(/server export matches/i)).toBeVisible();
+  await expect(page.getByText(/Revision 3 verified/)).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+
+  const verifiedRecovery = await page.evaluate(() =>
+    JSON.parse(
+      window.localStorage.getItem(
+        "project42.progress.migration.recovery.v1",
+      ) ?? "null",
+    ),
+  );
+  const invalidRecoveries = [
+    {
+      ...verifiedRecovery,
+      importId: verifiedRecovery.importId.endsWith("0")
+        ? `${verifiedRecovery.importId.slice(0, -1)}1`
+        : `${verifiedRecovery.importId.slice(0, -1)}0`,
+    },
+    {
+      ...verifiedRecovery,
+      completedAt: new Date(
+        Date.parse(verifiedRecovery.createdAt) - 1_000,
+      ).toISOString(),
+    },
+    {
+      ...verifiedRecovery,
+      unsupportedTenantHint: "must-not-load",
+    },
+  ];
+  for (const invalidRecovery of invalidRecoveries) {
+    await page.evaluate((storedRecovery) => {
+      window.localStorage.setItem(
+        "project42.progress.migration.recovery.v1",
+        JSON.stringify(storedRecovery),
+      );
+    }, invalidRecovery);
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Progress is synchronized" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Retained migration evidence" }),
+    ).toHaveCount(0);
+  }
+
+  await page.evaluate((storedRecovery) => {
+    window.localStorage.setItem(
+      "project42.progress.migration.recovery.v1",
+      JSON.stringify(storedRecovery),
+    );
+  }, verifiedRecovery);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Retained migration evidence" }),
+  ).toBeVisible();
+
+  await page
+    .getByLabel(/I understand that removing this retained backup/i)
+    .check();
+  await page
+    .getByRole("button", { name: "Remove retained browser backup" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Retained migration evidence" }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(() =>
+      window.localStorage.getItem(
+        "project42.progress.migration.recovery.v1",
+      ),
+    ),
+  ).toBeNull();
 
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Progress is synchronized" }),
   ).toBeVisible();
   expect(imports).toHaveLength(2);
-
-  const accessibility = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(accessibility.violations).toEqual([]);
 });
 
 test("blocks migration when an immutable attempt ID contains different evidence", async ({
@@ -879,8 +1039,28 @@ test("blocks migration when an immutable attempt ID contains different evidence"
     page.getByText(/Assessment attempt conflicting-attempt has different evidence/),
   ).toBeVisible();
   await expect(
+    page.getByText(/The account transcript remains unchanged/),
+  ).toBeVisible();
+  await expect(
     page.getByRole("button", { name: "Confirm and merge into my account" }),
   ).toBeDisabled();
+
+  const conflictDownloadPromise = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Download reconciliation package" })
+    .click();
+  const conflictDownload = await conflictDownloadPromise;
+  const conflictPath = await conflictDownload.path();
+  if (!conflictPath) throw new Error("Conflict package path is unavailable");
+  const conflictPackage = JSON.parse(await readFile(conflictPath, "utf8"));
+  expect(conflictPackage.conflicts).toHaveLength(1);
+  expect(
+    conflictPackage.items.find(
+      (item: { id: string }) => item.id === "conflicting-attempt",
+    ),
+  ).toMatchObject({ disposition: "conflict" });
+  expect(conflictPackage.records.browser.learner.attempts).toHaveLength(1);
+  expect(conflictPackage.records.account.learner.attempts).toHaveLength(1);
   expect(importRequests).toBe(0);
 });
 

@@ -12,6 +12,15 @@ import {
 } from "@project42/platform";
 import Link from "next/link";
 import { useMemo, useState, type ChangeEvent } from "react";
+import {
+  buildProgressMigrationItems,
+  buildProgressReconciliationPackage,
+  createProgressImportId,
+  createProgressMigrationPreview,
+  type ProgressMigrationDisposition,
+  type ProgressMigrationPreview,
+  type ProgressReconciliationPackage,
+} from "../lib/progressMigration";
 import { useAuth } from "./AuthProvider";
 import { useProgress } from "./ProgressProvider";
 
@@ -21,10 +30,13 @@ export function ProfileDashboard() {
     progress,
     migrationPreview,
     localRecordRecovery,
+    migrationRecovery,
     hydrated,
     storageStatus,
     syncStatus,
     migrateLocalToAccount,
+    verifyMigrationExport,
+    removeMigrationRecovery,
     replaceProgress,
     rename,
     reset,
@@ -34,6 +46,11 @@ export function ProfileDashboard() {
     message: string;
   } | null>(null);
   const [migrationError, setMigrationError] = useState<string | null>(null);
+  const [reconciliationStatus, setReconciliationStatus] = useState<{
+    kind: "error" | "success";
+    message: string;
+  } | null>(null);
+  const [backupRemovalConfirmed, setBackupRemovalConfirmed] = useState(false);
   const transcript = useMemo(
     () => buildTranscript(starterCatalog, progress),
     [progress],
@@ -47,6 +64,23 @@ export function ProfileDashboard() {
     [progress],
   );
   const exportDate = new Date().toISOString().slice(0, 10);
+  const migrationItems = useMemo(
+    () =>
+      migrationPreview
+        ? buildProgressMigrationItems(migrationPreview, starterCatalog)
+        : [],
+    [migrationPreview],
+  );
+  const retainedPreview = useMemo(
+    () =>
+      migrationRecovery
+        ? createProgressMigrationPreview(
+            migrationRecovery.localProgress,
+            migrationRecovery.remoteProgress,
+          )
+        : null,
+    [migrationRecovery],
+  );
 
   const downloadRecord = () => {
     const record = buildPortableLearnerRecord(starterCatalog, progress);
@@ -72,6 +106,56 @@ export function ProfileDashboard() {
       localRecordRecovery.rawRecord,
       "application/json",
     );
+  };
+
+  const downloadReconciliationPackage = async (
+    preview: ProgressMigrationPreview,
+    state: ProgressReconciliationPackage["state"],
+    importId?: string,
+  ) => {
+    const generatedAt = new Date().toISOString();
+    const resolvedImportId =
+      importId ?? (await createProgressImportId(preview.localProgress));
+    const reconciliation = buildProgressReconciliationPackage(
+      preview,
+      starterCatalog,
+      { generatedAt, importId: resolvedImportId, state },
+    );
+    downloadTextFile(
+      `project-42-progress-reconciliation-${exportDate}.json`,
+      `${JSON.stringify(reconciliation, null, 2)}\n`,
+      "application/json",
+    );
+    setReconciliationStatus({
+      kind: "success",
+      message:
+        "Portable browser, account, proposed-merge, and transcript evidence downloaded.",
+    });
+  };
+
+  const verifyAndDownloadAccountExport = async () => {
+    setReconciliationStatus(null);
+    try {
+      const exported = await verifyMigrationExport();
+      downloadTextFile(
+        `project42-verified-account-export-${exportDate}.json`,
+        `${JSON.stringify(exported, null, 2)}\n`,
+        "application/json",
+      );
+      setReconciliationStatus({
+        kind: "success",
+        message:
+          "The server export matches the retained migration record and was downloaded.",
+      });
+    } catch (caught) {
+      setReconciliationStatus({
+        kind: "error",
+        message:
+          caught instanceof Error
+            ? caught.message
+            : "The account export could not be verified.",
+      });
+    }
   };
 
   const importRecord = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -209,6 +293,14 @@ export function ProfileDashboard() {
                       <dd>Browser / account / after import</dd>
                     </div>
                     <div>
+                      <dt>Started paths</dt>
+                      <dd>
+                        {migrationPreview.local.startedPaths} /{" "}
+                        {migrationPreview.remote.startedPaths} /{" "}
+                        {migrationPreview.merged.startedPaths}
+                      </dd>
+                    </div>
+                    <div>
                       <dt>Completed modules</dt>
                       <dd>
                         {migrationPreview.local.completedModules} /{" "}
@@ -254,6 +346,53 @@ export function ProfileDashboard() {
                     : "modules"}
                   . Existing account attempts keep their original IDs and timestamps.
                 </p>
+                <div
+                  aria-labelledby="migration-item-heading"
+                  className="migration-item-review"
+                >
+                  <h3 id="migration-item-heading">
+                    Exact browser evidence review
+                  </h3>
+                  <p>
+                    Every browser enrollment, completion, attempt, capstone, and
+                    badge is listed with the action this merge will take.
+                  </p>
+                  <ul>
+                    {migrationItems.map((item) => (
+                      <li key={`${item.kind}-${item.id}`}>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <span>{item.detail}</span>
+                          <code>{item.id}</code>
+                        </div>
+                        <span className={`migration-disposition ${item.disposition}`}>
+                          {migrationDispositionLabel(item.disposition)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="migration-behavior">
+                  <h3>Merge and replace effects</h3>
+                  <p>
+                    Merge retains every account-only record, adds browser-only
+                    evidence, and keeps identical immutable evidence once.
+                  </p>
+                  <p>
+                    Replacing the account is unavailable because it would remove{" "}
+                    {migrationPreview.remoteOnly.startedPaths} path enrollment
+                    {migrationPreview.remoteOnly.startedPaths === 1 ? "" : "s"},{" "}
+                    {migrationPreview.remoteOnly.completedModules} completion
+                    {migrationPreview.remoteOnly.completedModules === 1 ? "" : "s"},{" "}
+                    {migrationPreview.remoteOnly.attempts} attempt
+                    {migrationPreview.remoteOnly.attempts === 1 ? "" : "s"},{" "}
+                    {migrationPreview.remoteOnly.capstoneSubmissions} capstone
+                    {migrationPreview.remoteOnly.capstoneSubmissions === 1 ? "" : "s"},
+                    and {migrationPreview.remoteOnly.badges} badge
+                    {migrationPreview.remoteOnly.badges === 1 ? "" : "s"} held only
+                    by the account.
+                  </p>
+                </div>
                 {migrationPreview.duplicateAttempts > 0 ||
                 migrationPreview.duplicateCapstoneSubmissions > 0 ? (
                   <p>
@@ -272,32 +411,58 @@ export function ProfileDashboard() {
                       ))}
                     </ul>
                     <p>
-                      Nothing has been changed. Download both records and contact
-                      support before continuing.
+                      Nothing has been changed. The account transcript remains
+                      unchanged, and the browser attempt remains in the retained
+                      local record. Download the reconciliation package containing
+                      both immutable records and the proposed transcript before
+                      contacting support.
                     </p>
                   </div>
                 ) : null}
               </>
             ) : null}
-            <button
-              className="button button-primary"
-              disabled={
-                !migrationPreview || migrationPreview.conflicts.length > 0
-              }
-              onClick={() => {
-                setMigrationError(null);
-                void migrateLocalToAccount().catch((caught) => {
-                  setMigrationError(
-                    caught instanceof Error
-                      ? caught.message
-                      : "Progress could not be moved.",
-                  );
-                });
-              }}
-              type="button"
-            >
-              Confirm and merge into my account
-            </button>
+            <div className="button-row">
+              <button
+                className="button button-secondary"
+                disabled={!migrationPreview}
+                onClick={() => {
+                  if (!migrationPreview) return;
+                  setReconciliationStatus(null);
+                  void downloadReconciliationPackage(
+                    migrationPreview,
+                    "preview",
+                  ).catch(() => {
+                    setReconciliationStatus({
+                      kind: "error",
+                      message:
+                        "The reconciliation package could not be created. Nothing was uploaded.",
+                    });
+                  });
+                }}
+                type="button"
+              >
+                Download reconciliation package
+              </button>
+              <button
+                className="button button-primary"
+                disabled={
+                  !migrationPreview || migrationPreview.conflicts.length > 0
+                }
+                onClick={() => {
+                  setMigrationError(null);
+                  void migrateLocalToAccount().catch((caught) => {
+                    setMigrationError(
+                      caught instanceof Error
+                        ? caught.message
+                        : "Progress could not be moved.",
+                    );
+                  });
+                }}
+                type="button"
+              >
+                Confirm and merge into my account
+              </button>
+            </div>
           </>
         ) : (
           <p>
@@ -313,6 +478,117 @@ export function ProfileDashboard() {
         )}
         {migrationError ? <p role="alert">{migrationError}</p> : null}
       </section>
+
+      {migrationRecovery && retainedPreview ? (
+        <section
+          aria-labelledby="retained-migration-heading"
+          className="profile-card retained-migration"
+        >
+          <p className="eyebrow">Browser backup</p>
+          <h2 id="retained-migration-heading">
+            Retained migration evidence
+          </h2>
+          <p>
+            The original browser record, the account record used for comparison,
+            and the proposed merge remain in this browser until you explicitly
+            remove them.
+          </p>
+          <dl>
+            <div>
+              <dt>Import receipt</dt>
+              <dd><code>{migrationRecovery.importId}</code></dd>
+            </div>
+            <div>
+              <dt>State</dt>
+              <dd>{migrationRecovery.state}</dd>
+            </div>
+            <div>
+              <dt>Verified server export</dt>
+              <dd>
+                {migrationRecovery.verifiedExportAt
+                  ? `Revision ${migrationRecovery.verifiedRevision} verified ${migrationRecovery.verifiedExportAt}`
+                  : "Not yet verified"}
+              </dd>
+            </div>
+          </dl>
+          <div className="button-row">
+            <button
+              className="button button-secondary"
+              onClick={() => {
+                setReconciliationStatus(null);
+                void downloadReconciliationPackage(
+                  retainedPreview,
+                  migrationRecovery.state,
+                  migrationRecovery.importId,
+                ).catch(() => {
+                  setReconciliationStatus({
+                    kind: "error",
+                    message: "The retained reconciliation package could not be created.",
+                  });
+                });
+              }}
+              type="button"
+            >
+              Download retained reconciliation package
+            </button>
+            {migrationRecovery.state === "completed" ? (
+              <button
+                className="button button-secondary"
+                onClick={() => void verifyAndDownloadAccountExport()}
+                type="button"
+              >
+                Verify and download account export
+              </button>
+            ) : null}
+          </div>
+          <div className="backup-removal">
+            <label>
+              <input
+                checked={backupRemovalConfirmed}
+                onChange={(event) =>
+                  setBackupRemovalConfirmed(event.currentTarget.checked)
+                }
+                type="checkbox"
+              />
+              I understand that removing this retained backup deletes the original
+              pre-merge browser and account comparison from this device.
+            </label>
+            <button
+              className="button button-secondary"
+              disabled={!backupRemovalConfirmed}
+              onClick={() => {
+                try {
+                  removeMigrationRecovery();
+                  setBackupRemovalConfirmed(false);
+                  setReconciliationStatus({
+                    kind: "success",
+                    message:
+                      "The retained browser migration backup was removed from this device.",
+                  });
+                } catch {
+                  setReconciliationStatus({
+                    kind: "error",
+                    message:
+                      "The browser could not remove the retained migration backup.",
+                  });
+                }
+              }}
+              type="button"
+            >
+              Remove retained browser backup
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {reconciliationStatus ? (
+        <p
+          className={`import-status import-status-${reconciliationStatus.kind}`}
+          role={reconciliationStatus.kind === "error" ? "alert" : "status"}
+        >
+          {reconciliationStatus.message}
+        </p>
+      ) : null}
 
       <section className="profile-card profile-identity">
         <p className="eyebrow">Learner profile</p>
@@ -622,6 +898,21 @@ export function ProfileDashboard() {
       ) : null}
     </div>
   );
+}
+
+function migrationDispositionLabel(
+  disposition: ProgressMigrationDisposition,
+): string {
+  switch (disposition) {
+    case "will-add":
+      return "Will add";
+    case "already-in-account":
+      return "Already in account";
+    case "will-merge":
+      return "Will merge evidence";
+    case "conflict":
+      return "Conflict — import blocked";
+  }
 }
 
 function downloadTextFile(filename: string, content: string, type: string) {

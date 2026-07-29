@@ -2,7 +2,19 @@
 
 ## Active branch
 
-`fix/device-local-quarantine-ab5424`
+`feat/progress-reconciliation-ab5424`
+
+## CI repair — 2026-07-29
+
+- Protected PR verification passed the product gates and then received HTTP 429
+  from the exact vLLM documentation URL after all three bounded link-check
+  attempts.
+- `config/link-check-exceptions.json` now permits only HTTP 429 for that exact
+  URL through 2026-10-31. Successful responses still pass normally; all other
+  statuses and network failures remain fatal.
+- The CI-equivalent full check passes with 99 HTML routes, 4 metadata endpoints,
+  4,402 internal references, 142 external links, 31 runtime browser tests, and
+  31 GitHub Pages browser tests.
 
 ## Scope
 
