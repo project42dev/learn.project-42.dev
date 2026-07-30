@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "application": {
     "name": "project42-learn",
-    "version": "0.11.0"
+    "version": "0.12.0"
   },
   "platform": {
-    "requiredVersion": "0.69.0"
+    "requiredVersion": "0.70.0"
   },
   "runtime": {
     "containerPort": 8080,

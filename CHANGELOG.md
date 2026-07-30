@@ -3,6 +3,13 @@
 All notable changes to Project 42 Learn are recorded here. Versions follow
 Semantic Versioning.
 
+## [0.12.0] - 2026-07-30
+
+- Aligned the reusable dependency and self-host compatibility contract with
+  signed Platform v0.70.0.
+- Preserved the production account, owner-console, progress, profile, and legal
+  routes without an application-data migration.
+
 ## [0.11.0] - 2026-07-30
 
 - Added enforced contributor and repository-governance documentation.

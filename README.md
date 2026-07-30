@@ -62,9 +62,9 @@ unlinked governance documents.
 Project 42 Learn is available under the
 [Apache License 2.0](LICENSE).
 
-## Release 0.11.0
+## Release 0.12.0
 
-Learn `0.11.0` consumes the signed Platform `0.69.0` release. Approved learners
+Learn `0.12.0` consumes the signed Platform `0.70.0` release. Approved learners
 can request an authoritative, recent-authentication-protected account transcript
 while signed-out and non-approved learners retain a clearly labelled
 browser-local export. The profile distinguishes portable local records, durable
@@ -73,8 +73,8 @@ the HttpOnly-cookie session boundary or presenting achievements as credentials.
 
 ## Current release facts
 
-- Site release `0.11.0`
-- Platform package `0.69.0`
+- Site release `0.12.0`
+- Platform package `0.70.0`
 - Content release `0.42.0`
 - 8 learning paths, 72 assessed modules, 69 evidence activities, and 363 reviewed questions
 - 8 dedicated learning paths and 4 provider scopes
