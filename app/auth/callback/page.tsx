@@ -9,6 +9,10 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     void completeSignIn().catch((caught) => {
+      // Authorization codes are single-use. Remove the callback query before
+      // rendering an error so refresh/back cannot replay the same code and
+      // produce a misleading intermittent API failure.
+      window.history.replaceState({}, "", "/auth/callback");
       setError(caught instanceof Error ? caught.message : "Sign-in could not be completed.");
     });
   }, [completeSignIn]);
