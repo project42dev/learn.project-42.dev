@@ -14,7 +14,7 @@ const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 
 test("current release contract is complete", async () => {
   const result = await validateRelease(repositoryRoot);
-  assert.equal(result.version, "0.11.0");
+  assert.equal(result.version, "0.12.0");
 });
 
 test("missing release-note risk disclosure is rejected", async () => {
@@ -63,7 +63,7 @@ test("manifest publication, consumption, rollback, and cleanup are reproducible"
       root: repositoryRoot,
       output: ".release-test/release-manifest.json",
       source: "0123456789abcdef0123456789abcdef01234567",
-      tag: "v0.11.0",
+      tag: "v0.12.0",
       artifacts: [".release-test/artifact.json"],
     });
     assert.equal(manifest.artifacts.length, 1);
