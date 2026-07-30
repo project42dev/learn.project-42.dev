@@ -1,4 +1,4 @@
-# Project 42 Learn 0.12.0
+# Project 42 Learn 0.12.1
 
 This release packages the Learn application, compatibility contract, OCI image
 metadata, checksums, and provenance under one verifiable manifest.
@@ -6,6 +6,10 @@ metadata, checksums, and provenance under one verifiable manifest.
 It aligns the hosted Learn client and self-host compatibility contract with
 signed Platform v0.70.0, including the released secure-session, owner-pagination,
 and secure Compose fixes.
+
+The patch version reserves a fresh immutable release tag after a retired
+historical local tag collision was detected before release publication. It does
+not change application behavior or data.
 
 ## Breaking changes
 
