@@ -689,7 +689,6 @@ export function AccountDashboard() {
         <ProfileEditor />
       ) : null}
       <ProfilePreferencesEditor hosted={account.state === "approved"} />
-      {account.state === "approved" ? <LinkedIdentityEditor /> : null}
       <LearnerDataControls />
       {account.roles.includes("owner") ? <OwnerAdministration /> : null}
     </div>
