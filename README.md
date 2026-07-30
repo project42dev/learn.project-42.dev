@@ -122,6 +122,10 @@ PII-free pending and rejected status, bounded retry, renewal, sign-out, and
 failure recovery. A new identity request never creates a learner session:
 approved users must complete a new secure sign-in before hosted learner records
 become available.
+The guarded
+[production learner-request acceptance](docs/production-registration-acceptance.md)
+uses one private pending-receipt state outside the repository and never runs in
+normal CI.
 The [browser-to-account migration contract](docs/progress-migration.md) documents
 preview, deterministic merge, immutable-evidence conflicts, retry, and recovery.
 The guarded
