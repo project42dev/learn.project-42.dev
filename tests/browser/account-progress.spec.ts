@@ -1266,7 +1266,7 @@ test("completes GitHub linkage without exposing the provider token to Learn", as
   ).toBeNull();
 });
 
-test("protects the owner route and renders request-correlated audit evidence", async ({
+test("keeps protected owner administration keyboard-operable at a narrow viewport", async ({
   page,
 }) => {
   test.skip(
@@ -1595,6 +1595,7 @@ test("protects the owner route and renders request-correlated audit evidence", a
     page.getByRole("button", { name: "Connect GitHub" }),
   ).toHaveCount(0);
 
+  await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/admin");
   await expect(
     page.getByRole("heading", { name: "Accounts and exact-domain approval" }),
@@ -1614,7 +1615,12 @@ test("protects the owner route and renders request-correlated audit evidence", a
   await expect(
     page.getByText("1 shown · 1 loaded · more available"),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Load more accounts" }).click();
+  const loadMoreAccounts = page.getByRole("button", {
+    name: "Load more accounts",
+  });
+  await loadMoreAccounts.focus();
+  await expect(loadMoreAccounts).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(
     page
       .locator(".admin-account-list")
@@ -1630,6 +1636,20 @@ test("protects the owner route and renders request-correlated audit evidence", a
   await expect(
     page.getByText("Loaded 1 more account. 2 total loaded."),
   ).toBeFocused();
+  expect(
+    await page.evaluate(() => ({
+      documentFits:
+        document.documentElement.scrollWidth <= window.innerWidth,
+      consoleFits: [
+        ...document.querySelectorAll<HTMLElement>(
+          ".owner-console .profile-card, .admin-account-list article, .domain-list article, .audit-event-list article",
+        ),
+      ].every((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.left >= 0 && bounds.right <= window.innerWidth;
+      }),
+    })),
+  ).toEqual({ documentFits: true, consoleFits: true });
   expect(accountListRequests).toContain(
     "/v1/admin/accounts?pageSize=25&state=pending",
   );
@@ -1698,7 +1718,12 @@ test("protects the owner route and renders request-correlated audit evidence", a
   ).toBeVisible();
   await expect(page.getByText("account.state.change")).toBeVisible();
   await expect(page.getByText("Request request-1")).toBeVisible();
-  await page.getByRole("button", { name: "Load more audit events" }).click();
+  const loadMoreAuditEvents = page.getByRole("button", {
+    name: "Load more audit events",
+  });
+  await loadMoreAuditEvents.focus();
+  await expect(loadMoreAuditEvents).toBeFocused();
+  await page.keyboard.press(" ");
   await expect(
     page.getByText(
       "The audit results changed. Reload from the first page before continuing.",
