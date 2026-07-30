@@ -365,7 +365,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     const target = new URL("/v1/auth/start", `${apiOrigin}/`);
     target.searchParams.set("return_to", returnTo.toString());
-    window.location.assign(target.toString());
+    // Replace the current document so authentication stays in the current tab.
+    // This also prevents the pre-auth page from remaining behind as a second
+    // apparent sign-in window.
+    window.location.replace(target.toString());
   }, []);
 
   const completeSignIn = useCallback(async () => {
