@@ -8,7 +8,7 @@ import {
 export const metadata: Metadata = {
   title: "My account",
   description:
-    "Project 42 profile, linked accounts, approval status, and owner administration.",
+    "Project 42 profile, approval status, and owner administration.",
 };
 
 export default function AccountPage() {
@@ -16,10 +16,10 @@ export default function AccountPage() {
     <main className="page-shell shell">
       <header className="page-hero profile-hero">
         <p className="eyebrow">Account and access</p>
-        <h1>One learning record. Your connected accounts.</h1>
+        <h1>One learning record. Your account.</h1>
         <p>
-          Manage your profile, sign-in identity, and optional GitHub link while
-          keeping progress available across browsers and devices.
+          Manage your profile and sign-in identity while keeping progress
+          available across browsers and devices.
         </p>
         <div className="policy-link-row" aria-label="Account policies">
           <Link className="text-link" href="/learner-data">
