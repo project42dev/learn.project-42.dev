@@ -214,7 +214,19 @@ const accountStateFilters: AccountStateFilter[] = [
 ];
 
 function accountLabel(account: Project42Account): string {
-  return account.displayName ?? account.primaryEmail ?? `Account ${account.id.slice(0, 8)}`;
+  return displayNameOrFallback(account.displayName, account.primaryEmail) ??
+    `Account ${account.id.slice(0, 8)}`;
+}
+
+function displayNameOrFallback(
+  displayName: string | null | undefined,
+  fallback: string | null | undefined,
+): string | null {
+  const candidate = displayName?.trim();
+  if (candidate && !/^(unknown|undefined|null|anonymous)$/i.test(candidate)) {
+    return candidate;
+  }
+  return fallback?.trim() || null;
 }
 
 function accountActionLabel(
@@ -619,7 +631,10 @@ export function AccountDashboard() {
         <p className="eyebrow">Project 42 account</p>
         <div className="account-heading">
           <div>
-            <h2>{account.displayName ?? "Project 42 learner"}</h2>
+            <h2>
+              {displayNameOrFallback(account.displayName, account.primaryEmail) ??
+                "Project 42 learner"}
+            </h2>
             <p>{account.primaryEmail ?? "No verified email supplied"}</p>
           </div>
           <span className={`account-state account-state-${account.state}`}>
