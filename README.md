@@ -124,6 +124,10 @@ approved users must complete a new secure sign-in before hosted learner records
 become available.
 The [browser-to-account migration contract](docs/progress-migration.md) documents
 preview, deterministic merge, immutable-evidence conflicts, retry, and recovery.
+The guarded
+[production migration acceptance](docs/production-progress-migration-acceptance.md)
+requires two private authenticated sessions and an explicit immutable-mutation
+confirmation. It is never part of normal CI.
 
 ### Self-hosted source build
 
