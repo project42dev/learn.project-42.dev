@@ -1,4 +1,4 @@
-import { accessSync, constants } from "node:fs";
+import { accessSync, constants, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 export const PRODUCTION_PROGRESS_ACCEPTANCE_CONFIRMATION =
@@ -50,15 +50,17 @@ function privateStatePath(value: string, name: string, repositoryRoot: string) {
     throw new Error(`${name} must be an absolute path outside the repository.`);
   }
   const absolute = resolve(value);
-  const repositoryRelative = relative(resolve(repositoryRoot), absolute);
+  accessSync(absolute, constants.R_OK);
+  const realStatePath = realpathSync(absolute);
+  const realRepositoryRoot = realpathSync(resolve(repositoryRoot));
+  const repositoryRelative = relative(realRepositoryRoot, realStatePath);
   if (
     repositoryRelative === "" ||
     (!repositoryRelative.startsWith("..") && !isAbsolute(repositoryRelative))
   ) {
     throw new Error(`${name} must be stored outside the repository.`);
   }
-  accessSync(absolute, constants.R_OK);
-  return absolute;
+  return realStatePath;
 }
 
 export function readProductionProgressAcceptanceConfig(

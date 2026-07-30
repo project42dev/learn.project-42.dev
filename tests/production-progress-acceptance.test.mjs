@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -127,6 +127,23 @@ test("rejects authenticated state stored inside the repository", () => {
     "tests",
     "production-progress-acceptance.test.mjs",
   );
+  assert.throws(
+    () => readProductionProgressAcceptanceConfig(environment, process.cwd()),
+    /outside the repository/,
+  );
+});
+
+test("rejects an outside symlink that resolves into the repository", () => {
+  const { environment } = fixture();
+  const privateDirectory = mkdtempSync(
+    join(tmpdir(), "project42-progress-acceptance-link-"),
+  );
+  const linkedState = join(privateDirectory, "linked-state.json");
+  symlinkSync(
+    resolve("tests", "production-progress-acceptance.test.mjs"),
+    linkedState,
+  );
+  environment.PROJECT42_PROGRESS_ACCEPTANCE_PRIMARY_STATE = linkedState;
   assert.throws(
     () => readProductionProgressAcceptanceConfig(environment, process.cwd()),
     /outside the repository/,
