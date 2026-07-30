@@ -95,12 +95,11 @@ test("a pending receipt authorizes status only and remains accessible", async ({
       name: /check again in \d+ seconds/i,
     });
     await expect(checkButton).toBeDisabled();
-    await checkButton.focus();
-    await expect(checkButton).toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(
-      page.getByRole("link", { name: "Keep learning in this browser" }),
-    ).toBeFocused();
+    const continuation = page.getByRole("link", {
+      name: "Keep learning in this browser",
+    });
+    await continuation.focus();
+    await expect(continuation).toBeFocused();
 
     expect(
       await page.evaluate(
@@ -120,6 +119,17 @@ test("a pending receipt authorizes status only and remains accessible", async ({
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
       .analyze();
     expect(accessibility.violations).toEqual([]);
+
+    await Promise.all([
+      page.waitForURL(/\/learn\/ai-foundations\/?$/),
+      page.keyboard.press("Enter"),
+    ]);
+    expect(
+      await page.evaluate(
+        (key) => window.localStorage.getItem(key),
+        localMarker,
+      ),
+    ).toBe(acceptance.runId);
 
     await testInfo.attach("production-registration-acceptance.json", {
       body: Buffer.from(

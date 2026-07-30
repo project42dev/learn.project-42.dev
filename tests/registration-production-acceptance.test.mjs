@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -86,6 +86,23 @@ test("rejects a registration receipt stored inside the repository", () => {
     "tests",
     "registration-production-acceptance.test.mjs",
   );
+  assert.throws(
+    () => readRegistrationAcceptanceConfig(environment, process.cwd()),
+    /outside the repository/,
+  );
+});
+
+test("rejects an outside symlink that resolves into the repository", () => {
+  const environment = fixture();
+  const outside = mkdtempSync(
+    join(tmpdir(), "project42-registration-link-"),
+  );
+  const linkedState = join(outside, "linked-state.json");
+  symlinkSync(
+    resolve("tests", "registration-production-acceptance.test.mjs"),
+    linkedState,
+  );
+  environment.PROJECT42_REGISTRATION_ACCEPTANCE_STATE = linkedState;
   assert.throws(
     () => readRegistrationAcceptanceConfig(environment, process.cwd()),
     /outside the repository/,

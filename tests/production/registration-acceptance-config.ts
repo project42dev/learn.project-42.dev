@@ -1,4 +1,4 @@
-import { accessSync, constants } from "node:fs";
+import { accessSync, constants, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 export const REGISTRATION_ACCEPTANCE_CONFIRMATION =
@@ -57,8 +57,11 @@ export function readRegistrationAcceptanceConfig(
       "PROJECT42_REGISTRATION_ACCEPTANCE_STATE must be an absolute path outside the repository.",
     );
   }
-  const statePath = resolve(stateValue);
-  const repositoryRelative = relative(resolve(repositoryRoot), statePath);
+  const unresolvedStatePath = resolve(stateValue);
+  accessSync(unresolvedStatePath, constants.R_OK);
+  const statePath = realpathSync(unresolvedStatePath);
+  const repositoryRealPath = realpathSync(resolve(repositoryRoot));
+  const repositoryRelative = relative(repositoryRealPath, statePath);
   if (
     repositoryRelative === "" ||
     (!repositoryRelative.startsWith("..") && !isAbsolute(repositoryRelative))
@@ -67,8 +70,6 @@ export function readRegistrationAcceptanceConfig(
       "PROJECT42_REGISTRATION_ACCEPTANCE_STATE must be stored outside the repository.",
     );
   }
-  accessSync(statePath, constants.R_OK);
-
   const requestedAt = required(
     environment,
     "PROJECT42_REGISTRATION_ACCEPTANCE_REQUESTED_AT",
