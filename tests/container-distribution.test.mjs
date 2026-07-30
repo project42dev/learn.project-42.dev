@@ -33,6 +33,7 @@ test("self-host image is non-root and uses the supported public configuration", 
   assert.doesNotMatch(dockerfile, /NEXT_PUBLIC_PROJECT42_OIDC_SCOPE/);
   assert.match(dockerfile, /HEALTHCHECK/);
   assert.match(nginx, /listen 8080/);
+  assert.match(nginx, /absolute_redirect off/);
   assert.match(nginx, /location = \/health/);
   assert.match(nginx, /try_files \$uri \$uri\/ \$uri\/index\.html =404/);
   assert.match(nginx, /error_page 404 \/404\.html/);
