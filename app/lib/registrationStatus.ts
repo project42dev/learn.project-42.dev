@@ -2,7 +2,7 @@ import type { RegistrationStatus } from "@project42/platform";
 
 export type RegistrationAccountState = Extract<
   RegistrationStatus["state"],
-  "pending" | "approved" | "rejected"
+  "pending" | "approved" | "rejected" | "suspended" | "revoked"
 >;
 
 export type RegistrationNextAction = RegistrationStatus["nextAction"];
@@ -30,6 +30,18 @@ const expectedRegistrationState = {
     nextAction: "sign-in",
   },
   rejected: {
+    canSignIn: false,
+    nextAction: "contact-owner",
+  },
+  // The server reports every account state on this receipt. Dropping suspended
+  // and revoked here made an accurate, actionable status collapse into a
+  // generic "unavailable" error for exactly the people who most need to know
+  // what happened to their access (AB#5780).
+  suspended: {
+    canSignIn: false,
+    nextAction: "contact-owner",
+  },
+  revoked: {
     canSignIn: false,
     nextAction: "contact-owner",
   },
@@ -66,7 +78,9 @@ export function parseRegistrationStatus(
   if (
     state !== "pending" &&
     state !== "approved" &&
-    state !== "rejected"
+    state !== "rejected" &&
+    state !== "suspended" &&
+    state !== "revoked"
   ) {
     throw new Error("invalid_registration_status");
   }

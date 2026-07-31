@@ -79,11 +79,31 @@ test("fails closed on unsafe state, timestamp, and next-action drift", () => {
     { registration: null },
     {
       registration: {
-        state: "suspended",
+        state: "unknown-future-state",
         requestedAt,
         updatedAt,
         canSignIn: false,
         nextAction: "contact-owner",
+      },
+    },
+    // Suspended and revoked are real reported states, but they must still fail
+    // closed if the server claims they can sign in.
+    {
+      registration: {
+        state: "suspended",
+        requestedAt,
+        updatedAt,
+        canSignIn: true,
+        nextAction: "contact-owner",
+      },
+    },
+    {
+      registration: {
+        state: "revoked",
+        requestedAt,
+        updatedAt,
+        canSignIn: false,
+        nextAction: "sign-in",
       },
     },
     {
@@ -158,4 +178,25 @@ test("bounds numeric, date, missing, and hostile Retry-After values", () => {
   );
   assert.equal(registrationRetryDelaySeconds(null, now), 30);
   assert.equal(registrationRetryDelaySeconds("not-a-delay", now), 30);
+});
+
+test("suspended and revoked receipts parse with an accurate, non-signable status", () => {
+  // The server reports every account state on this receipt. Rejecting suspended
+  // and revoked collapsed an accurate status into a generic "unavailable"
+  // error for exactly the learners who most need to know what happened to
+  // their access (AB#5780).
+  for (const state of ["suspended", "revoked"]) {
+    const receipt = parseRegistrationStatus({
+      registration: {
+        state,
+        requestedAt,
+        updatedAt,
+        canSignIn: false,
+        nextAction: "contact-owner",
+      },
+    });
+    assert.equal(receipt.state, state);
+    assert.equal(receipt.canSignIn, false);
+    assert.equal(receipt.nextAction, "contact-owner");
+  }
 });

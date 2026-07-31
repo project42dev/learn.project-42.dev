@@ -1820,3 +1820,134 @@ test("keeps protected owner administration keyboard-operable at a narrow viewpor
     .analyze();
   expect(accessibility.violations).toEqual([]);
 });
+
+test("signing out clears the session and returns the learner to a signed-out account page", async ({
+  page,
+}) => {
+  test.skip(
+    !hostedIdentityConfigured,
+    "The sign-out journey requires account-API configuration.",
+  );
+
+  const account = {
+    id: "sign-out-account",
+    installationId: "test",
+    identity: {
+      issuer: "https://issuer.example",
+      subject: "sign-out-subject",
+    },
+    displayName: "Departing learner",
+    primaryEmail: "learner@example.test",
+    emailVerified: true,
+    state: "approved",
+    roles: ["learner"],
+    createdAt: "2026-07-28T00:00:00.000Z",
+    updatedAt: "2026-07-28T00:00:00.000Z",
+  };
+  const headers = { "content-type": "application/json" };
+  let signedOut = false;
+  let signoutRequests = 0;
+
+  await page.route(
+    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
+    async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+
+      if (pathname === "/v1/auth/signout" && request.method() === "POST") {
+        signoutRequests += 1;
+        signedOut = true;
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            signedOut: true,
+            logoutUrl: "https://issuer.example/logout",
+          }),
+        });
+        return;
+      }
+
+      // After sign-out the session must be gone server-side, not merely hidden
+      // by the client.
+      if (pathname === "/v1/auth/session") {
+        if (signedOut) {
+          await route.fulfill({
+            status: 401,
+            headers,
+            body: JSON.stringify({
+              error: {
+                code: "session_expired",
+                message: "Sign in is required.",
+              },
+            }),
+          });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          headers,
+          body: JSON.stringify({
+            account,
+            session: {
+              expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+              absoluteExpiresAt: new Date(
+                Date.now() + 8 * 60 * 60_000,
+              ).toISOString(),
+            },
+          }),
+        });
+        return;
+      }
+
+      if (pathname === "/v1/registration/status") {
+        await route.fulfill({
+          status: 401,
+          headers,
+          body: JSON.stringify({ error: { code: "registration_receipt_invalid" } }),
+        });
+        return;
+      }
+
+      await route.fulfill({ status: 200, headers, body: JSON.stringify({}) });
+    },
+  );
+
+  await page.goto("/account");
+  await expect(
+    page.getByRole("heading", { name: "Departing learner" }),
+  ).toBeVisible();
+
+  const signOutButton = page.getByRole("button", {
+    name: "Sign out on this browser",
+  });
+  await expect(signOutButton).toBeVisible();
+
+  // Keyboard-operable, not pointer-only.
+  await signOutButton.focus();
+  await page.keyboard.press("Enter");
+
+  await expect(
+    page.getByRole("button", { name: "Continue to sign in or request access" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Departing learner" }),
+  ).toBeHidden();
+  expect(signoutRequests).toBe(1);
+
+  // The signed-out page must not retain the learner's identity.
+  const signedOutHtml = await page.content();
+  expect(signedOutHtml).not.toContain("learner@example.test");
+  expect(signedOutHtml).not.toContain("sign-out-subject");
+
+  // Reloading must not resurrect the session.
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Continue to sign in or request access" }),
+  ).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+});

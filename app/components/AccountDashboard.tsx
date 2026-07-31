@@ -364,11 +364,19 @@ function RegistrationStatusCard({
   if (receipt) {
     const pending = receipt.state === "pending";
     const approved = receipt.state === "approved";
+    // Every state the server can report needs its own accurate wording.
+    // Collapsing suspended and revoked into the rejected copy would tell a
+    // learner their request was never approved when in fact access existed and
+    // was withdrawn, which is both wrong and unactionable (AB#5780).
     const title = pending
       ? "Your access request is waiting for review"
       : approved
         ? "Your access is ready"
-        : "Your access request was not approved";
+        : receipt.state === "suspended"
+          ? "Your access is temporarily suspended"
+          : receipt.state === "revoked"
+            ? "Your access has been withdrawn"
+            : "Your access request was not approved";
     return (
       <section
         className="profile-card account-card registration-card"
@@ -642,10 +650,23 @@ export function AccountDashboard() {
             </h2>
             <p>{account.primaryEmail ?? "No verified email supplied"}</p>
           </div>
-          <span className={`account-state account-state-${account.state}`}>
+          {/*
+            The badge rendered a bare token with no context, so a screen reader
+            announced only "pending" with nothing to attach it to (AB#5780).
+          */}
+          <span
+            className={`account-state account-state-${account.state}`}
+            aria-label={`Account state: ${account.state}`}
+          >
             {account.state}
           </span>
         </div>
+        {/*
+          Account state can change while this page is open - an owner approving,
+          suspending, or revoking takes effect on the next request - so the
+          explanation is a live region rather than silent text.
+        */}
+        <div aria-live="polite" role="status">
         {account.state === "pending" ? (
           <p>
             Your request is waiting for owner approval. Learning still works in this
@@ -677,6 +698,7 @@ export function AccountDashboard() {
             transcript entries, and badges with the server.
           </p>
         ) : null}
+        </div>
         <button
           className="button button-secondary"
           onClick={() => void signOut()}
