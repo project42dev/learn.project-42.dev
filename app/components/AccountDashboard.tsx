@@ -307,6 +307,11 @@ function AccountRequestCard({
           A reviewed exact-domain rule may approve a verified address
           automatically; otherwise an owner decides the request.
         </li>
+        <li>
+          The identity provider currently asks for a one-time code sent to
+          your email rather than a password. Project 42 does not create,
+          store, or require a separate password.
+        </li>
       </ul>
       <AccountExpectationLinks />
       <div className="button-row">
