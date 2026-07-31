@@ -945,7 +945,16 @@ function LinkedIdentityEditor() {
                   ? `@${identity.providerLogin}`
                   : identity.displayName ?? "Verified identity"}
               </span>
+              {/*
+                AB#6230 requires the profile to show when each identity was
+                linked and last used, so a learner can recognise an unfamiliar
+                or stale sign-in method before deciding to unlink it.
+              */}
               <small>
+                Linked {new Date(identity.linkedAt).toLocaleDateString()}
+                {" · "}
+                Last used {new Date(identity.lastSeenAt).toLocaleDateString()}
+                {" · "}
                 Last verified{" "}
                 {new Date(identity.lastVerifiedAt).toLocaleDateString()}
               </small>
