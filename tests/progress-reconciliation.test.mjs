@@ -197,3 +197,66 @@ test("accepts only cryptographically bound, chronological, strict retained backu
     null,
   );
 });
+
+test("an interrupted import leaves both the local and durable records recoverable", async () => {
+  const { account, browser } = progressRecords();
+  const preview = createProgressMigrationPreview(browser, account);
+  // The import id is content-addressed on the local record (see
+  // parseProgressMigrationRecovery), which is what makes a retry idempotent.
+  const importId = await createProgressImportId(browser);
+
+  // ProgressProvider writes this envelope to localStorage BEFORE POSTing
+  // /v1/me/progress, so a network failure, tab close, or crash mid-import
+  // cannot lose either side of the merge. Reconstruct that pending envelope
+  // and prove it is still fully recoverable.
+  const interrupted = {
+    schemaVersion: 1,
+    importId,
+    localProgress: browser,
+    remoteProgress: account,
+    mergedProgress: preview.mergedProgress,
+    createdAt: "2026-07-29T03:00:00.000Z",
+    state: "pending",
+  };
+
+  const recovered = await parseProgressMigrationRecovery(
+    interrupted,
+    starterCatalog,
+  );
+  assert.ok(recovered, "a pending envelope must survive an interrupted import");
+  assert.equal(recovered.state, "pending");
+
+  // Both originals are retained verbatim, so the learner can retry or walk away
+  // without losing the browser record or the server record.
+  assert.deepEqual(recovered.localProgress, browser);
+  assert.deepEqual(recovered.remoteProgress, account);
+
+  // Retrying is safe: the same inputs derive the same content-addressed import
+  // id, so the server rejects a replay rather than double-applying it.
+  assert.equal(await createProgressImportId(recovered.localProgress), importId);
+
+  // A tampered or partially written envelope must be rejected outright rather
+  // than trusted, otherwise recovery could silently apply the wrong merge.
+  assert.equal(
+    await parseProgressMigrationRecovery(
+      { ...interrupted, mergedProgress: browser },
+      starterCatalog,
+    ),
+    null,
+    "a merge that does not match the recorded inputs must not be recoverable",
+  );
+  assert.equal(
+    await parseProgressMigrationRecovery(
+      { ...interrupted, importId: `browser-local-v1-${"0".repeat(64)}` },
+      starterCatalog,
+    ),
+    null,
+    "an import id that does not address the local record must not be recoverable",
+  );
+  const { mergedProgress: _dropped, ...truncated } = interrupted;
+  assert.equal(
+    await parseProgressMigrationRecovery(truncated, starterCatalog),
+    null,
+    "a partially written envelope must not be recoverable",
+  );
+});
