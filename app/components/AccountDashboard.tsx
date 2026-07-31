@@ -173,7 +173,7 @@ function appendUniqueById<T extends { id: string }>(
 }
 
 function adminListPath(
-  resource: "accounts" | "audit",
+  resource: "accounts" | "audit" | "deletions",
   options: { cursor?: string; state?: AccountStateFilter } = {},
 ): string {
   const search = new URLSearchParams({ pageSize: String(adminPageSize) });
@@ -2210,6 +2210,12 @@ export function OwnerAdministration() {
   const [deletionActionId, setDeletionActionId] = useState<string | null>(null);
   const [deletionActionReason, setDeletionActionReason] = useState("");
   const [deletionActionConfirmation, setDeletionActionConfirmation] = useState("");
+  const [deletionPage, setDeletionPage] = useState<AdminPageState>(
+    legacyAdminPage(0),
+  );
+  const [deletionsLoading, setDeletionsLoading] = useState(true);
+  const [deletionsStale, setDeletionsStale] = useState(false);
+  const [deletionAnnouncement, setDeletionAnnouncement] = useState("");
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [auditPage, setAuditPage] = useState<AdminPageState>(
     legacyAdminPage(0),
@@ -2225,6 +2231,7 @@ export function OwnerAdministration() {
   const deletionActionHeading = useRef<HTMLHeadingElement>(null);
   const accountPaginationStatus = useRef<HTMLParagraphElement>(null);
   const auditPaginationStatus = useRef<HTMLParagraphElement>(null);
+  const deletionPaginationStatus = useRef<HTMLParagraphElement>(null);
 
   const filteredAccounts = useMemo(() => {
     const query = accountSearch.trim().toLocaleLowerCase();
@@ -2275,8 +2282,11 @@ export function OwnerAdministration() {
     setAuditLoading(true);
     setAccountsStale(false);
     setAuditStale(false);
+    setDeletionsStale(false);
     setAccountAnnouncement("");
     setAuditAnnouncement("");
+    setDeletionAnnouncement("");
+    setDeletionsLoading(true);
     try {
       const [accountResponse, domainResponse, deletionResponse, auditResponse] =
         await Promise.all([
@@ -2286,7 +2296,7 @@ export function OwnerAdministration() {
           }),
         ),
         apiFetch("/v1/admin/domains"),
-        apiFetch("/v1/admin/deletions"),
+        apiFetch(adminListPath("deletions")),
         apiFetch(adminListPath("audit")),
       ]);
       const accountBody = (await accountResponse.json()) as {
@@ -2301,7 +2311,8 @@ export function OwnerAdministration() {
       };
       const deletionBody = (await deletionResponse.json()) as {
         requests?: OwnerDeletionRequest[];
-        error?: { message?: string };
+        page?: unknown;
+        error?: AdminListError;
       };
       const auditBody = (await auditResponse.json()) as {
         events?: AuditEvent[];
@@ -2338,7 +2349,11 @@ export function OwnerAdministration() {
       setAutomaticDomainApprovalEnabled(
         domainBody.automaticApprovalEnabled === true,
       );
-      setDeletionRequests(deletionBody.requests ?? []);
+      const nextDeletionRequests = deletionBody.requests ?? [];
+      setDeletionRequests(nextDeletionRequests);
+      setDeletionPage(
+        readAdminPage(deletionBody.page, nextDeletionRequests.length),
+      );
       setAuditEvents(nextAuditEvents);
       setAuditPage(nextAuditPage);
       setLoadedAt(Date.now());
@@ -2348,6 +2363,7 @@ export function OwnerAdministration() {
     } finally {
       setAccountsLoading(false);
       setAuditLoading(false);
+      setDeletionsLoading(false);
       setBusy(false);
     }
   }, [accountStateFilter, apiFetch, ownerAccount?.id]);
@@ -2420,6 +2436,69 @@ export function OwnerAdministration() {
       );
     } finally {
       setAccountsLoading(false);
+    }
+  }
+
+  async function loadMoreDeletionRequests() {
+    const cursor = deletionPage.nextCursor;
+    if (!cursor || deletionsLoading) return;
+    setDeletionsLoading(true);
+    setDeletionsStale(false);
+    setDeletionAnnouncement("Loading more deletion requests…");
+    try {
+      const response = await apiFetch(adminListPath("deletions", { cursor }));
+      const body = (await response.json()) as {
+        requests?: OwnerDeletionRequest[];
+        page?: unknown;
+        error?: AdminListError;
+      };
+      if (!response.ok) {
+        if (body.error?.code === "invalid_admin_cursor") {
+          // Never silently drop the continuation: a hidden pending deletion is
+          // outstanding owner work, so say so and offer a reload from the start.
+          setDeletionsStale(true);
+          setDeletionPage((current) => ({
+            ...current,
+            hasMore: false,
+            nextCursor: null,
+          }));
+          setDeletionAnnouncement(
+            "The deletion requests changed. Reload from the first page before continuing.",
+          );
+          window.requestAnimationFrame(() =>
+            deletionPaginationStatus.current?.focus(),
+          );
+          return;
+        }
+        throw new Error(
+          body.error?.message ?? "More deletion requests could not be loaded.",
+        );
+      }
+      const nextRequests = body.requests ?? [];
+      const nextPage = readAdminPage(body.page, nextRequests.length);
+      const combined = appendUniqueById(deletionRequests, nextRequests);
+      const added = combined.length - deletionRequests.length;
+      setDeletionRequests(combined);
+      setDeletionPage(nextPage);
+      setDeletionAnnouncement(
+        `Loaded ${added} more deletion request${
+          added === 1 ? "" : "s"
+        }. ${combined.length} total loaded.`,
+      );
+      window.requestAnimationFrame(() =>
+        deletionPaginationStatus.current?.focus(),
+      );
+    } catch (caught) {
+      setDeletionAnnouncement(
+        caught instanceof Error
+          ? caught.message
+          : "More deletion requests could not be loaded.",
+      );
+      window.requestAnimationFrame(() =>
+        deletionPaginationStatus.current?.focus(),
+      );
+    } finally {
+      setDeletionsLoading(false);
     }
   }
 
@@ -3082,8 +3161,19 @@ export function OwnerAdministration() {
         </section>
 
         <section className="profile-card">
-          <h3>Deletion requests</h3>
-          {deletionRequests.length === 0 ? (
+          <div className="admin-account-heading">
+            <div>
+              <h3>Deletion requests</h3>
+            </div>
+            <strong aria-live="polite">
+              {deletionRequests.length} loaded
+              {deletionPage.hasMore ? " · more available" : ""}
+            </strong>
+          </div>
+          {deletionsLoading && deletionRequests.length === 0 ? (
+            <p role="status">Loading deletion requests…</p>
+          ) : null}
+          {!deletionsLoading && deletionRequests.length === 0 ? (
             <p>No account deletion requests are waiting.</p>
           ) : (
             <div className="admin-account-list">
@@ -3182,6 +3272,53 @@ export function OwnerAdministration() {
               })}
             </div>
           )}
+          <div className="admin-pagination" aria-label="Deletion request pages">
+            {deletionAnnouncement ? (
+              <p
+                className="admin-pagination-status"
+                ref={deletionPaginationStatus}
+                role={deletionsStale ? "alert" : "status"}
+                tabIndex={-1}
+              >
+                {deletionAnnouncement}
+              </p>
+            ) : deletionPage.mode === "legacy" && !deletionsLoading ? (
+              <p className="admin-pagination-status" role="status">
+                The current account service returned all deletion requests
+                without continuation metadata.
+              </p>
+            ) : !deletionPage.hasMore &&
+              deletionRequests.length > 0 &&
+              !deletionsLoading ? (
+              <p className="admin-pagination-status">
+                End of deletion requests.
+              </p>
+            ) : null}
+            <div className="button-row">
+              {deletionPage.hasMore && deletionPage.nextCursor ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy || deletionsLoading}
+                  onClick={() => void loadMoreDeletionRequests()}
+                  type="button"
+                >
+                  {deletionsLoading
+                    ? "Loading more deletion requests…"
+                    : "Load more deletion requests"}
+                </button>
+              ) : null}
+              {deletionsStale ? (
+                <button
+                  className="button button-secondary"
+                  disabled={busy}
+                  onClick={() => void load()}
+                  type="button"
+                >
+                  Reload deletion requests from start
+                </button>
+              ) : null}
+            </div>
+          </div>
         </section>
 
         <AccountMergeAdministration
