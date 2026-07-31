@@ -91,6 +91,16 @@ test("renders canonical versions, counts, providers, licenses, and project links
     referenceRecordStore:
       defaultLearnerDataPolicy.adapters.referenceRecordStore,
   });
+
+  // The deepEqual above only proves the artifact and the constant agree, not
+  // that either is correct - it would happily lock in a stale value, which is
+  // exactly how AB#6425 survived. Pin the published claim to the released
+  // capability directly.
+  assert.equal(
+    releaseFacts.learnerDataPolicy.accountBackedRecords,
+    "available",
+    "the durable account-backed record contract is released; published facts must not understate it",
+  );
 });
 
 test("renders the learner-data disclosure and machine-readable policy", async () => {
@@ -104,7 +114,14 @@ test("renders the learner-data disclosure and machine-readable policy", async ()
   assert.match(html, /Your learning data, without fine print/);
   assert.match(html, /Private to this browser/);
   assert.match(html, /Account-backed records/);
-  assert.match(html, /Not enabled/);
+  // The policy states what the software supports; the page must state what this
+  // deployment actually offers, so an unconfigured build still reads "Not
+  // enabled" even though the released capability is "available" (AB#6425).
+  assert.match(
+    html,
+    hostedIdentityConfigured ? /Available/ : /Not enabled/,
+    "the disclosure page must describe this build's real record capability",
+  );
   assert.match(html, /email address is never your account key/i);
   assert.match(html, /Consent and choice/);
   assert.match(html, /Retention and recovery/);

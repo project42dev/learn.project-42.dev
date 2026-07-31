@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { learnerDataPolicy as policy } from "../lib/learnerDataPolicy";
+import {
+  accountServiceConfigured,
+  learnerDataPolicy as policy,
+} from "../lib/learnerDataPolicy";
 
 export const metadata: Metadata = {
   title: "Learner data and account controls",
@@ -47,7 +50,17 @@ export default function LearnerDataPage() {
         <dl>
           <div>
             <dt>Account-backed records</dt>
-            <dd>{policy.accountBackedRecords === "available" ? "Available" : "Not enabled"}</dd>
+            {/*
+              The policy states what the software supports; this states what this
+              deployment offers. An unconfigured or self-hosted build must not
+              imply durable records it cannot store (AB#6425).
+            */}
+            <dd>
+              {policy.accountBackedRecords === "available" &&
+              accountServiceConfigured
+                ? "Available"
+                : "Not enabled"}
+            </dd>
           </div>
           <div>
             <dt>Policy version</dt>
