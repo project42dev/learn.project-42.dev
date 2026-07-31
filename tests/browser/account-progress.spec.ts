@@ -1819,6 +1819,39 @@ test("keeps protected owner administration keyboard-operable at a narrow viewpor
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(accessibility.violations).toEqual([]);
+
+  // AB#6227 requires the console to pass reduced-motion and high-contrast
+  // checks. Asserting the media queries exist in CSS proves nothing about the
+  // rendered console, so re-run the real surfaces under each preference.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Privileged audit events" }),
+  ).toBeVisible();
+  const reducedMotionAccessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(reducedMotionAccessibility.violations).toEqual([]);
+
+  // Forced colours replace the palette outright, so any state conveyed only by
+  // a background colour disappears. The account rows and their state badges
+  // must still be present and legible.
+  await page.emulateMedia({ forcedColors: "active" });
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Project 42 administration" }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".admin-account-list article").first(),
+  ).toBeVisible();
+  const forcedColorsAccessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(forcedColorsAccessibility.violations).toEqual([]);
+  await page.emulateMedia({
+    forcedColors: "none",
+    reducedMotion: "no-preference",
+  });
 });
 
 test("signing out clears the session and returns the learner to a signed-out account page", async ({

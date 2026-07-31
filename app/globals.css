@@ -3330,6 +3330,25 @@ a {
   color: inherit;
 }
 
+/*
+  The footer is painted on a fixed dark panel, so its muted greys are chosen
+  against that panel rather than the page background. Under forced colours the
+  panel is replaced by the user's Canvas while these greys survive as authored,
+  which collapses the contrast. Hand both back to the system palette.
+*/
+@media (forced-colors: active) {
+  .footer-grid > div:first-child p,
+  .footer-grid strong,
+  .footer-grid a,
+  .footer-bottom {
+    color: CanvasText;
+  }
+
+  .footer-bottom {
+    border-top-color: CanvasText;
+  }
+}
+
 .policy-link-row {
   align-items: center;
   display: flex;
