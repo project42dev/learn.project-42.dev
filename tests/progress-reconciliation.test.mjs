@@ -253,7 +253,8 @@ test("an interrupted import leaves both the local and durable records recoverabl
     null,
     "an import id that does not address the local record must not be recoverable",
   );
-  const { mergedProgress: _dropped, ...truncated } = interrupted;
+  const truncated = { ...interrupted };
+  delete truncated.mergedProgress;
   assert.equal(
     await parseProgressMigrationRecovery(truncated, starterCatalog),
     null,

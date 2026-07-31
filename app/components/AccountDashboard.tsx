@@ -2209,6 +2209,9 @@ export function OwnerAdministration() {
     null,
   );
   const [accountActionReason, setAccountActionReason] = useState("");
+  // AB#5696: an owner deciding a request needs the request's own detail, not
+  // just the queue summary row.
+  const [detailAccountId, setDetailAccountId] = useState<string | null>(null);
   const [accountActionConfirmation, setAccountActionConfirmation] = useState("");
   const [domains, setDomains] = useState<DomainRule[]>([]);
   const [domainAction, setDomainAction] = useState<DomainRuleAction | null>(null);
@@ -2901,6 +2904,21 @@ export function OwnerAdministration() {
                   {candidate.state}
                 </span>
                 <div className="admin-actions">
+                  <button
+                    aria-controls={`admin-account-detail-${candidate.id}`}
+                    aria-expanded={detailAccountId === candidate.id}
+                    className="button button-secondary"
+                    onClick={() =>
+                      setDetailAccountId((current) =>
+                        current === candidate.id ? null : candidate.id,
+                      )
+                    }
+                    type="button"
+                  >
+                    {detailAccountId === candidate.id
+                      ? "Hide request detail"
+                      : "View request detail"}
+                  </button>
                   {nextStates[candidate.state].map((next) => (
                     <button
                       className="button button-secondary"
@@ -2913,6 +2931,51 @@ export function OwnerAdministration() {
                     </button>
                   ))}
                 </div>
+                {detailAccountId === candidate.id ? (
+                  <dl
+                    className="admin-account-detail"
+                    id={`admin-account-detail-${candidate.id}`}
+                  >
+                    <div>
+                      <dt>Verified email</dt>
+                      <dd>
+                        {candidate.primaryEmail ?? "None recorded"}
+                        {candidate.primaryEmail
+                          ? candidate.emailVerified
+                            ? " · verified by the identity provider"
+                            : " · not verified"
+                          : ""}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Current state</dt>
+                      <dd>{candidate.state}</dd>
+                    </div>
+                    <div>
+                      <dt>Roles</dt>
+                      <dd>{candidate.roles.join(", ") || "None"}</dd>
+                    </div>
+                    <div>
+                      <dt>Requested</dt>
+                      <dd>{new Date(candidate.createdAt).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt>Last updated</dt>
+                      <dd>{new Date(candidate.updatedAt).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      {/*
+                        The internal account identifier is what correlates this
+                        request with the privileged audit record below. The
+                        provider issuer and subject are deliberately not shown:
+                        an owner never needs them to decide, and they are the
+                        identity key.
+                      */}
+                      <dt>Account reference</dt>
+                      <dd>{candidate.id}</dd>
+                    </div>
+                  </dl>
+                ) : null}
                 {accountAction?.accountId === candidate.id &&
                 selectedAccount ? (
                   <form

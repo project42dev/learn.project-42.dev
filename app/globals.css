@@ -3878,6 +3878,29 @@ a {
   border-color: #b42318;
 }
 
+/* AB#5696: request detail sits under its queue row and spans the full width. */
+.admin-account-detail {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.6rem 1.5rem;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  margin: 0;
+  padding: 1rem;
+}
+
+.admin-account-detail dt {
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.admin-account-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .admin-account-action h4,
 .admin-account-action p {
   margin: 0;
