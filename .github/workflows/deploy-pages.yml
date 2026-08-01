@@ -34,6 +34,48 @@ jobs:
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: dist/pages
+      # AB#6851: publish /account and /admin to their own subdomains from the
+      # same build `npm run check` already produced, instead of the one-off
+      # manual export+push done when this pipeline was first stood up. Each
+      # target repo's own dist/pages content is unchanged if nothing in that
+      # route subtree changed, so this is a no-op push on most runs.
+      - name: Publish account.project-42.dev and admin.project-42.dev
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_APP_ID: ${{ secrets.SUBDOMAIN_PUBLISH_APP_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.SUBDOMAIN_PUBLISH_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/export-github-pages.mjs --domain=account.project-42.dev --routes=/account --out=pages-account
+          node scripts/export-github-pages.mjs --domain=admin.project-42.dev --routes=/admin --out=pages-admin
+
+          # Reads the existing App private key only to mint a short-lived
+          # installation token (standard GitHub App auth flow) - never writes,
+          # rotates, or otherwise changes the key itself.
+          token=$(node scripts/mint-github-app-token.mjs project42dev)
+
+          publish() {
+            local repo="$1" export_dir="$2"
+            local work; work=$(mktemp -d)
+            git clone --depth 1 "https://x-access-token:${token}@github.com/project42dev/${repo}.git" "$work"
+            find "$work" -mindepth 1 -maxdepth 1 -not -name .git -not -name .github -exec rm -rf {} +
+            cp -r "${export_dir}/." "$work/"
+            cd "$work"
+            git config user.name "project42dev-bot"
+            git config user.email "actions@project-42.dev"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No content change for ${repo}, skipping push."
+            else
+              git commit -m "chore(publish): sync from learn.project-42.dev@${GITHUB_SHA:0:12} AB#6851"
+              git push origin main
+            fi
+            cd - >/dev/null
+            rm -rf "$work"
+          }
+
+          publish account.project-42.dev dist/pages-account
+          publish admin.project-42.dev dist/pages-admin
 
   deploy:
     needs: build
