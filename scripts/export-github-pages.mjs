@@ -54,6 +54,36 @@ function outputPathForRoute(route) {
   return path.join(outputRoot, route.replace(/^\/+/, ""), "index.html");
 }
 
+// Routes that learn.project-42.dev handed off to their own subdomains
+// (AB#6851, AB#6227). Learn's build still renders them - the app keeps working
+// for local dev, Playwright, and the subdomain exports that reuse these very
+// components - but the HTML Learn *publishes* is replaced with a redirect, so
+// the old public URLs stop serving a second live copy of each surface.
+//
+// This is deliberately an export-time transform rather than runtime
+// headers().get("host") branching inside the pages: a previous attempt at the
+// runtime version broke CI, because Playwright drives a live `vinext start`
+// server whose per-request Host is not learn.project-42.dev, so any
+// host-conditional redirect either fired for the tests or would have had to
+// special-case them. Only the published artifact needs to redirect, and only
+// the default full-site export produces it.
+const RETIRED_ROUTES = new Map([
+  ["/account", "https://account.project-42.dev/account/"],
+  ["/admin", "https://admin.project-42.dev/admin/"],
+]);
+
+function redirectDocument(route, target) {
+  return (
+    `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+    `<meta http-equiv="refresh" content="0; url=${target}">` +
+    `<link rel="canonical" href="${target}">` +
+    `<meta name="robots" content="noindex">` +
+    `<title>Redirecting…</title></head><body>` +
+    `<p>This page has moved. <a href="${target}">Continue to ${target}</a></p>` +
+    `</body></html>\n`
+  );
+}
+
 function addStaticNavigation(html) {
   const navigation = `<script data-project42-static-navigation>
 document.addEventListener("click",function(event){
@@ -116,6 +146,14 @@ async function main() {
     throw new Error(`--routes matched no known route: ${routePrefixes.join(",")}`);
   }
   for (const route of htmlRoutes) {
+    // Only the default learn.project-42.dev export retires these routes; a
+    // filtered --domain export is the subdomain publishing its own copy, which
+    // must keep the real page.
+    const retiredTarget = isFilteredExport ? undefined : RETIRED_ROUTES.get(route);
+    if (retiredTarget) {
+      await writeRoute(route, redirectDocument(route, retiredTarget));
+      continue;
+    }
     const response = await fetchRoute(route);
     if (!response.ok) {
       throw new Error(`Cannot export ${route}: HTTP ${response.status}`);

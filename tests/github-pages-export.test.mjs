@@ -30,6 +30,37 @@ test("exports every governed route for GitHub Pages", async () => {
   }
 });
 
+test("retires the routes that moved to their own subdomains AB#6851 AB#6227", async () => {
+  const [account, admin, githubCallback] = await Promise.all([
+    readFile(path.join(outputRoot, "account", "index.html"), "utf8"),
+    readFile(path.join(outputRoot, "admin", "index.html"), "utf8"),
+    readFile(
+      path.join(outputRoot, "account", "github", "callback", "index.html"),
+      "utf8",
+    ),
+  ]);
+
+  for (const [html, target] of [
+    [account, "https://account.project-42.dev/account/"],
+    [admin, "https://admin.project-42.dev/admin/"],
+  ]) {
+    assert.match(html, new RegExp(`<meta http-equiv="refresh" content="0; url=${target}">`));
+    assert.match(html, new RegExp(`<link rel="canonical" href="${target}">`));
+    assert.match(html, /<meta name="robots" content="noindex">/);
+    // The published artifact must not keep serving a second live copy of a
+    // surface that now belongs to its own subdomain.
+    assert.doesNotMatch(html, /AccountDashboard|AdminDashboard/);
+  }
+
+  assert.doesNotMatch(account, /One learning record/);
+  assert.doesNotMatch(admin, /Project 42 administration/);
+
+  // /account/github/callback is the live GitHub identity-link redirect URI
+  // (GITHUB_LINK_REDIRECT_URI still points at learn.project-42.dev), so it is
+  // deliberately NOT retired - retiring it would break identity linking.
+  assert.doesNotMatch(githubCallback, /<meta http-equiv="refresh"/);
+});
+
 test("publishes current release facts and learner-data disclosure", async () => {
   const [home, learnerData, releaseFacts, policy, installedPlatform, application] = await Promise.all([
     readFile(path.join(outputRoot, "index.html"), "utf8"),

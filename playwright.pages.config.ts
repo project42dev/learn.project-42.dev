@@ -24,7 +24,13 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "chromium",
+      // Distinct from playwright.config.ts's "chromium" project on purpose.
+      // This run serves the published dist/pages artifact, where routes handed
+      // off to their own subdomains (/account, /admin - AB#6851, AB#6227) are
+      // redirect stubs rather than the live surface. Specs that exercise those
+      // surfaces check this project name and skip, because the app itself still
+      // renders them for the live server and for the subdomains' own exports.
+      name: "chromium-pages",
       use: { ...devices["Desktop Chrome"] },
     },
   ],

@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import type { LearnerProgress } from "@project42/platform";
 import { readFile } from "node:fs/promises";
+import { skipOnRetiredPagesRoute } from "./retired-routes";
 
 const hostedIdentityConfigured = Boolean(
   process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
@@ -38,6 +39,7 @@ async function installSignedOutApi(page: Page) {
 test("renders the account state selected by public account-API configuration", async ({
   page,
 }) => {
+  skipOnRetiredPagesRoute("/account");
   await installSignedOutApi(page);
   await page.goto("/account");
   if (hostedIdentityConfigured) {
