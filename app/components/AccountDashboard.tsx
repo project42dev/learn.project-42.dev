@@ -334,10 +334,12 @@ function RegistrationStatusCard({
   registration,
   refreshRegistration,
   signIn,
+  signOut,
 }: {
   registration: RegistrationExperience;
   refreshRegistration: () => Promise<void>;
   signIn: (returnPath?: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }) {
   const { formatDateTime } = useProfilePreferences();
   const retrySeconds = useRetryCountdown(registration.retryAt);
@@ -460,6 +462,19 @@ function RegistrationStatusCard({
           <Link className="button button-secondary" href="/learn/ai-foundations">
             Keep learning in this browser
           </Link>
+          {/*
+            A pending or rejected browser holds only the receipt and has no
+            session, so it never reached the signed-in card that carries the
+            sign-out control. Without this the browser is stuck on the receipt
+            with no way to test another account or hand the device back.
+          */}
+          <button
+            className="button button-secondary"
+            onClick={() => void signOut()}
+            type="button"
+          >
+            Clear this request on this browser
+          </button>
         </div>
       </section>
     );
@@ -593,6 +608,7 @@ export function AccountDashboard() {
             refreshRegistration={refreshRegistration}
             registration={registration}
             signIn={signIn}
+            signOut={signOut}
           />
         )}
         <ProfilePreferencesEditor hosted={false} />

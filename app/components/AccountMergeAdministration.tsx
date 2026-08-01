@@ -137,6 +137,10 @@ export function AccountMergeAdministration({
   const [busy, setBusy] = useState(false);
   const [clock, setClock] = useState(() => Date.now());
   const previewHeading = useRef<HTMLHeadingElement>(null);
+  // The status line sits at the top of a very long section while the actions
+  // are hundreds of pixels below it. Without moving focus, a failed merge
+  // looks like the button did nothing at all.
+  const statusMessage = useRef<HTMLParagraphElement>(null);
   const receiptHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -149,6 +153,16 @@ export function AccountMergeAdministration({
     if (receipt) receiptHeading.current?.focus();
     else if (preview) previewHeading.current?.focus();
   }, [preview, receipt]);
+
+  // The status line sits at the top of a very long section while the actions
+  // are hundreds of pixels below it, so a failed merge previously looked like
+  // the button had done nothing at all. Bring the reason to the operator.
+  const announced = useRef(message);
+  useEffect(() => {
+    if (message === announced.current) return;
+    announced.current = message;
+    if (message) statusMessage.current?.focus();
+  }, [message]);
 
   const source = eligibleAccounts.find(
     (candidate) => candidate.id === sourceUserId,
@@ -432,7 +446,13 @@ export function AccountMergeAdministration({
         account, choose the durable survivor, review every conflict, and preserve
         the recovery receipt.
       </p>
-      <p className="admin-status" role="status" aria-live="polite">
+      <p
+        className="admin-status"
+        ref={statusMessage}
+        role="status"
+        aria-live="polite"
+        tabIndex={-1}
+      >
         {message}
       </p>
 
