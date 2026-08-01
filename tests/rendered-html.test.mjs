@@ -149,7 +149,7 @@ test("renders the learner-data disclosure and machine-readable policy", async ()
 });
 
 test("links account and profile surfaces to privacy and legal expectations", async () => {
-  for (const route of ["/", "/account", "/profile", "/learner-data"]) {
+  for (const route of ["/", "/profile", "/learner-data"]) {
     const response = await render(route);
     assert.equal(response.status, 200, route);
     assert.match(
@@ -158,10 +158,6 @@ test("links account and profile surfaces to privacy and legal expectations", asy
       route,
     );
   }
-
-  const account = await render("/account");
-  const accountHtml = await account.text();
-  assert.match(accountHtml, /Learner data and controls/);
 });
 
 test("renders the one-time legacy progress migration experience", async () => {
@@ -174,43 +170,29 @@ test("renders the one-time legacy progress migration experience", async () => {
 });
 
 test("renders account, approval, and cross-device progress surfaces", async () => {
-  const [accountResponse, profileResponse, adminResponse] = await Promise.all([
+  const profileResponse = await render("/profile");
+  assert.equal(profileResponse.status, 200);
+  const profile = await profileResponse.text();
+  assert.match(profile, /browser privately or synchronize an approved account/i);
+});
+
+test("redirects the legacy account and admin routes to their dedicated subdomains (AB#6851, AB#6227)", async () => {
+  const [accountResponse, adminResponse] = await Promise.all([
     render("/account"),
-    render("/profile"),
     render("/admin"),
   ]);
   assert.equal(accountResponse.status, 200);
-  assert.equal(profileResponse.status, 200);
   assert.equal(adminResponse.status, 200);
   const account = await accountResponse.text();
-  const profile = await profileResponse.text();
   const admin = await adminResponse.text();
-  assert.match(account, /Account and access/);
-  assert.match(account, /Check a deletion request/);
-  assert.match(account, /cannot search by email, name, or account identifier/i);
   assert.match(
     account,
-    hostedIdentityConfigured
-      ? /not retained by this page/i
-      : /Deletion-status lookup becomes available/i,
+    /<meta http-equiv="refresh" content="0; url=https:\/\/account\.project-42\.dev\/account\/"\/>/,
   );
-  assert.match(
-    account,
-    hostedIdentityConfigured
-      ? /Loading your Project 42 account/
-      : /Ready for hosted identity configuration/,
-  );
-  assert.match(profile, /browser privately or synchronize an approved account/i);
-  assert.match(admin, /Project 42 administration/);
-  // Duplicate-account reconciliation moved to the learner profile (AB#6231):
-  // the owner console must no longer advertise or offer it.
-  assert.doesNotMatch(admin, /recover duplicate learner accounts/i);
-  assert.doesNotMatch(admin, /Review and merge learner records/i);
+  assert.match(admin, /Owner administration has a new home/i);
   assert.match(
     admin,
-    hostedIdentityConfigured
-      ? /Checking owner access/
-      : /Hosted identity is not configured/,
+    /<meta http-equiv="refresh" content="0; url=https:\/\/admin\.project-42\.dev\/admin\/"\/>/,
   );
 });
 
