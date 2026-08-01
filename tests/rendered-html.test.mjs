@@ -190,7 +190,10 @@ test("renders account, approval, and cross-device progress surfaces", async () =
   );
   assert.match(profile, /browser privately or synchronize an approved account/i);
   assert.match(admin, /Project 42 administration/);
-  assert.match(admin, /recover duplicate learner accounts/i);
+  // Duplicate-account reconciliation moved to the learner profile (AB#6231):
+  // the owner console must no longer advertise or offer it.
+  assert.doesNotMatch(admin, /recover duplicate learner accounts/i);
+  assert.doesNotMatch(admin, /Review and merge learner records/i);
   assert.match(
     admin,
     hostedIdentityConfigured

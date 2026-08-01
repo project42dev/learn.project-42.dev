@@ -21,7 +21,6 @@ import {
   type Project42Account,
   type RegistrationExperience,
 } from "./AuthProvider";
-import { AccountMergeAdministration } from "./AccountMergeAdministration";
 import {
   useProfilePreferences,
   validateProfilePreferences,
@@ -3430,11 +3429,6 @@ export function OwnerAdministration() {
             </div>
           </div>
         </section>
-
-        <AccountMergeAdministration
-          accounts={accounts}
-          onAccountsChanged={load}
-        />
 
         <section className="profile-card">
           <div className="admin-account-heading">

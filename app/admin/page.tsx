@@ -15,8 +15,9 @@ export default function AdminPage() {
         <h1>Project 42 administration</h1>
         <p>
           Review registrations, enforce account states, manage approved-domain
-          policy, recover duplicate learner accounts, inspect audit evidence, and
-          complete eligible deletion requests.
+          policy, inspect audit evidence, and complete eligible deletion
+          requests. Learners reconcile their own duplicate accounts from their
+          profile by proving control of both.
         </p>
       </header>
       <AdminDashboard />
