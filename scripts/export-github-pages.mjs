@@ -7,8 +7,32 @@ import { buildRouteInventory } from "./link-integrity.mjs";
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const clientRoot = path.join(projectRoot, "dist", "client");
 const workerPath = path.join(projectRoot, "dist", "server", "index.js");
-const outputRoot = path.join(projectRoot, "dist", "pages");
-const canonicalDomain = "learn.project-42.dev";
+
+// Defaults reproduce the full-site export exactly - tests/github-pages-export.test.mjs
+// depends on that. --domain and --routes together produce a filtered export of just
+// the given route prefixes under a distinct domain, used to publish /admin and
+// /account to their own subdomains (AB#6851) without duplicating Learn's toolchain.
+const args = new Map(
+  process.argv.slice(2).map((arg) => {
+    const [key, ...rest] = arg.replace(/^--/, "").split("=");
+    return [key, rest.join("=")];
+  }),
+);
+const canonicalDomain = args.get("domain") ?? "learn.project-42.dev";
+const routePrefixes = args.get("routes")?.split(",").map((value) => value.trim()).filter(Boolean) ?? null;
+const isFilteredExport = routePrefixes !== null;
+const outputRoot = path.join(
+  projectRoot,
+  "dist",
+  args.get("out") ?? "pages",
+);
+
+function matchesRoutePrefix(route) {
+  if (!routePrefixes) return true;
+  return routePrefixes.some(
+    (prefix) => route === prefix || route.startsWith(`${prefix}/`),
+  );
+}
 
 const endpointFiles = new Map([
   ["/manifest.webmanifest", "manifest.webmanifest"],
@@ -65,7 +89,15 @@ async function main() {
   const { default: worker } = await import(workerUrl.href);
   const fetchRoute = (route) =>
     worker.fetch(
-      new Request(`https://${canonicalDomain}${route}`),
+      // The synthetic export request has no real "Host" header, but
+      // subdomainLinks.ts's crossDomainHref() reads headers().get("host") to
+      // decide whether an /account or /admin link should render relative or
+      // absolute. Set it explicitly so a filtered --domain export of a
+      // subdomain's own routes gets relative links, and the default full-site
+      // export keeps every route relative to learn.project-42.dev.
+      new Request(`https://${canonicalDomain}${route}`, {
+        headers: { host: canonicalDomain },
+      }),
       {
         ASSETS: {
           fetch: async () => new Response("Not found", { status: 404 }),
@@ -78,8 +110,12 @@ async function main() {
   await mkdir(outputRoot, { recursive: true });
   await cp(clientRoot, outputRoot, { recursive: true });
 
-  const inventory = buildRouteInventory();
-  for (const route of inventory.htmlRoutes) {
+  const fullInventory = buildRouteInventory();
+  const htmlRoutes = fullInventory.htmlRoutes.filter(matchesRoutePrefix);
+  if (isFilteredExport && htmlRoutes.length === 0) {
+    throw new Error(`--routes matched no known route: ${routePrefixes.join(",")}`);
+  }
+  for (const route of htmlRoutes) {
     const response = await fetchRoute(route);
     if (!response.ok) {
       throw new Error(`Cannot export ${route}: HTTP ${response.status}`);
@@ -91,28 +127,50 @@ async function main() {
     await writeRoute(route, addStaticNavigation(await response.text()));
   }
 
-  for (const [route, target] of endpointFiles) {
-    const response = await fetchRoute(route);
-    if (!response.ok) {
-      throw new Error(`Cannot export ${route}: HTTP ${response.status}`);
+  const exportedEndpoints = [];
+  if (!isFilteredExport) {
+    for (const [route, target] of endpointFiles) {
+      const response = await fetchRoute(route);
+      if (!response.ok) {
+        throw new Error(`Cannot export ${route}: HTTP ${response.status}`);
+      }
+      await writeFile(path.join(outputRoot, target), await response.text());
+      exportedEndpoints.push(route);
     }
-    await writeFile(path.join(outputRoot, target), await response.text());
-  }
 
-  const policyResponse = await fetchRoute("/learner-data/policy");
-  if (!policyResponse.ok) {
-    throw new Error(
-      `Cannot export /learner-data/policy: HTTP ${policyResponse.status}`,
-    );
+    const policyResponse = await fetchRoute("/learner-data/policy");
+    if (!policyResponse.ok) {
+      throw new Error(
+        `Cannot export /learner-data/policy: HTTP ${policyResponse.status}`,
+      );
+    }
+    const policy = await policyResponse.text();
+    JSON.parse(policy);
+    await mkdir(path.join(outputRoot, "learner-data"), { recursive: true });
+    await writeFile(path.join(outputRoot, "learner-data", "policy.json"), policy);
+    exportedEndpoints.push("/learner-data/policy.json");
   }
-  const policy = await policyResponse.text();
-  JSON.parse(policy);
-  await mkdir(path.join(outputRoot, "learner-data"), { recursive: true });
-  await writeFile(path.join(outputRoot, "learner-data", "policy.json"), policy);
 
   const notFoundResponse = await fetchRoute("/__project42_not_found__");
   const notFoundHtml = addStaticNavigation(await notFoundResponse.text());
   await writeFile(path.join(outputRoot, "404.html"), notFoundHtml);
+
+  // A filtered export's own routes never include "/" (the site being
+  // republished is a single existing Learn route, e.g. "/account"), but a
+  // subdomain root still needs to resolve to something. Redirect it to the
+  // one route this export actually owns rather than shipping a dead root.
+  if (isFilteredExport && !htmlRoutes.includes("/")) {
+    const target = htmlRoutes[0];
+    await writeFile(
+      path.join(outputRoot, "index.html"),
+      `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+        `<meta http-equiv="refresh" content="0; url=${target}/">` +
+        `<link rel="canonical" href="https://${canonicalDomain}${target}/">` +
+        `<title>Redirecting…</title></head><body>` +
+        `<p><a href="${target}/">Continue to ${canonicalDomain}${target}/</a></p>` +
+        `</body></html>\n`,
+    );
+  }
   await writeFile(path.join(outputRoot, ".nojekyll"), "");
   await writeFile(path.join(outputRoot, "CNAME"), `${canonicalDomain}\n`);
   await writeFile(
@@ -121,11 +179,8 @@ async function main() {
       {
         schemaVersion: 1,
         canonicalDomain,
-        htmlRoutes: inventory.htmlRoutes,
-        endpoints: [
-          ...endpointFiles.keys(),
-          "/learner-data/policy.json",
-        ],
+        htmlRoutes,
+        endpoints: exportedEndpoints,
       },
       null,
       2,
@@ -133,8 +188,8 @@ async function main() {
   );
 
   console.log(
-    `GitHub Pages export ready: ${inventory.htmlRoutes.length} HTML routes and ` +
-      `${endpointFiles.size + 1} endpoints in ${outputRoot}.`,
+    `GitHub Pages export ready: ${htmlRoutes.length} HTML routes and ` +
+      `${exportedEndpoints.length} endpoints in ${outputRoot}.`,
   );
 }
 

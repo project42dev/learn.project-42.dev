@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../components/AuthProvider";
+import { clientCrossDomainHref } from "../../../lib/subdomainLinks";
 
 export default function GithubIdentityCallbackPage() {
   const { completeGithubLink } = useAuth();
@@ -37,7 +38,7 @@ export default function GithubIdentityCallbackPage() {
             "Project 42 is verifying GitHub’s response and preserving your existing learner record."}
         </p>
         {error ? (
-          <a className="button button-primary" href="/account">
+          <a className="button button-primary" href={clientCrossDomainHref("/account")}>
             Return to your account
           </a>
         ) : null}

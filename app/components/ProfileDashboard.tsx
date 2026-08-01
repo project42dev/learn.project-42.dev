@@ -21,6 +21,7 @@ import {
   type ProgressMigrationPreview,
   type ProgressReconciliationPackage,
 } from "../lib/progressMigration";
+import { clientCrossDomainHref } from "../lib/subdomainLinks";
 import { useAuth } from "./AuthProvider";
 import { useProgress } from "./ProgressProvider";
 
@@ -338,7 +339,7 @@ export function ProfileDashboard() {
           </p>
         ) : !account ? (
           <p>
-            <Link href="/account">Sign in</Link> to request access and synchronize
+            <Link href={clientCrossDomainHref("/account")}>Sign in</Link> to request access and synchronize
             progress after approval.
           </p>
         ) : account.state !== "approved" ? (

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -68,4 +69,62 @@ test("contains GitHub Pages controls without server or Sites metadata", async ()
   await access(path.join(outputRoot, "404.html"));
   await assert.rejects(access(path.join(outputRoot, ".openai")));
   await assert.rejects(access(path.join(outputRoot, "server")));
+});
+
+test("a filtered --domain/--routes export publishes only its own routes with cross-subdomain nav links AB#6851", async () => {
+  const filteredOutputRoot = path.join(projectRoot, "dist", "pages-account-test");
+  execFileSync(
+    process.execPath,
+    [
+      "scripts/export-github-pages.mjs",
+      "--domain=account.project-42.dev",
+      "--routes=/account",
+      "--out=pages-account-test",
+    ],
+    { cwd: projectRoot, stdio: "pipe" },
+  );
+
+  const manifest = JSON.parse(
+    await readFile(path.join(filteredOutputRoot, "pages-manifest.json"), "utf8"),
+  );
+  assert.equal(manifest.canonicalDomain, "account.project-42.dev");
+  assert.deepEqual(manifest.htmlRoutes, [
+    "/account",
+    "/account/github/callback",
+  ]);
+  assert.deepEqual(manifest.endpoints, []);
+
+  assert.equal(
+    await readFile(path.join(filteredOutputRoot, "CNAME"), "utf8"),
+    "account.project-42.dev\n",
+  );
+  await assert.rejects(
+    access(path.join(filteredOutputRoot, "learn", "index.html")),
+    "a filtered export must not publish routes it doesn't own",
+  );
+  await assert.rejects(
+    access(path.join(filteredOutputRoot, "learner-data")),
+    "a filtered export skips site-wide endpoints, not just unowned HTML routes",
+  );
+
+  const accountPage = await readFile(
+    path.join(filteredOutputRoot, "account", "index.html"),
+    "utf8",
+  );
+  assert.match(
+    accountPage,
+    /<a href="https:\/\/learn\.project-42\.dev\/learn">Learn<\/a>/,
+    "a route this export doesn't own must link back to Learn absolutely",
+  );
+  assert.match(
+    accountPage,
+    /<a href="\/account">Account<\/a>/,
+    "a route this export does own must stay a same-host relative link",
+  );
+
+  const rootRedirect = await readFile(
+    path.join(filteredOutputRoot, "index.html"),
+    "utf8",
+  );
+  assert.match(rootRedirect, /content="0; url=\/account\/"/);
 });

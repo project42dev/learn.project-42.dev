@@ -15,6 +15,7 @@ import {
   type FormEvent,
 } from "react";
 import { learnerDataPolicy } from "../lib/learnerDataPolicy";
+import { clientCrossDomainHref } from "../lib/subdomainLinks";
 import { AccountMergeSelfService } from "./AccountMergeSelfService";
 import {
   useAuth,
@@ -723,7 +724,7 @@ export function AccountDashboard() {
           Sign out on this browser
         </button>
         {account.roles.includes("owner") ? (
-          <a className="button button-primary" href="/admin">
+          <a className="button button-primary" href={clientCrossDomainHref("/admin")}>
             Open owner console
           </a>
         ) : null}
@@ -2222,7 +2223,7 @@ export function AdminDashboard() {
           This account is not an approved Project 42 owner. No administrative data
           has been requested or displayed.
         </p>
-        <a className="button button-secondary" href="/account">
+        <a className="button button-secondary" href={clientCrossDomainHref("/account")}>
           Return to my account
         </a>
       </section>

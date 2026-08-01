@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { BrandMark } from "./BrandMark";
+import { crossDomainHref } from "../lib/subdomainLinks";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const [learnHref, diagramsHref, profileHref, accountHref, startHref] =
+    await Promise.all([
+      crossDomainHref("/learn"),
+      crossDomainHref("/diagrams"),
+      crossDomainHref("/profile"),
+      crossDomainHref("/account"),
+      crossDomainHref("/learn/ai-foundations"),
+    ]);
   return (
     <header className="site-header">
       <div className="shell header-inner">
@@ -12,14 +21,14 @@ export function SiteHeader() {
           </span>
         </a>
         <nav aria-label="Primary navigation">
-          <Link href="/learn">Learn</Link>
+          <Link href={learnHref}>Learn</Link>
           <a href="https://guide.project-42.dev">Field Guide</a>
-          <Link href="/diagrams">Visual guides</Link>
-          <Link href="/profile">My progress</Link>
-          <Link href="/account">Account</Link>
+          <Link href={diagramsHref}>Visual guides</Link>
+          <Link href={profileHref}>My progress</Link>
+          <Link href={accountHref}>Account</Link>
           <a href="https://project-42.dev/about">About</a>
         </nav>
-        <Link className="header-action" href="/learn/ai-foundations">
+        <Link className="header-action" href={startHref}>
           Start learning
         </Link>
       </div>
