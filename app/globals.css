@@ -4398,6 +4398,25 @@ a {
   overflow-wrap: anywhere;
 }
 
+.account-merge-copyable {
+  margin: 0.5rem 0;
+}
+
+.account-merge-copyable-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.account-merge-copyable-row code {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  overflow-wrap: anywhere;
+  padding: 0.3rem 0.5rem;
+}
+
 .account-merge-records {
   display: flex;
   flex-wrap: wrap;

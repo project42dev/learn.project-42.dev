@@ -1,422 +1,360 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
-const hostedIdentityConfigured = Boolean(
-  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
-);
+const apiOrigin = process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN;
+const hostedIdentityConfigured = Boolean(apiOrigin);
+const now = "2026-08-01T00:00:00.000Z";
 
-const ownerId = "00000000-0000-4000-8000-000000000001";
-const sourceId = "00000000-0000-4000-8000-000000000002";
-const survivorId = "00000000-0000-4000-8000-000000000003";
-const mergeId = "00000000-0000-4000-8000-000000000004";
-const receiptId = "00000000-0000-4000-8000-000000000005";
+const accountId = "00000000-0000-4000-8000-000000000101";
+const otherAccountId = "00000000-0000-4000-8000-000000000102";
+const mergeId = "00000000-0000-4000-8000-000000000103";
+const receiptId = "00000000-0000-4000-8000-000000000104";
 
-const createdAt = "2026-07-28T00:00:00.000Z";
-const owner = {
-  id: ownerId,
+const account = {
+  id: accountId,
   installationId: "test",
-  identity: { issuer: "https://issuer.example", subject: "owner-subject" },
-  displayName: "Test owner",
-  primaryEmail: "owner@example.test",
+  identity: { issuer: "https://issuer.example", subject: "self-service-subject" },
+  displayName: "Self-service learner",
+  primaryEmail: "learner@example.test",
   emailVerified: true,
   state: "approved",
-  roles: ["learner", "owner"],
-  createdAt,
-  updatedAt: createdAt,
-};
-const source = {
-  ...owner,
-  id: sourceId,
-  identity: { issuer: "https://issuer.example", subject: "source-subject" },
-  displayName: "Duplicate Learner",
-  primaryEmail: "duplicate@example.test",
   roles: ["learner"],
-};
-const survivor = {
-  ...owner,
-  id: survivorId,
-  identity: { issuer: "https://issuer.example", subject: "survivor-subject" },
-  displayName: "Survivor Learner",
-  primaryEmail: "survivor@example.test",
-  roles: ["learner"],
+  createdAt: now,
+  updatedAt: now,
 };
 
-async function installOwnerApi(
-  page: Page,
-  options: {
-    previewMode?: "available" | "expired" | "replayed";
-  } = {},
-) {
-  let recoveryProofCount = 0;
-  let completionRequest: Record<string, unknown> | null = null;
-  let rollbackRequest: Record<string, unknown> | null = null;
-  const previewMode = options.previewMode ?? "available";
-
-  await page.route(
-    `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/**`,
-    async (route) => {
-      const request = route.request();
-      const origin = request.headers().origin ?? "http://localhost";
-      const headers = {
-        "access-control-allow-origin": origin,
-        "access-control-allow-credentials": "true",
-        "access-control-allow-headers":
-          "content-type,x-request-id",
-        "access-control-allow-methods": "DELETE,GET,POST,PATCH,PUT,OPTIONS",
-        "content-type": "application/json",
-      };
-      if (request.method() === "OPTIONS") {
-        await route.fulfill({ status: 204, headers });
-        return;
-      }
-      const pathname = new URL(request.url()).pathname;
-      const commonBodies: Record<string, unknown> = {
-        "/v1/auth/session": { account: owner },
-        "/v1/admin/accounts": { accounts: [owner, source, survivor] },
-        "/v1/admin/domains": {
-          domains: [],
-          automaticApprovalEnabled: false,
-        },
-        "/v1/admin/deletions": { requests: [] },
-        "/v1/admin/audit": { events: [] },
-      };
-      if (pathname in commonBodies) {
-        await route.fulfill({
-          status: 200,
-          headers,
-          body: JSON.stringify(commonBodies[pathname]),
-        });
-        return;
-      }
-      if (
-        pathname === "/v1/admin/account-merges/recovery-proofs" &&
-        request.method() === "POST"
-      ) {
-        recoveryProofCount += 1;
-        const input = request.postDataJSON() as { userId: string };
-        await route.fulfill({
-          status: 201,
-          headers,
-          body: JSON.stringify({
-            proof: {
-              token: `proof_${"a".repeat(44)}_${recoveryProofCount}`,
-              userId: input.userId,
-              method: "owner-assisted-recovery",
-              expiresAt: new Date(Date.now() + 900_000).toISOString(),
-            },
-          }),
-        });
-        return;
-      }
-      if (
-        pathname === "/v1/admin/account-merges/preview" &&
-        request.method() === "POST"
-      ) {
-        if (previewMode === "replayed") {
-          await route.fulfill({
-            status: 409,
-            headers,
-            body: JSON.stringify({
-              error: {
-                code: "account_merge_proof_unavailable",
-                message: "One proof was already consumed.",
-              },
-            }),
-          });
-          return;
-        }
-        await route.fulfill({
-          status: 201,
-          headers,
-          body: JSON.stringify({
-            merge: {
-              id: mergeId,
-              status: "preview",
-              sourceUserId: sourceId,
-              survivorUserId: survivorId,
-              sourceDisplayName: source.displayName,
-              survivorDisplayName: survivor.displayName,
-              sourcePrimaryEmail: source.primaryEmail,
-              survivorPrimaryEmail: survivor.primaryEmail,
-              proofMethods: {
-                source: "owner-assisted-recovery",
-                survivor: "owner-assisted-recovery",
-              },
-              conflicts: [
-                {
-                  key: "account.displayName",
-                  field: "displayName",
-                  sourcePresent: true,
-                  survivorPresent: true,
-                  sourceValue: source.displayName,
-                  survivorValue: survivor.displayName,
-                  required: true,
-                  description:
-                    "Choose the display name retained by the survivor account.",
-                },
-              ],
-              recordCounts: {
-                assessment_attempts: { source: 2, survivor: 3 },
-                transcript_entries: { source: 1, survivor: 4 },
-              },
-              expiresAt:
-                previewMode === "expired"
-                  ? new Date(Date.now() - 1_000).toISOString()
-                  : new Date(Date.now() + 1_800_000).toISOString(),
-            },
-          }),
-        });
-        return;
-      }
-      if (
-        pathname === `/v1/admin/account-merges/${mergeId}/complete` &&
-        request.method() === "POST"
-      ) {
-        completionRequest = request.postDataJSON() as Record<string, unknown>;
-        await route.fulfill({
-          status: 200,
-          headers,
-          body: JSON.stringify({
-            receipt: {
-              id: receiptId,
-              mergeCaseId: mergeId,
-              receiptDigest: "receipt-digest",
-              snapshotDigest: "snapshot-digest",
-              mergedAt: new Date().toISOString(),
-              recordCounts: {
-                assessment_attempts: 5,
-                transcript_entries: 5,
-              },
-              status: "completed",
-            },
-          }),
-        });
-        return;
-      }
-      if (
-        pathname === `/v1/admin/account-merges/${mergeId}/rollback` &&
-        request.method() === "POST"
-      ) {
-        rollbackRequest = request.postDataJSON() as Record<string, unknown>;
-        await route.fulfill({
-          status: 200,
-          headers,
-          body: JSON.stringify({
-            receipt: {
-              id: receiptId,
-              mergeCaseId: mergeId,
-              receiptDigest: "receipt-digest",
-              snapshotDigest: "snapshot-digest",
-              mergedAt: new Date().toISOString(),
-              recordCounts: {
-                assessment_attempts: 5,
-                transcript_entries: 5,
-              },
-              status: "rolled-back",
-            },
-          }),
-        });
-        return;
-      }
-      await route.fulfill({
-        status: 404,
-        headers,
-        body: JSON.stringify({ error: { message: "Not found" } }),
-      });
-    },
-  );
-
+function jsonHeaders(route: Route) {
   return {
-    completionRequest: () => completionRequest,
-    rollbackRequest: () => rollbackRequest,
-    recoveryProofCount: () => recoveryProofCount,
+    "access-control-allow-origin":
+      route.request().headers().origin ?? "http://127.0.0.1",
+    "access-control-allow-credentials": "true",
+    "access-control-allow-headers": "content-type,x-request-id",
+    "access-control-allow-methods": "DELETE,GET,POST,PATCH,PUT,OPTIONS",
+    "content-type": "application/json",
   };
 }
 
-async function selectAccountsAndPasteProofs(page: Page) {
-  const sourceGroup = page.getByRole("group", {
-    name: "Duplicate account to retire",
+async function fulfillJson(route: Route, body: unknown, status = 200) {
+  await route.fulfill({
+    status,
+    headers: jsonHeaders(route),
+    body: JSON.stringify(body),
   });
-  const survivorGroup = page.getByRole("group", {
-    name: "Learner record to keep",
-  });
-  await sourceGroup.getByLabel("Account", { exact: true }).selectOption(sourceId);
-  await survivorGroup
-    .getByLabel("Account", { exact: true })
-    .selectOption(survivorId);
-  await sourceGroup
-    .getByLabel("One-time proof from the account holder")
-    .fill(`proof_${"s".repeat(48)}`);
-  await survivorGroup
-    .getByLabel("One-time proof from the account holder")
-    .fill(`proof_${"v".repeat(48)}`);
-  return { sourceGroup, survivorGroup };
 }
 
-test("owner reviews, confirms, and recovers a duplicate-account merge", async ({
-  page,
-}) => {
-  test.skip(
-    !hostedIdentityConfigured,
-    "The account-merge journey requires account-API configuration.",
-  );
-  const api = await installOwnerApi(page);
-  await page.goto("/admin");
-  await expect(
-    page.getByText(
-      "The current account service returned all matching accounts without continuation metadata.",
-    ),
-  ).toBeVisible();
-
-  const sourceGroup = page.getByRole("group", {
-    name: "Duplicate account to retire",
+async function installBaselineApi(
+  page: Page,
+  handle: (route: Route, pathname: string) => Promise<boolean>,
+): Promise<void> {
+  await page.route(`${apiOrigin}/**`, async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: jsonHeaders(route) });
+      return;
+    }
+    const pathname = new URL(request.url()).pathname;
+    if (await handle(route, pathname)) return;
+    const bodies: Record<string, unknown> = {
+      "/v1/auth/session": { account },
+      "/v1/me/identities": { identities: [] },
+      "/v1/me/consents": { consents: [] },
+      "/v1/me/deletion": { requests: [] },
+      "/v1/me/profile": {
+        profile: {
+          userId: account.id,
+          displayName: account.displayName,
+          bio: null,
+          organization: null,
+          location: null,
+          websiteUrl: null,
+          locale: "en-US",
+          timeZone: "UTC",
+          reducedMotion: false,
+          highContrast: false,
+          photoAvailable: false,
+          photoUpdatedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+    };
+    if (pathname in bodies) {
+      await fulfillJson(route, bodies[pathname]);
+      return;
+    }
+    await fulfillJson(route, { error: { code: "not_found" } }, 404);
   });
-  const survivorGroup = page.getByRole("group", {
-    name: "Learner record to keep",
-  });
-  await sourceGroup.getByLabel("Account", { exact: true }).selectOption(sourceId);
-  await survivorGroup
-    .getByLabel("Account", { exact: true })
-    .selectOption(survivorId);
+}
 
-  for (const group of [sourceGroup, survivorGroup]) {
-    await group.locator("summary").click();
-    await group
-      .getByLabel("Identity-provider recovery completed")
-      .check();
-    await group.getByLabel("Signed owner attestation recorded").check();
-    await group.getByLabel("Recovery reference").fill("support-case-42");
-    await group
-      .getByLabel("Evidence summary")
-      .fill("Two independent recovery methods were reviewed by the owner.");
-    await group
-      .getByRole("button", { name: "Record governed recovery proof" })
+function installMergeApi(
+  page: Page,
+  options: { previewMode?: "available" | "expired" | "replayed" } = {},
+) {
+  const previewMode = options.previewMode ?? "available";
+  let proofCount = 0;
+  let completionRequest: Record<string, unknown> | null = null;
+  let rollbackRequest: Record<string, unknown> | null = null;
+
+  return installBaselineApi(page, async (route, pathname) => {
+    const request = route.request();
+    if (
+      pathname === "/v1/me/account-merge-proof" &&
+      request.method() === "POST"
+    ) {
+      proofCount += 1;
+      await fulfillJson(
+        route,
+        {
+          proof: {
+            token: `proof_${"a".repeat(44)}_${proofCount}`,
+            userId: account.id,
+            method: "recent-authentication",
+            expiresAt: new Date(Date.now() + 900_000).toISOString(),
+          },
+        },
+        201,
+      );
+      return true;
+    }
+    if (
+      pathname === "/v1/me/account-merges/preview" &&
+      request.method() === "POST"
+    ) {
+      if (previewMode === "replayed") {
+        await fulfillJson(
+          route,
+          {
+            error: {
+              code: "invalid_account_merge_proof",
+              message: "One proof was already consumed.",
+            },
+          },
+          400,
+        );
+        return true;
+      }
+      const body = request.postDataJSON() as {
+        sourceUserId: string;
+        survivorUserId: string;
+      };
+      await fulfillJson(
+        route,
+        {
+          merge: {
+            id: mergeId,
+            status: "preview",
+            sourceUserId: body.sourceUserId,
+            survivorUserId: body.survivorUserId,
+            sourceDisplayName: "Retired side",
+            survivorDisplayName: "Surviving side",
+            sourcePrimaryEmail: "retired@example.test",
+            survivorPrimaryEmail: "learner@example.test",
+            proofMethods: {
+              source: "recent-authentication",
+              survivor: "recent-authentication",
+            },
+            conflicts: [
+              {
+                key: "account.displayName",
+                field: "displayName",
+                sourcePresent: true,
+                survivorPresent: true,
+                sourceValue: "Retired side",
+                survivorValue: "Surviving side",
+                required: true,
+                description:
+                  "Choose the display name retained by the survivor account.",
+              },
+            ],
+            recordCounts: {
+              assessment_attempts: { source: 2, survivor: 3 },
+            },
+            expiresAt:
+              previewMode === "expired"
+                ? new Date(Date.now() - 1_000).toISOString()
+                : new Date(Date.now() + 1_800_000).toISOString(),
+          },
+        },
+        201,
+      );
+      return true;
+    }
+    if (
+      pathname === `/v1/me/account-merges/${mergeId}/complete` &&
+      request.method() === "POST"
+    ) {
+      completionRequest = request.postDataJSON() as Record<string, unknown>;
+      await fulfillJson(route, {
+        receipt: {
+          id: receiptId,
+          mergeCaseId: mergeId,
+          receiptDigest: "receipt-digest",
+          snapshotDigest: "snapshot-digest",
+          mergedAt: new Date().toISOString(),
+          recordCounts: { assessment_attempts: 5 },
+          status: "completed",
+        },
+      });
+      return true;
+    }
+    if (
+      pathname === `/v1/me/account-merges/${mergeId}/rollback` &&
+      request.method() === "POST"
+    ) {
+      rollbackRequest = request.postDataJSON() as Record<string, unknown>;
+      await fulfillJson(route, {
+        receipt: {
+          id: receiptId,
+          mergeCaseId: mergeId,
+          receiptDigest: "receipt-digest",
+          snapshotDigest: "snapshot-digest",
+          mergedAt: new Date().toISOString(),
+          recordCounts: { assessment_attempts: 5 },
+          status: "rolled-back",
+        },
+      });
+      return true;
+    }
+    return false;
+  }).then(() => ({
+    completionRequest: () => completionRequest,
+    rollbackRequest: () => rollbackRequest,
+  }));
+}
+
+test.describe("learner-initiated account merge", () => {
+  test.beforeEach(() => {
+    test.skip(
+      !hostedIdentityConfigured,
+      "The account-merge journey requires account-API configuration.",
+    );
+  });
+
+  test("a learner merges a duplicate account into their own without owner involvement", async ({
+    page,
+  }) => {
+    const api = await installMergeApi(page);
+    await page.goto("/account");
+
+    await page
+      .getByRole("button", { name: "Get this account's proof" })
       .click();
-  }
-  expect(api.recoveryProofCount()).toBe(2);
+    await expect(page.getByText("Account ID", { exact: true })).toBeVisible();
 
-  await page
-    .getByRole("button", { name: "Preview merge consequences" })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Merge review" }),
-  ).toBeFocused();
-  await expect(page.getByText("Created atomically before any records move")).toBeVisible();
-  await expect(page.getByText("assessment attempts: 2 duplicate + 3 survivor")).toBeVisible();
-  await expect(page.getByText(/Rollback is refused after new profile/i)).toBeVisible();
+    await page.getByLabel("Other account's ID").fill(otherAccountId);
+    await page
+      .getByLabel("Other account's proof")
+      .fill(`proof_${"o".repeat(44)}`);
+    await page
+      .getByLabel("Keep this account; the other account merges into it")
+      .check();
 
-  await page
-    .getByLabel("Keep from survivor: Survivor Learner")
-    .check();
-  await page
-    .getByLabel(new RegExp(`Type MERGE ${sourceId} INTO ${survivorId}`))
-    .fill(`MERGE ${sourceId} INTO ${survivorId}`);
-  await page.getByRole("button", { name: "Merge accounts" }).click();
+    await page
+      .getByRole("button", { name: "Preview merge consequences" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Merge review" }),
+    ).toBeFocused();
+    await expect(
+      page.getByText("assessment attempts: 2 from this side + 3 from the other side"),
+    ).toBeVisible();
+    await expect(page.getByText(/Rollback is refused after new profile/i)).toBeVisible();
 
-  await expect(
-    page.getByRole("heading", { name: "Immutable merge receipt" }),
-  ).toBeFocused();
-  await expect(page.getByText("receipt-digest")).toBeVisible();
-  expect(api.completionRequest()).toMatchObject({
-    confirmation: `MERGE ${sourceId} INTO ${survivorId}`,
-    resolutions: { "account.displayName": "survivor" },
+    await page.getByLabel("Keep: Surviving side").check();
+    await page
+      .getByLabel("Type the confirmation below")
+      .fill(`MERGE ${otherAccountId} INTO ${accountId}`);
+    await page.getByRole("button", { name: "Merge accounts" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Immutable merge receipt" }),
+    ).toBeFocused();
+    expect(api.completionRequest()).toMatchObject({
+      confirmation: `MERGE ${otherAccountId} INTO ${accountId}`,
+      resolutions: { "account.displayName": "survivor" },
+    });
+
+    await page.getByText("Roll back this merge").click();
+    await page
+      .getByLabel("Type the confirmation below")
+      .last()
+      .fill(`ROLL BACK ${mergeId}`);
+    await page
+      .getByLabel("Rollback reason")
+      .fill("The learner picked the wrong side to keep.");
+    await page.getByRole("button", { name: "Restore both accounts" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Recovery completed" }),
+    ).toBeVisible();
+    expect(api.rollbackRequest()).toEqual({
+      confirmation: `ROLL BACK ${mergeId}`,
+      reason: "The learner picked the wrong side to keep.",
+    });
+
+    const accessibility = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    expect(accessibility.violations).toEqual([]);
   });
 
-  await page
-    .getByText("Roll back from the protected recovery snapshot")
-    .click();
-  await page
-    .getByLabel(new RegExp(`Type ROLL BACK ${mergeId}`))
-    .fill(`ROLL BACK ${mergeId}`);
-  await page
-    .getByLabel("Rollback reason")
-    .fill("The owner selected the wrong durable learner record.");
-  await page.getByRole("button", { name: "Restore both accounts" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Recovery completed" }),
-  ).toBeVisible();
-  expect(api.rollbackRequest()).toEqual({
-    confirmation: `ROLL BACK ${mergeId}`,
-    reason: "The owner selected the wrong durable learner record.",
+  test("fails closed for a same-account merge, an expired review, and a replayed proof", async ({
+    page,
+  }) => {
+    await installMergeApi(page, { previewMode: "expired" });
+    await page.goto("/account");
+
+    await page
+      .getByRole("button", { name: "Get this account's proof" })
+      .click();
+    await page.getByLabel("Other account's ID").fill(accountId);
+    await page
+      .getByLabel("Other account's proof")
+      .fill(`proof_${"o".repeat(44)}`);
+    await page
+      .getByLabel("Keep this account; the other account merges into it")
+      .check();
+    await page
+      .getByRole("button", { name: "Preview merge consequences" })
+      .click();
+    await expect(
+      page.getByText("The other account must be different from this one."),
+    ).toBeVisible();
+
+    await page.getByLabel("Other account's ID").fill(otherAccountId);
+    await page
+      .getByRole("button", { name: "Preview merge consequences" })
+      .click();
+    await expect(
+      page.getByText("This review has expired. No merge occurred."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Merge accounts" }),
+    ).toBeDisabled();
+    await page.getByRole("button", { name: "Cancel review" }).click();
+    await expect(
+      page.getByText(/Merge review cancelled. No accounts changed/i),
+    ).toBeVisible();
+
+    await page.unrouteAll({ behavior: "wait" });
+    await installMergeApi(page, { previewMode: "replayed" });
+    await page.reload();
+    await page
+      .getByRole("button", { name: "Get this account's proof" })
+      .click();
+    await page.getByLabel("Other account's ID").fill(otherAccountId);
+    await page
+      .getByLabel("Other account's proof")
+      .fill(`proof_${"o".repeat(44)}`);
+    await page
+      .getByLabel("Keep this account; the other account merges into it")
+      .check();
+    await page
+      .getByRole("button", { name: "Preview merge consequences" })
+      .click();
+    await expect(
+      page.getByText(
+        "One proof was already consumed. Get a fresh proof from both accounts and try again.",
+      ),
+    ).toBeVisible();
   });
-
-  const accessibility = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(accessibility.violations).toEqual([]);
-});
-
-test("owner merge UI fails closed for duplicate, cancelled, expired, and replayed reviews", async ({
-  page,
-}) => {
-  test.skip(
-    !hostedIdentityConfigured,
-    "The account-merge failure states require account-API configuration.",
-  );
-  await installOwnerApi(page, { previewMode: "expired" });
-  await page.goto("/admin");
-
-  const sourceGroup = page.getByRole("group", {
-    name: "Duplicate account to retire",
-  });
-  const survivorGroup = page.getByRole("group", {
-    name: "Learner record to keep",
-  });
-  await sourceGroup.getByLabel("Account", { exact: true }).selectOption(sourceId);
-  await survivorGroup
-    .getByLabel("Account", { exact: true })
-    .selectOption(sourceId);
-  await sourceGroup
-    .getByLabel("One-time proof from the account holder")
-    .fill(`proof_${"s".repeat(48)}`);
-  await survivorGroup
-    .getByLabel("One-time proof from the account holder")
-    .fill(`proof_${"v".repeat(48)}`);
-  await page
-    .getByRole("button", { name: "Preview merge consequences" })
-    .click();
-  await expect(
-    page.getByText("The duplicate and survivor must be different accounts."),
-  ).toBeVisible();
-
-  await survivorGroup
-    .getByLabel("Account", { exact: true })
-    .selectOption(survivorId);
-  await sourceGroup
-    .getByLabel("One-time proof from the account holder")
-    .fill(`proof_${"s".repeat(48)}`);
-  await survivorGroup
-    .getByLabel("One-time proof from the account holder")
-    .fill(`proof_${"v".repeat(48)}`);
-  await page
-    .getByRole("button", { name: "Preview merge consequences" })
-    .click();
-  await expect(
-    page.getByText("This review has expired. No merge occurred."),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Merge accounts" }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Cancel review" }).click();
-  await expect(
-    page.getByText(/Merge review cancelled. No accounts changed/i),
-  ).toBeVisible();
-
-  await page.unrouteAll({ behavior: "wait" });
-  await installOwnerApi(page, { previewMode: "replayed" });
-  await page.reload();
-  await selectAccountsAndPasteProofs(page);
-  await page
-    .getByRole("button", { name: "Preview merge consequences" })
-    .click();
-  await expect(
-    page.getByText(
-      "One proof was already consumed. Collect fresh proof for both accounts.",
-    ),
-  ).toBeVisible();
-  await expect(
-    page
-      .getByRole("group", { name: "Duplicate account to retire" })
-      .getByLabel("One-time proof from the account holder"),
-  ).toHaveValue("");
 });

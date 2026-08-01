@@ -15,6 +15,7 @@ import {
   type FormEvent,
 } from "react";
 import { learnerDataPolicy } from "../lib/learnerDataPolicy";
+import { AccountMergeSelfService } from "./AccountMergeSelfService";
 import {
   useAuth,
   type AccountState,
@@ -732,6 +733,7 @@ export function AccountDashboard() {
       ) : null}
       <ProfilePreferencesEditor hosted={account.state === "approved"} />
       <LearnerDataControls />
+      {account.state === "approved" ? <AccountMergeSelfService /> : null}
       {account.roles.includes("owner") ? <OwnerAdministration /> : null}
     </div>
   );
