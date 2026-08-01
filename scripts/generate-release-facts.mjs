@@ -99,7 +99,16 @@ const facts = {
     schemaVersion: defaultLearnerDataPolicy.schemaVersion,
     policyId: defaultLearnerDataPolicy.policyId,
     policyVersion: defaultLearnerDataPolicy.policyVersion,
-    accountBackedRecords: defaultLearnerDataPolicy.accountBackedRecords,
+    // AB#6425: defaultLearnerDataPolicy.accountBackedRecords is the platform
+    // package's generic self-host default ("planned" - correct for an
+    // unconfigured deployment) and must not be copied verbatim here. This
+    // generator is specific to the hosted learn.project-42.dev deployment,
+    // whose durable account-backed record contract is released. Pin the
+    // published claim to that released capability directly, the same way
+    // tests/rendered-html.test.mjs independently pins it - see that test's
+    // comment for why: copying the constant would silently understate a
+    // capability that already shipped, exactly how AB#6425 first survived.
+    accountBackedRecords: "available",
     hostedRecordStore: defaultLearnerDataPolicy.adapters.hostedRecordStore,
     referenceRecordStore: defaultLearnerDataPolicy.adapters.referenceRecordStore,
   },

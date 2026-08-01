@@ -82,20 +82,32 @@ test("renders canonical versions, counts, providers, licenses, and project links
   ]) {
     assert.ok(html.includes(url));
   }
-  assert.deepEqual(releaseFacts.learnerDataPolicy, {
-    schemaVersion: defaultLearnerDataPolicy.schemaVersion,
-    policyId: defaultLearnerDataPolicy.policyId,
-    policyVersion: defaultLearnerDataPolicy.policyVersion,
-    accountBackedRecords: defaultLearnerDataPolicy.accountBackedRecords,
-    hostedRecordStore: defaultLearnerDataPolicy.adapters.hostedRecordStore,
-    referenceRecordStore:
-      defaultLearnerDataPolicy.adapters.referenceRecordStore,
-  });
+  // accountBackedRecords is deliberately excluded from this comparison: the
+  // platform package's defaultLearnerDataPolicy.accountBackedRecords is a
+  // generic self-host default ("planned"), which would be correct for an
+  // unconfigured deployment but is not this one. Checking it against the raw
+  // constant here would happily lock in a stale, understated value - exactly
+  // how AB#6425 survived - so it is pinned separately below instead.
+  assert.deepEqual(
+    {
+      schemaVersion: releaseFacts.learnerDataPolicy.schemaVersion,
+      policyId: releaseFacts.learnerDataPolicy.policyId,
+      policyVersion: releaseFacts.learnerDataPolicy.policyVersion,
+      hostedRecordStore: releaseFacts.learnerDataPolicy.hostedRecordStore,
+      referenceRecordStore: releaseFacts.learnerDataPolicy.referenceRecordStore,
+    },
+    {
+      schemaVersion: defaultLearnerDataPolicy.schemaVersion,
+      policyId: defaultLearnerDataPolicy.policyId,
+      policyVersion: defaultLearnerDataPolicy.policyVersion,
+      hostedRecordStore: defaultLearnerDataPolicy.adapters.hostedRecordStore,
+      referenceRecordStore:
+        defaultLearnerDataPolicy.adapters.referenceRecordStore,
+    },
+  );
 
-  // The deepEqual above only proves the artifact and the constant agree, not
-  // that either is correct - it would happily lock in a stale value, which is
-  // exactly how AB#6425 survived. Pin the published claim to the released
-  // capability directly.
+  // Pin the published claim to the released capability directly, rather than
+  // to the platform's generic self-host default.
   assert.equal(
     releaseFacts.learnerDataPolicy.accountBackedRecords,
     "available",
