@@ -1,11 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { skipOnRetiredPagesRoute } from "./retired-routes";
 
 test("keeps legal, privacy, and account expectations visible without dark patterns", async ({
   page,
 }) => {
-  skipOnRetiredPagesRoute("/account");
   await page.goto("/account");
 
   await expect(

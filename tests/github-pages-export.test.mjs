@@ -30,12 +30,42 @@ test("exports every governed route for GitHub Pages", async () => {
   }
 });
 
-test("retires the routes that moved to their own subdomains AB#6851 AB#6227", async () => {
-  const [account, admin, githubCallback] = await Promise.all([
+test("keeps the migrated routes live in the default export AB#6851 AB#6227", async () => {
+  // The default export is what the self-host Learn image serves (Dockerfile
+  // runs npm run pages:build). A self-hosted deployment has no
+  // account.project-42.dev or admin.project-42.dev, so retiring these routes by
+  // default would redirect its users to this project's hosted surface.
+  // Retirement is opt-in via --retire-migrated-routes and belongs only to the
+  // learn.project-42.dev publish.
+  const [account, admin] = await Promise.all([
     readFile(path.join(outputRoot, "account", "index.html"), "utf8"),
     readFile(path.join(outputRoot, "admin", "index.html"), "utf8"),
+  ]);
+
+  for (const html of [account, admin]) {
+    assert.doesNotMatch(html, /<meta http-equiv="refresh"/);
+  }
+  assert.match(account, /One learning record/);
+  assert.match(admin, /Project 42 administration/);
+});
+
+test("retires the routes that moved to their own subdomains AB#6851 AB#6227", async () => {
+  const retiredRoot = path.join(projectRoot, "dist", "pages-retired-test");
+  execFileSync(
+    process.execPath,
+    [
+      path.join(projectRoot, "scripts", "export-github-pages.mjs"),
+      "--retire-migrated-routes",
+      "--out=pages-retired-test",
+    ],
+    { cwd: projectRoot, stdio: "pipe" },
+  );
+
+  const [account, admin, githubCallback] = await Promise.all([
+    readFile(path.join(retiredRoot, "account", "index.html"), "utf8"),
+    readFile(path.join(retiredRoot, "admin", "index.html"), "utf8"),
     readFile(
-      path.join(outputRoot, "account", "github", "callback", "index.html"),
+      path.join(retiredRoot, "account", "github", "callback", "index.html"),
       "utf8",
     ),
   ]);

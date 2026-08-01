@@ -31,6 +31,15 @@ jobs:
           PUPPETEER_SKIP_DOWNLOAD: "true"
       - run: npx playwright install --with-deps chromium --only-shell
       - run: npm run check
+      # AB#6851 AB#6227: /account and /admin moved to their own subdomains, so
+      # the published learn.project-42.dev site serves redirect stubs for them.
+      # This re-export is deliberately separate from the one npm run check
+      # produced: that artifact is also what the self-host Learn image serves
+      # (Dockerfile runs npm run pages:build), and a self-hosted deployment has
+      # no account./admin.project-42.dev to redirect to. Only this publish opts
+      # in. It reuses the build npm run check already made.
+      - name: Re-export with the migrated routes retired
+        run: npm run pages:export -- --retire-migrated-routes
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: dist/pages

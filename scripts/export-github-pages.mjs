@@ -21,6 +21,16 @@ const args = new Map(
 const canonicalDomain = args.get("domain") ?? "learn.project-42.dev";
 const routePrefixes = args.get("routes")?.split(",").map((value) => value.trim()).filter(Boolean) ?? null;
 const isFilteredExport = routePrefixes !== null;
+// --retire-migrated-routes replaces the routes that moved to their own
+// subdomains with redirect stubs (AB#6851, AB#6227). It is opt-in and used only
+// by the learn.project-42.dev Pages publish, NOT by the default export.
+//
+// The default export is also what the self-host Learn image serves (Dockerfile
+// runs npm run pages:build). A self-hosted deployment has no
+// account.project-42.dev or admin.project-42.dev, so redirecting there would
+// send its users to this project's hosted surface instead of their own. The
+// default must keep rendering the real pages.
+const retireMigratedRoutes = args.has("retire-migrated-routes");
 const outputRoot = path.join(
   projectRoot,
   "dist",
@@ -146,10 +156,13 @@ async function main() {
     throw new Error(`--routes matched no known route: ${routePrefixes.join(",")}`);
   }
   for (const route of htmlRoutes) {
-    // Only the default learn.project-42.dev export retires these routes; a
-    // filtered --domain export is the subdomain publishing its own copy, which
-    // must keep the real page.
-    const retiredTarget = isFilteredExport ? undefined : RETIRED_ROUTES.get(route);
+    // Retire only when explicitly asked, and never for a filtered --domain
+    // export: that export IS the subdomain publishing its own copy, so it must
+    // keep the real page or it would redirect to itself forever.
+    const retiredTarget =
+      retireMigratedRoutes && !isFilteredExport
+        ? RETIRED_ROUTES.get(route)
+        : undefined;
     if (retiredTarget) {
       await writeRoute(route, redirectDocument(route, retiredTarget));
       continue;
