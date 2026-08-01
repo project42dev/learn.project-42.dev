@@ -94,6 +94,7 @@ test("starts API-owned sign-in without storing an identity-provider token", asyn
     !hostedIdentityConfigured,
     "The secure-session journey requires account-API configuration.",
   );
+  skipOnRetiredPagesRoute("/account");
   await installSignedOutApi(page);
   const startPattern =
     `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/auth/start**`;
@@ -127,6 +128,7 @@ test("recovers when another browser tab wins secure-session rotation", async ({
     !hostedIdentityConfigured,
     "The secure-session journey requires account-API configuration.",
   );
+  skipOnRetiredPagesRoute("/account");
 
   const account = {
     id: "rotation-race-account",
@@ -1087,6 +1089,7 @@ test("explains a temporarily unreachable hosted account service", async ({ page 
     !hostedIdentityConfigured,
     "The hosted-account network state requires account-API configuration.",
   );
+  skipOnRetiredPagesRoute("/account");
 
   await page.route(
     `${process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN}/v1/auth/session`,
@@ -1275,6 +1278,7 @@ test("keeps protected owner administration keyboard-operable at a narrow viewpor
     !hostedIdentityConfigured,
     "The owner-console journey requires account-API configuration.",
   );
+  skipOnRetiredPagesRoute("/admin");
 
   const account = {
     id: "owner-account",
@@ -1863,6 +1867,7 @@ test("signing out clears the session and returns the learner to a signed-out acc
     !hostedIdentityConfigured,
     "The sign-out journey requires account-API configuration.",
   );
+  skipOnRetiredPagesRoute("/account");
 
   const account = {
     id: "sign-out-account",
