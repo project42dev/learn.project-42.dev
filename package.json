@@ -42,7 +42,8 @@
     "test:pages:artifact": "node --test tests/github-pages-export.test.mjs",
     "test:production:progress-migration": "playwright test --config playwright.production-progress.config.ts",
     "test:production:registration-request": "playwright test --config playwright.production-registration.config.ts",
-    "check": "npm run facts:check && npm run governance:check && npm run release:validate && npm run brand:check && npm run diagrams:check && npm run lint && npm run typecheck && npm run test:container-contract && npm test && npm run pages:export && npm run test:pages:artifact && npm run test:pages",
+    "check": "npm run audit:production && npm run facts:check && npm run governance:check && npm run release:validate && npm run brand:check && npm run diagrams:check && npm run lint && npm run typecheck && npm run test:container-contract && npm test && npm run pages:export && npm run test:pages:artifact && npm run test:pages",
+    "audit:production": "npm audit --omit=dev --audit-level=critical",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
