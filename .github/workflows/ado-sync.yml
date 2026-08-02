@@ -1,12 +1,11 @@
 name: ADO sync (Flow 1 intake)
 
-# Mirrors native Bug/Feature GitHub issues up into Azure DevOps for rollup/reporting. Initial
-# creation uses the official Microsoft-documented GitHub Action (listed at
-# https://learn.microsoft.com/azure/devops/cross-service/github-integration#integrate-azure-boards-with-github)
-# and later events update the exact immutable AB# link through the ADO REST API. The split
-# prevents the action from creating duplicates after title changes. GitHub stays the master
-# record — see docs/standards/work-item-sync.md (Flow 1) and
-# docs/standards/github-issues.md.
+# Mirrors native Bug/Feature GitHub issues up into Azure DevOps for rollup/reporting. Every
+# event (create, edit, close, reopen) goes straight to the Azure DevOps REST API via
+# curl/jq — no third-party GitHub Action executes with our secrets. The previous
+# danhellem/github-actions-issue-to-work-item action's action.yml still declared node20
+# with no Node 24-capable release upstream (AB#6466). GitHub stays the master record —
+# see docs/standards/work-item-sync.md (Flow 1) and docs/standards/github-issues.md.
 #
 # The REVERSE direction (AB# mention -> ADO link/state-transition, e.g. "Fixes AB#123" in a
 # PR) is handled by the native "Azure Boards" GitHub Marketplace app + the ADO project's
@@ -58,23 +57,47 @@ jobs:
             *) echo "Unsupported issue type" >&2; exit 1 ;;
           esac
 
-      # Pinned to the v2.5 release commit, not @master (mutable ref) — this action receives
-      # ADO_PAT and github_token secrets, so it must not silently pick up unreviewed changes.
-      # Re-pin deliberately (and re-review the diff) when bumping to a newer release.
-      - id: sync
+      # First-party ADO REST creation (AB#6466 / SPIKE-013) — replaces the
+      # danhellem/github-actions-issue-to-work-item action so no third-party action
+      # runtime (Node-version or otherwise) executes with ADO_PAT/github_token. Issue
+      # title/body flow through env vars and jq --arg / gh --body-file only, never
+      # interpolated into the run: script, to avoid GitHub Actions script injection.
+      - name: Create ADO work item
+        id: sync
         if: github.event.action == 'opened' && steps.linked.outputs.id == ''
-        uses: danhellem/github-actions-issue-to-work-item@8d0ead9b49a65aa66dac6949b1ff149d7ef8b4de # v2.5
         env:
-          ado_token: "${{ secrets.ADO_PAT }}"
-          ado_organization: "${{ secrets.ADO_ORG }}"
-          ado_project: "${{ secrets.ADO_PROJECT }}"
-          ado_area_path: "Project 42\\Product and UX"
-          ado_wit: "${{ steps.type.outputs.ado_wit }}"
-          ado_new_state: "New"
-          ado_close_state: "Closed"
-          ado_bypassrules: "true"
-          github_token: "${{ github.token }}"
-          log_level: "100"
+          ADO_PAT: "${{ secrets.ADO_PAT }}"
+          ADO_ORG: "${{ secrets.ADO_ORG }}"
+          ADO_PROJECT: "${{ secrets.ADO_PROJECT }}"
+          ADO_WIT: "${{ steps.type.outputs.ado_wit }}"
+          GH_TOKEN: "${{ github.token }}"
+          REPOSITORY: "${{ github.repository }}"
+          ISSUE_NUMBER: "${{ github.event.issue.number }}"
+          ISSUE_TITLE: "${{ github.event.issue.title }}"
+          ISSUE_BODY: "${{ github.event.issue.body }}"
+        run: |
+          project_encoded=$(node -p "encodeURIComponent(process.env.ADO_PROJECT)")
+          ado_url="https://dev.azure.com/${ADO_ORG}/${project_encoded}/_apis/wit/workitems/\$${ADO_WIT}?bypassRules=true&api-version=7.1"
+          ado_auth=$(printf ':%s' "$ADO_PAT" | base64 -w0)
+          patch=$(jq -n \
+            --arg title "$ISSUE_TITLE" \
+            --arg description "$ISSUE_BODY" \
+            --arg area 'Project 42\Product and UX' \
+            '[
+              {"op":"add","path":"/fields/System.Title","value":$title},
+              {"op":"add","path":"/fields/System.Description","value":$description},
+              {"op":"add","path":"/fields/System.AreaPath","value":$area}
+            ]')
+          work_item_id=$(curl --silent --show-error --fail-with-body \
+            --request POST \
+            --header "Authorization: Basic ${ado_auth}" \
+            --header "Content-Type: application/json-patch+json" \
+            --data "$patch" \
+            "$ado_url" | jq -r '.id')
+          echo "id=${work_item_id}" >> "$GITHUB_OUTPUT"
+
+          printf '%s\n\nAB#%s\n' "$ISSUE_BODY" "$work_item_id" > "$RUNNER_TEMP/issue-body.txt"
+          gh issue edit "$ISSUE_NUMBER" --repo "$REPOSITORY" --body-file "$RUNNER_TEMP/issue-body.txt"
 
       - name: Update the exact linked ADO work item
         if: github.event.action != 'opened' && steps.linked.outputs.id != ''
