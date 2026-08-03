@@ -49,6 +49,11 @@ artifacts are generated ahead of deployment. See
 [`docs/diagram-authoring.md`](docs/diagram-authoring.md) for the validation,
 accessibility, and security contract.
 
+The virtual instructor player never calls a model at runtime; it only plays
+back pre-generated, human-approved training packages. See
+[`docs/virtual-instructor-player.md`](docs/virtual-instructor-player.md) for
+the package contract, the runtime prohibition, and the current build status.
+
 ## Contributing and support
 
 - [Contributing](CONTRIBUTING.md) covers repository ownership, local setup,
