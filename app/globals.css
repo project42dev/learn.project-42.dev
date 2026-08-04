@@ -176,6 +176,163 @@ a {
   color: var(--ink);
 }
 
+/* Header menus: a disclosure button and a panel that stays in the DOM,
+   toggled with `hidden` so every destination is still in the served HTML. */
+.header-menu {
+  position: relative;
+}
+
+.header-menu-trigger {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 720;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0;
+}
+
+.header-menu-trigger:hover {
+  color: var(--ink);
+}
+
+.header-menu-chevron {
+  height: 12px;
+  transition: transform 0.15s ease;
+  width: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-menu-chevron {
+    transition: none;
+  }
+}
+
+.header-menu-trigger[aria-expanded="true"] .header-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.header-menu-panel {
+  background: var(--paper-strong);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow);
+  left: 0;
+  min-width: 15rem;
+  padding: 0.5rem;
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  z-index: 60;
+}
+
+.header-menu-panel[hidden] {
+  display: none;
+}
+
+.header-menu-panel-end {
+  left: auto;
+  right: 0;
+}
+
+.header-menu-list {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.header-menu-list a {
+  align-items: center;
+  border-radius: 6px;
+  color: var(--ink);
+  display: flex;
+  font-size: 0.86rem;
+  font-weight: 700;
+  /* 44px floor: these are pointer targets and the sites enforce a minimum
+     target size. Padding alone left them around 38px. */
+  min-height: 44px;
+  padding: 0 0.65rem;
+  text-decoration: none;
+}
+
+.header-menu-list a:hover {
+  background: rgba(17, 24, 39, 0.06);
+}
+
+.header-menu-identity {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.1rem;
+  margin: 0 0 0.4rem;
+  padding: 0.4rem 0.65rem 0.7rem;
+}
+
+.header-menu-identity span {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header-menu-identity strong {
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.header-menu-footer {
+  border-top: 1px solid var(--line);
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+.header-menu-footer button {
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 0 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+
+.header-menu-footer button:hover {
+  background: rgba(17, 24, 39, 0.06);
+}
+
+.header-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.9rem;
+}
+
+.profile-trigger {
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.profile-trigger:hover {
+  background: rgba(17, 24, 39, 0.06);
+}
+
+.profile-icon {
+  height: 22px;
+  width: 22px;
+}
+
 .header-action {
   align-items: center;
   background: var(--navy);
@@ -5103,6 +5260,18 @@ html[data-project42-reduced-motion="true"] *::after {
 
 .ondemand-status strong {
   color: var(--ink, #11181f);
+}
+
+/* A path with nothing written for the classroom yet. Muted rather than
+   hidden: dropping it would make the two catalogues disagree about what
+   exists, which is the defect this page had. */
+.learning-path-row.is-unwritten {
+  background: transparent;
+}
+
+.learning-path-row.is-unwritten .learning-path-number,
+.learning-path-row.is-unwritten h2 {
+  color: #737b88;
 }
 
 /* A filmed lesson inside the path block's lesson column. The list is the same

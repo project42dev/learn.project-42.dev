@@ -13,43 +13,46 @@ export const metadata: Metadata = {
     "Instructor-led lessons on demand: the same Project 42 modules, taught on video with captions and a full transcript.",
 };
 
-// The instructor-led catalogue. It uses the same learning-path-row block as
-// /learn on purpose: this is the same catalogue in a second rendering
-// (ADR-0020), so presenting it as a different kind of list made two views of
-// one thing look like two products. A path with no film yet still links to
-// where its material can be finished today.
+// The instructor-led catalogue, and it must line up with /learn exactly.
+//
+// It previously listed only the three paths that have class scripts and
+// numbered them 01-03, so "02" meant Providers in Practice on /learn and
+// Reliable Agent Workflows here, and five paths simply vanished. Two views of
+// ONE catalogue (ADR-0020) cannot disagree about what is in it or what order
+// it comes in.
+//
+// So: every path, in catalog order, carrying its catalog number. A path with
+// no class scripts says so and still links to where its material can be read.
 export default function OnDemandPage() {
-  const pathsWithScripts = starterCatalog.paths.flatMap((path) => {
+  const paths = starterCatalog.paths.map((path) => {
     const lessons = path.moduleIds.flatMap((moduleId) => {
       const classScript = getClassScriptPackage(moduleId);
       const lessonModule = getLearningModule(moduleId);
-      if (!classScript || !lessonModule) return [];
+      if (!lessonModule) return [];
       return [
         {
           moduleId,
           title: lessonModule.title,
-          seconds: classScript.plannedDurationSeconds,
+          seconds: classScript?.plannedDurationSeconds ?? 0,
+          scripted: Boolean(classScript),
           rendering: getInstructorRendering(moduleId),
         },
       ];
     });
-    if (lessons.length === 0) return [];
-    return [
-      {
-        path,
-        lessons,
-        minutes: Math.round(
-          lessons.reduce((total, lesson) => total + lesson.seconds, 0) / 60,
-        ),
-        filmed: lessons.find((lesson) => lesson.rendering),
-      },
-    ];
+    const scripted = lessons.filter((lesson) => lesson.scripted);
+    return {
+      path,
+      lessons,
+      scriptedCount: scripted.length,
+      minutes: Math.round(
+        scripted.reduce((total, lesson) => total + lesson.seconds, 0) / 60,
+      ),
+      filmed: lessons.find((lesson) => lesson.rendering),
+    };
   });
 
-  const scriptedCount = pathsWithScripts.reduce(
-    (total, entry) => total + entry.lessons.length,
-    0,
-  );
+  const scriptedTotal = paths.reduce((total, entry) => total + entry.scriptedCount, 0);
+  const pathsWithScripts = paths.filter((entry) => entry.scriptedCount > 0).length;
   const filmedCount = instructorRenderings.length;
 
   return (
@@ -68,31 +71,38 @@ export default function OnDemandPage() {
       </header>
 
       {/*
-        Counting out loud, because the honest number is small. Saying "40
-        lessons" when one has been filmed would be the same silent-success
-        failure this project keeps finding in its own checks: a figure that
-        looks healthy and measures the wrong thing.
+        Counting out loud, because the honest numbers are small and they are
+        three different numbers. Collapsing them into one would be the same
+        silent-success failure this project keeps finding in its own checks: a
+        figure that looks healthy and measures the wrong thing.
       */}
       <p className="ondemand-status">
         <strong>
           {filmedCount} lesson{filmedCount === 1 ? "" : "s"} filmed so far
         </strong>{" "}
-        out of {scriptedCount} written for the classroom. Every module is already
+        out of {scriptedTotal} written for the classroom, across{" "}
+        {pathsWithScripts} of {starterCatalog.paths.length} paths. The paths and
+        their order are the same as the self-paced side. Every module is already
         available to read, and anything you finish now carries straight over when
         its lesson is published.
       </p>
 
       <div className="learning-path-list">
-        {pathsWithScripts.map(({ path, lessons, minutes, filmed }, index) => (
-          <article className="learning-path-row" key={path.id}>
-            <div className="learning-path-number">
-              {String(index + 1).padStart(2, "0")}
-            </div>
+        {paths.map(({ path, lessons, scriptedCount, minutes, filmed }, index) => (
+          <article
+            className={
+              scriptedCount > 0 ? "learning-path-row" : "learning-path-row is-unwritten"
+            }
+            key={path.id}
+          >
+            <div className="learning-path-number">{String(index + 1).padStart(2, "0")}</div>
             <div>
               <div className="path-card-top">
                 <span className="level-pill">{path.level}</span>
                 <span>
-                  {lessons.length} lessons · {minutes} min
+                  {scriptedCount > 0
+                    ? `${scriptedCount} lessons · ${minutes} min of video`
+                    : `${lessons.length} modules · no lessons written yet`}
                 </span>
               </div>
               <h2>{path.title}</h2>
