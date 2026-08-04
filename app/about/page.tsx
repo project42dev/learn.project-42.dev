@@ -55,6 +55,16 @@ export default function AboutPage() {
             curriculum are open so teams can eventually run and extend their own.
           </p>
         </section>
+        <section>
+          <span className="about-number">05</span>
+          <h2>One course, two ways to take it</h2>
+          <p>
+            Every module can be read or watched. An instructor-led lesson is a second
+            rendering of the same material, not a second course, so both carry the
+            same knowledge check, cite the same sources, and land in the same record.
+            A correction reaches the reader and the viewer together.
+          </p>
+        </section>
       </div>
 
       <section className="release-facts" aria-labelledby="release-facts-title">
@@ -106,10 +116,13 @@ export default function AboutPage() {
             <dt>Reviewed questions</dt>
             <dd>{siteFacts.counts.reviewedQuestions}</dd>
           </div>
-          <div>
-            <dt>Practical resources</dt>
-            <dd>{siteFacts.counts.resources}</dd>
-          </div>
+          {/*
+            No "Practical resources" tile. Learn's count is legitimately 0
+            because the references moved to guide.project-42.dev, but rendering
+            that reads as "Project 42 has no practical resources", which is
+            false: there are 83 of them one subdomain over. The fact stays in
+            release-facts.json; it just is not a stat this site should display.
+          */}
           <div>
             <dt>Provider scopes</dt>
             <dd>{siteFacts.counts.providerScopes}</dd>

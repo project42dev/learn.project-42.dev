@@ -751,6 +751,13 @@ a {
   max-width: 980px;
 }
 
+/* page-hero h1 sets line-height 0.86 with margin 0, which reads well for a
+   one-line headline. Any headline that wraps put its second-line descenders
+   into the lede underneath, visible on the landing page and About. */
+.page-hero h1 + p {
+  margin-top: 1.5rem;
+}
+
 .page-hero > p:last-child,
 .path-hero > div > p,
 .resource-detail-hero > div > p {
@@ -2852,6 +2859,13 @@ a {
   padding: 2rem;
 }
 
+/* An odd number of points would leave the last one as a half-width orphan
+   beside empty space. Spanning it reads as deliberate emphasis instead. */
+.about-grid section:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
 .about-number {
   color: #737b88;
   font-family: Georgia, "Times New Roman", serif;
@@ -3004,6 +3018,12 @@ a {
 
 .open-source-banner h2 {
   font-size: clamp(2.2rem, 5vw, 4rem);
+}
+
+/* Same wrapped-headline collision as page-hero: line-height 0.98 with margin 0
+   puts the second line's descenders into the paragraph below. */
+.open-source-banner h2 + p {
+  margin-top: 1.25rem;
 }
 
 .open-source-banner > div > p:last-child {
@@ -5042,6 +5062,14 @@ html[data-project42-reduced-motion="true"] *::after {
   .diagram-viewer-controls output {
     min-height: 44px;
   }
+}
+
+/* The landing page's header. page-hero carries the type and the rule; this
+   only adds the top breathing room that page-shell would normally provide,
+   which the landing page cannot use because ProgressSnapshot brings its own
+   shell and would end up double-inset inside one. */
+.landing-hero {
+  padding-block: 4.5rem 4rem;
 }
 
 /* The way back to the other format from inside one of them. Deliberately quiet

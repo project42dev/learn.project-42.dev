@@ -60,7 +60,10 @@ test("renders canonical versions, counts, providers, licenses, and project links
     releaseFacts.counts.assessedModules,
     releaseFacts.counts.evidenceActivities,
     releaseFacts.counts.reviewedQuestions,
-    releaseFacts.counts.resources,
+    // Not counts.resources: it is 0 on this site (the references live on
+    // guide.project-42.dev) and the About page no longer renders a tile that
+    // would read as "Project 42 has no practical resources". The assertion was
+    // also close to vacuous, since `>0<` matches a zero anywhere in the page.
     releaseFacts.counts.providerScopes,
   ]) {
     assert.ok(html.includes(`>${count}<`), `About page is missing count ${count}`);

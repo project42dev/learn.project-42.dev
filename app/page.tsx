@@ -20,24 +20,33 @@ export const metadata: Metadata = {
 export default function Home() {
   const pathCount = starterCatalog.paths.length;
   const moduleCount = starterCatalog.modules.length;
-  const minutes = starterCatalog.modules.reduce(
-    (total, module) => total + (module.estimatedMinutes ?? 0),
-    0,
+  // Rounded to hours. The raw total is 3,704 minutes, which is a number nobody
+  // can picture and reads like a bug rather than a catalogue size.
+  const hours = Math.round(
+    starterCatalog.modules.reduce(
+      (total, module) => total + (module.estimatedMinutes ?? 0),
+      0,
+    ) / 60,
   );
 
   return (
     <main>
-      <section className="section shell" aria-labelledby="landing-title">
-        <div className="section-heading">
-          <p className="eyebrow">Project 42 Academy</p>
-          <h1 id="landing-title">Two ways to take the same course.</h1>
-          <p>
-            The same modules, the same knowledge checks, the same sources, and one
-            record of what you have finished. Read it, or watch it taught. Switch
-            whenever you like: your progress does not care which one you picked.
-          </p>
-        </div>
-      </section>
+      {/*
+        page-hero, the same treatment the Field Guide and every inner Learn
+        page use: display-scale headline, eyebrow, rule underneath. An earlier
+        version of this page used section-heading, which styles an h2 and left
+        the landing page's h1 at body size, so the front door read as plain
+        text while every page behind it had a proper header.
+      */}
+      <header className="page-hero landing-hero shell">
+        <p className="eyebrow">Project 42 Academy</p>
+        <h1>Two ways to take the same course.</h1>
+        <p>
+          The same modules, the same knowledge checks, the same sources, and one
+          record of what you have finished. Read it, or watch it taught. Switch
+          whenever you like: your progress does not care which one you picked.
+        </p>
+      </header>
 
       <ProgressSnapshot />
 
@@ -55,7 +64,7 @@ export default function Home() {
               <li>
                 {pathCount} learning paths, {moduleCount} assessed modules
               </li>
-              <li>About {minutes} minutes of material</li>
+              <li>About {hours} hours of material</li>
               <li>Every claim carries its source and a verification date</li>
               <li>Progress stays on this device in the current release</li>
             </ul>
