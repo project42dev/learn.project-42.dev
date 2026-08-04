@@ -5040,3 +5040,43 @@ html[data-project42-reduced-motion="true"] *::after {
     min-height: 44px;
   }
 }
+
+/*
+  Two ways to take the same course, presented as two sections. The teaser is
+  deliberately quieter than the live path list: it announces something that is
+  not here yet and must not compete with what a learner can start now.
+*/
+.section-intro {
+  color: var(--muted, #5b6470);
+  margin-bottom: 2rem;
+  max-width: 62ch;
+}
+
+.instructor-led-teaser {
+  border: 1px dashed var(--line, #d6dce4);
+  border-radius: 10px;
+  margin-top: 3.5rem;
+  padding: 2rem;
+}
+
+.instructor-led-teaser .section-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.instructor-led-teaser p {
+  max-width: 62ch;
+}
+
+.instructor-led-teaser p + p {
+  margin-top: 0.9rem;
+}
+
+.instructor-led-note {
+  color: var(--muted, #5b6470);
+  font-size: 0.92rem;
+  margin-top: 1.25rem !important;
+}

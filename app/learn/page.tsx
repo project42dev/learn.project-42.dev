@@ -18,6 +18,24 @@ export default function LearnPage() {
           module ends with a short knowledge check.
         </p>
       </header>
+
+      {/*
+        Two ways to take the same course, not two courses. Both sections are
+        rendered from one content item, so a correction to the material reaches
+        the reader and the viewer together. A parallel catalogue would drift, and
+        when a cited source changed there would be two copies of the same claim
+        to reconcile.
+      */}
+      <section aria-labelledby="self-paced-heading">
+        <h2 id="self-paced-heading" className="section-heading">
+          Self-paced
+        </h2>
+        <p className="section-intro">
+          Read at your own speed, work through the exercises, and finish each module
+          with a knowledge check. Available now.
+        </p>
+      </section>
+
       <div className="learning-path-list">
         {starterCatalog.paths.map((path, index) => {
           const modules = path.moduleIds
@@ -57,6 +75,27 @@ export default function LearnPage() {
           );
         })}
       </div>
+
+      <section className="instructor-led-teaser" aria-labelledby="instructor-led-heading">
+        <h2 id="instructor-led-heading" className="section-heading">
+          Instructor-led, on demand <span className="level-pill">Coming soon</span>
+        </h2>
+        <p>
+          The same material, taught rather than read. A virtual instructor works
+          through each module on video, with captions and a full transcript, so you
+          can watch a lesson instead of reading one.
+        </p>
+        <p>
+          <strong>Same course, same knowledge checks, same sources.</strong> Every
+          lesson is built from the identical content as the self-paced version, so a
+          correction reaches both at once and the two can never tell you different
+          things.
+        </p>
+        <p className="instructor-led-note">
+          Nothing is generated while you watch. Every lesson is produced and reviewed
+          before it is published, then served as a fixed package.
+        </p>
+      </section>
     </main>
   );
 }
