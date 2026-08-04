@@ -5080,3 +5080,87 @@ html[data-project42-reduced-motion="true"] *::after {
   font-size: 0.92rem;
   margin-top: 1.25rem !important;
 }
+
+/* Preview of an instructor-led lesson: the shape of it, not a mock of a
+   finished one. No presenter is shown, because the avatar is chosen and
+   nothing has been rendered, and a stand-in face would promise something
+   this page has not committed to. */
+.lesson-preview {
+  background: var(--surface-2, #f6f8fb);
+  border-radius: 10px;
+  margin: 1.75rem 0 0;
+  padding: 1.25rem;
+}
+
+.lesson-preview-stage {
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(160deg, #1d2733 0%, #2b3a4d 100%);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: center;
+  padding: 1rem;
+  position: relative;
+  text-align: center;
+}
+
+.lesson-preview-badge {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  padding: 0.25rem 0.7rem;
+  text-transform: uppercase;
+}
+
+.lesson-preview-stage-note {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.94rem;
+  margin: 0;
+  max-width: 34ch;
+}
+
+.lesson-preview-caption {
+  background: #11181f;
+  border-radius: 6px;
+  color: #f2f5f8;
+  font-size: 0.95rem;
+  margin-top: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  text-align: center;
+}
+
+.lesson-preview-parts {
+  display: grid;
+  gap: 0.4rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0;
+}
+
+.lesson-preview-parts li {
+  font-size: 0.93rem;
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.lesson-preview-parts li::before {
+  content: "\2713";
+  left: 0;
+  position: absolute;
+}
+
+.lesson-preview figcaption {
+  color: var(--muted, #5b6470);
+  font-size: 0.88rem;
+  margin-top: 1.1rem;
+  max-width: 62ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-preview-stage { transition: none; }
+}

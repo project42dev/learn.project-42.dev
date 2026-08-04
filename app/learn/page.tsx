@@ -95,6 +95,35 @@ export default function LearnPage() {
           Nothing is generated while you watch. Every lesson is produced and reviewed
           before it is published, then served as a fixed package.
         </p>
+
+        {/*
+          A preview of the shape, not a mock of a finished lesson. It shows the
+          parts a learner gets and deliberately does not show a presenter: the
+          avatar is chosen but nothing has been rendered, and a fake still would
+          promise a specific face we have not committed to on this page.
+        */}
+        <figure className="lesson-preview" aria-label="Preview of an instructor-led lesson">
+          <div className="lesson-preview-stage">
+            <span className="lesson-preview-badge">Preview</span>
+            <p className="lesson-preview-stage-note">
+              Instructor on video, with the module&rsquo;s diagrams alongside
+            </p>
+          </div>
+          <div className="lesson-preview-caption">
+            &ldquo;A model does not remember your last question. Everything it seems
+            to recall was put back in front of it.&rdquo;
+          </div>
+          <ul className="lesson-preview-parts">
+            <li>Captions, on by default</li>
+            <li>Full transcript you can search and copy</li>
+            <li>The same diagrams as the written module</li>
+            <li>The same knowledge check at the end</li>
+          </ul>
+          <figcaption>
+            Each lesson is built from the same content as its written module, so the
+            two can never tell you different things.
+          </figcaption>
+        </figure>
       </section>
     </main>
   );
