@@ -5092,47 +5092,19 @@ html[data-project42-reduced-motion="true"] *::after {
   padding: 1.25rem;
 }
 
-.lesson-preview-stage {
-  align-items: center;
+.lesson-preview-video {
   aspect-ratio: 16 / 9;
-  background: linear-gradient(160deg, #1d2733 0%, #2b3a4d 100%);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  justify-content: center;
-  padding: 1rem;
-  position: relative;
-  text-align: center;
-}
-
-.lesson-preview-badge {
-  background: rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  color: #fff;
-  font-size: 0.72rem;
-  letter-spacing: 0.09em;
-  padding: 0.25rem 0.7rem;
-  text-transform: uppercase;
-}
-
-.lesson-preview-stage-note {
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.94rem;
-  margin: 0;
-  max-width: 34ch;
-}
-
-.lesson-preview-caption {
   background: #11181f;
-  border-radius: 6px;
-  color: #f2f5f8;
-  font-size: 0.95rem;
-  margin-top: 0.6rem;
-  padding: 0.7rem 0.9rem;
-  text-align: center;
+  border-radius: 8px;
+  display: block;
+  width: 100%;
 }
 
+.lesson-preview-strap {
+  color: var(--muted, #5b6470);
+  font-size: 0.9rem;
+  margin: 0.7rem 0 0;
+}
 .lesson-preview-parts {
   display: grid;
   gap: 0.4rem 1.5rem;
@@ -5161,6 +5133,3 @@ html[data-project42-reduced-motion="true"] *::after {
   max-width: 62ch;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lesson-preview-stage { transition: none; }
-}

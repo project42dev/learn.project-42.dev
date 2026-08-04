@@ -102,26 +102,40 @@ export default function LearnPage() {
           avatar is chosen but nothing has been rendered, and a fake still would
           promise a specific face we have not committed to on this page.
         */}
+        {/*
+          A real render, not a mock. The opening of the Agents, Tools and
+          Guardrails module, spoken from that module's own class script. It is
+          labelled a preview because it is the first 87 seconds of a 17-segment
+          lesson, and because the presenter is not the final choice: the three
+          characters originally picked are not supported by the batch API we
+          render with.
+        */}
         <figure className="lesson-preview" aria-label="Preview of an instructor-led lesson">
-          <div className="lesson-preview-stage">
-            <span className="lesson-preview-badge">Preview</span>
-            <p className="lesson-preview-stage-note">
-              Instructor on video, with the module&rsquo;s diagrams alongside
-            </p>
-          </div>
-          <div className="lesson-preview-caption">
-            &ldquo;A model does not remember your last question. Everything it seems
-            to recall was put back in front of it.&rdquo;
-          </div>
+          <video
+            className="lesson-preview-video"
+            controls
+            preload="metadata"
+            playsInline
+            aria-label="Instructor-led preview: Agents, Tools, and Guardrails, opening"
+          >
+            <source src="/preview/agents-and-guardrails-preview.mp4" type="video/mp4" />
+            Your browser cannot play this video. The written module covers the same
+            material.
+          </video>
+          <p className="lesson-preview-strap">
+            <strong>Agents, Tools, and Guardrails</strong> &middot; opening 87 seconds
+            &middot; spoken from the module&rsquo;s own class script
+          </p>
           <ul className="lesson-preview-parts">
-            <li>Captions, on by default</li>
+            <li>Captions, embedded in the video</li>
             <li>Full transcript you can search and copy</li>
             <li>The same diagrams as the written module</li>
             <li>The same knowledge check at the end</li>
           </ul>
           <figcaption>
             Each lesson is built from the same content as its written module, so the
-            two can never tell you different things.
+            two can never tell you different things. The presenter shown here is a
+            work in progress and is not the final choice.
           </figcaption>
         </figure>
       </section>
