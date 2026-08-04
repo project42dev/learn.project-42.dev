@@ -5105,76 +5105,26 @@ html[data-project42-reduced-motion="true"] *::after {
   color: var(--ink, #11181f);
 }
 
-.ondemand-path + .ondemand-path {
-  margin-top: 2.75rem;
+/* A filmed lesson inside the path block's lesson column. The list is the same
+   learning-path-modules column /learn uses, so this only adds the one mark
+   that distinguishes the two catalogues. */
+.lesson-filmed {
+  color: var(--ink) !important;
+  font-weight: 750;
 }
 
-.ondemand-path-head {
-  align-items: baseline;
-  border-bottom: 1px solid var(--line, #d6dce4);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding-bottom: 0.75rem;
-}
-
-.ondemand-path-head h2 {
-  margin: 0;
-}
-
-.ondemand-path-head a {
-  font-size: 0.9rem;
-  margin-left: auto;
-}
-
-.ondemand-lessons {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.ondemand-lesson {
-  align-items: center;
-  border-bottom: 1px solid var(--line, #d6dce4);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  padding: 1.25rem 0;
-}
-
-.ondemand-lesson-main {
-  flex: 1 1 24rem;
-}
-
-.ondemand-lesson-main h3 {
-  font-size: 1.05rem;
-  margin: 0 0 0.35rem;
-}
-
-.ondemand-lesson-main p {
-  color: var(--muted, #5b6470);
-  font-size: 0.93rem;
-  margin: 0;
-  max-width: 62ch;
-}
-
-.ondemand-lesson-meta {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  margin-left: auto;
-}
-
-.ondemand-lesson-length {
-  color: var(--muted, #5b6470);
-  font-size: 0.88rem;
-  font-variant-numeric: tabular-nums;
-}
-
-/* An unfilmed lesson is still a real lesson, so it is dimmed rather than
-   disabled: the row still leads somewhere the learner can finish today. */
-.ondemand-lesson:not(.is-filmed) .ondemand-lesson-main h3 {
-  color: var(--muted, #5b6470);
+.lesson-filmed em {
+  background: var(--cyan);
+  border-radius: 999px;
+  color: var(--navy);
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 
 /* The lesson itself. */
@@ -5298,10 +5248,4 @@ html[data-project42-reduced-motion="true"] *::after {
   margin-top: 1rem;
 }
 
-@media (max-width: 640px) {
-  .ondemand-lesson-meta {
-    margin-left: 0;
-    width: 100%;
-  }
-}
 

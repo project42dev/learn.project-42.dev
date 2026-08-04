@@ -5,11 +5,7 @@ import {
   getLearningModule,
   starterCatalog,
 } from "@project42/platform";
-import {
-  formatLessonLength,
-  getInstructorRendering,
-  instructorRenderings,
-} from "../lib/instructorMedia";
+import { getInstructorRendering, instructorRenderings } from "../lib/instructorMedia";
 
 export const metadata: Metadata = {
   title: "On-demand classroom",
@@ -17,30 +13,38 @@ export const metadata: Metadata = {
     "Instructor-led lessons on demand: the same Project 42 modules, taught on video with captions and a full transcript.",
 };
 
-// The instructor-led catalogue. It is a second RENDERING of the same modules
-// the self-paced side serves (ADR-0020), not a second curriculum, so every row
-// here resolves to a module that already exists at /learn and a lesson without
-// a film links to the written one rather than to nothing.
+// The instructor-led catalogue. It uses the same learning-path-row block as
+// /learn on purpose: this is the same catalogue in a second rendering
+// (ADR-0020), so presenting it as a different kind of list made two views of
+// one thing look like two products. A path with no film yet still links to
+// where its material can be finished today.
 export default function OnDemandPage() {
-  const pathsWithScripts = starterCatalog.paths
-    .map((path) => {
-      const lessons = path.moduleIds.flatMap((moduleId) => {
-        const classScript = getClassScriptPackage(moduleId);
-        const lessonModule = getLearningModule(moduleId);
-        if (!classScript || !lessonModule) return [];
-        return [
-          {
-            moduleId,
-            title: lessonModule.title,
-            summary: lessonModule.summary,
-            length: formatLessonLength(classScript.plannedDurationSeconds),
-            rendering: getInstructorRendering(moduleId),
-          },
-        ];
-      });
-      return { path, lessons };
-    })
-    .filter((entry) => entry.lessons.length > 0);
+  const pathsWithScripts = starterCatalog.paths.flatMap((path) => {
+    const lessons = path.moduleIds.flatMap((moduleId) => {
+      const classScript = getClassScriptPackage(moduleId);
+      const lessonModule = getLearningModule(moduleId);
+      if (!classScript || !lessonModule) return [];
+      return [
+        {
+          moduleId,
+          title: lessonModule.title,
+          seconds: classScript.plannedDurationSeconds,
+          rendering: getInstructorRendering(moduleId),
+        },
+      ];
+    });
+    if (lessons.length === 0) return [];
+    return [
+      {
+        path,
+        lessons,
+        minutes: Math.round(
+          lessons.reduce((total, lesson) => total + lesson.seconds, 0) / 60,
+        ),
+        filmed: lessons.find((lesson) => lesson.rendering),
+      },
+    ];
+  });
 
   const scriptedCount = pathsWithScripts.reduce(
     (total, entry) => total + entry.lessons.length,
@@ -78,64 +82,54 @@ export default function OnDemandPage() {
         its lesson is published.
       </p>
 
-      {pathsWithScripts.map(({ path, lessons }) => (
-        <section
-          aria-labelledby={`ondemand-${path.id}`}
-          className="ondemand-path"
-          key={path.id}
-        >
-          <div className="ondemand-path-head">
-            <h2 id={`ondemand-${path.id}`}>{path.title}</h2>
-            <span className="level-pill">{path.level}</span>
-            <Link href={`/learn/${path.id}`}>Read this path →</Link>
-          </div>
-          <ul className="ondemand-lessons">
-            {lessons.map((lesson) => (
-              <li
-                className={
-                  lesson.rendering ? "ondemand-lesson is-filmed" : "ondemand-lesson"
-                }
-                key={lesson.moduleId}
+      <div className="learning-path-list">
+        {pathsWithScripts.map(({ path, lessons, minutes, filmed }, index) => (
+          <article className="learning-path-row" key={path.id}>
+            <div className="learning-path-number">
+              {String(index + 1).padStart(2, "0")}
+            </div>
+            <div>
+              <div className="path-card-top">
+                <span className="level-pill">{path.level}</span>
+                <span>
+                  {lessons.length} lessons · {minutes} min
+                </span>
+              </div>
+              <h2>{path.title}</h2>
+              <p>{path.summary}</p>
+              <small>For {path.audience.toLowerCase()}</small>
+            </div>
+            <div className="learning-path-modules" aria-label={`${path.title} lessons`}>
+              {lessons.map((lesson, lessonIndex) => (
+                <span
+                  className={lesson.rendering ? "lesson-filmed" : undefined}
+                  key={lesson.moduleId}
+                >
+                  {lessonIndex + 1}. {lesson.title}
+                  {lesson.rendering ? <em>Filmed</em> : null}
+                </span>
+              ))}
+            </div>
+            {filmed ? (
+              <Link
+                className="button button-primary"
+                href={`/ondemand/${path.id}/${filmed.moduleId}`}
               >
-                <div className="ondemand-lesson-main">
-                  <h3>
-                    {lesson.rendering ? (
-                      <Link href={`/ondemand/${path.id}/${lesson.moduleId}`}>
-                        {lesson.title}
-                      </Link>
-                    ) : (
-                      lesson.title
-                    )}
-                  </h3>
-                  <p>{lesson.summary}</p>
-                </div>
-                <div className="ondemand-lesson-meta">
-                  <span className="ondemand-lesson-length">{lesson.length}</span>
-                  {lesson.rendering ? (
-                    <Link
-                      className="button button-primary"
-                      href={`/ondemand/${path.id}/${lesson.moduleId}`}
-                    >
-                      Watch the lesson
-                    </Link>
-                  ) : (
-                    <Link
-                      className="button button-secondary"
-                      href={`/learn/${path.id}/${lesson.moduleId}`}
-                    >
-                      Read it now
-                    </Link>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+                Watch the lesson
+              </Link>
+            ) : (
+              <Link className="button button-secondary" href={`/learn/${path.id}`}>
+                Read this path
+              </Link>
+            )}
+          </article>
+        ))}
+      </div>
 
-      <p className="instructor-led-note">
+      <p className="learn-format-switch">
         Nothing is generated while you watch. Every lesson is produced and reviewed
-        before it is published, then served as a fixed package.
+        before it is published, then served as a fixed package.{" "}
+        <Link href="/learn">Browse the written paths →</Link>
       </p>
     </main>
   );
