@@ -316,6 +316,9 @@ a {
 }
 
 .profile-trigger {
+  /* The photo fills the circle, so clip it and drop the button padding. */
+  overflow: hidden;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;
   color: var(--ink);
@@ -332,6 +335,19 @@ a {
   height: 22px;
   width: 22px;
 }
+.profile-photo {
+  border-radius: 50%;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.profile-initials {
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+}
+
 
 .header-action {
   align-items: center;
