@@ -1,4 +1,4 @@
-import diagramConfig from "../../config/diagrams.json";
+import diagramConfig from "@project42/platform/content/diagrams/catalogue.json";
 
 export interface Project42Diagram {
   id: string;

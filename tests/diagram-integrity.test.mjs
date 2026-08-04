@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import diagramConfig from "../config/diagrams.json" with { type: "json" };
+import diagramConfig from "../node_modules/@project42/platform/content/diagrams/catalogue.json" with { type: "json" };
 import {
   runDiagramIntegrity,
   validateDiagramConfig,

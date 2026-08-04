@@ -14,8 +14,10 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const configPath = path.join(projectRoot, "config", "diagrams.json");
-const sourceRoot = path.join(projectRoot, "diagrams");
+const platformDiagrams = path.join(
+  projectRoot, "node_modules", "@project42", "platform", "content", "diagrams");
+const configPath = path.join(platformDiagrams, "catalogue.json");
+const sourceRoot = platformDiagrams;
 const publicRoot = path.join(projectRoot, "public", "diagrams");
 const manifestPath = path.join(publicRoot, "manifest.json");
 const checkOnly = process.argv.includes("--check");
@@ -171,7 +173,7 @@ async function loadConfigAndSources() {
 
 async function assertExactInventory(records) {
   const expectedSources = new Set(records.map(({ diagram }) => diagram.source));
-  const sourceFiles = (await readdir(sourceRoot)).filter((name) => !name.startsWith("."));
+  const sourceFiles = (await readdir(sourceRoot)).filter((name) => name.endsWith(".mmd"));
   assert.deepEqual(
     sourceFiles.sort(),
     [...expectedSources].sort(),
@@ -291,7 +293,7 @@ async function generateArtifacts(config, records) {
       await writeFile(temporarySvg, record.svg, "utf8");
       await rename(temporarySvg, record.svgPath);
     } catch (error) {
-      await unlink(temporarySvg).catch(() => {});
+      await unlink(temporarySvg).catch(() => { });
       throw error;
     }
   }
@@ -314,7 +316,7 @@ async function main() {
   const result = await runDiagramIntegrity();
   console.log(
     `${checkOnly ? "Diagram integrity passed" : "Generated diagram artifacts"}: ` +
-      `${result.diagramCount} diagrams with ${result.renderer}.`,
+    `${result.diagramCount} diagrams with ${result.renderer}.`,
   );
 }
 
