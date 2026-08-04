@@ -1,12 +1,14 @@
 import type { MetadataRoute } from "next";
 import { starterCatalog } from "@project42/platform";
 import { diagramCatalog } from "./lib/diagrams";
+import { instructorRenderings } from "./lib/instructorMedia";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://learn.project-42.dev";
   return [
     "",
     "/learn",
+    "/ondemand",
     "/diagrams",
     "/import-progress",
     "/profile",
@@ -15,6 +17,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...starterCatalog.paths.map((path) => `/learn/${path.id}`),
     ...starterCatalog.paths.flatMap((path) =>
       path.moduleIds.map((moduleId) => `/learn/${path.id}/${moduleId}`),
+    ),
+    ...instructorRenderings.map(
+      (rendering) => `/ondemand/${rendering.pathId}/${rendering.moduleId}`,
     ),
     ...diagramCatalog.map((diagram) => `/diagrams/${diagram.id}`),
   ].map((path) => ({

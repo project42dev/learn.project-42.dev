@@ -5,7 +5,10 @@ import { crossDomainHref } from "../lib/subdomainLinks";
 export async function SiteHeader() {
   const [learnHref, diagramsHref, profileHref, accountHref, startHref] =
     await Promise.all([
-      crossDomainHref("/learn"),
+      // The landing page, not /learn. Off-site headers link to the bare
+      // origin, so pointing this at /learn made the same nav item land on two
+      // different URLs depending on where it was clicked from.
+      crossDomainHref("/"),
       crossDomainHref("/diagrams"),
       crossDomainHref("/profile"),
       crossDomainHref("/account"),

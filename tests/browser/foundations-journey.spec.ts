@@ -248,7 +248,10 @@ test("critical learner states pass automated accessibility checks", async ({
   page,
 }) => {
   for (const route of [
+    "/",
     "/learn",
+    "/ondemand",
+    "/ondemand/ai-foundations/agents-and-guardrails",
     "/learn/ai-foundations",
     "/learn/ai-foundations/research-with-evidence",
     "/learn/ai-foundations/ai-foundations-capstone",

@@ -4,6 +4,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starterCatalog } from "@project42/platform";
 import diagramConfig from "../config/diagrams.json" with { type: "json" };
+import instructorRenderingConfig from "../config/instructor-renderings.json" with { type: "json" };
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultBaseUrl = "https://learn.project-42.dev";
@@ -50,6 +51,7 @@ function sourceLabel(reference) {
 export function buildRouteInventory(
   catalog = starterCatalog,
   diagrams = diagramConfig.diagrams,
+  instructorRenderings = instructorRenderingConfig.renderings,
 ) {
   const htmlRoutes = new Set([
     "/",
@@ -62,6 +64,7 @@ export function buildRouteInventory(
     "/import-progress",
     "/learn",
     "/learner-data",
+    "/ondemand",
     "/profile",
   ]);
   for (const learningPath of catalog.paths) {
@@ -72,6 +75,12 @@ export function buildRouteInventory(
   }
   for (const diagram of diagrams) {
     htmlRoutes.add(`/diagrams/${diagram.id}`);
+  }
+  // Only lessons that have been rendered get a route, which is the same rule
+  // generateStaticParams applies. Deriving these from the class scripts instead
+  // would inventory forty routes for one film.
+  for (const rendering of instructorRenderings) {
+    htmlRoutes.add(`/ondemand/${rendering.pathId}/${rendering.moduleId}`);
   }
   return {
     htmlRoutes: [...htmlRoutes].sort(),

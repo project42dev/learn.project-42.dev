@@ -1,161 +1,84 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { starterCatalog } from "@project42/platform";
 import { ProgressSnapshot } from "./components/ProgressSnapshot";
-import { diagramCatalog } from "./lib/diagrams";
 
+export const metadata: Metadata = {
+  title: "Learn with Project 42",
+  description:
+    "Choose how you learn: work through the written modules at your own pace, or watch an instructor teach the same material on demand.",
+};
+
+// This is the landing page for learning, and its whole job is the choice
+// between the two formats. It used to be a copy of the project-42.dev home
+// page, hero and all, so arriving here from the main site showed you the page
+// you had just left and the real index sat a second click away at /learn.
+//
+// The two formats are two renderings of ONE course (ADR-0020), not two
+// catalogues, so the counts below are read from the same catalog either card
+// sends you to. Nothing here should ever describe them as separate curricula.
 export default function Home() {
-  const beginnerPath = starterCatalog.paths.find((path) => path.id === "ai-foundations");
-  const practitionerPath = starterCatalog.paths.find(
-    (path) => path.id === "providers-in-practice",
+  const pathCount = starterCatalog.paths.length;
+  const moduleCount = starterCatalog.modules.length;
+  const minutes = starterCatalog.modules.reduce(
+    (total, module) => total + (module.estimatedMinutes ?? 0),
+    0,
   );
 
   return (
     <main>
-      <section className="hero shell">
-        <div className="hero-copy">
-          <p className="eyebrow">Free, open AI learning</p>
-          <h1>
-            Start curious.
-            <span>Become capable.</span>
-          </h1>
-          <p className="hero-lede">
-            Project 42 makes artificial intelligence understandable from your first
-            question to your first reliable agent. Learn at your pace, check what you
-            know, and keep a record of your progress.
+      <section className="section shell" aria-labelledby="landing-title">
+        <div className="section-heading">
+          <p className="eyebrow">Project 42 Academy</p>
+          <h1 id="landing-title">Two ways to take the same course.</h1>
+          <p>
+            The same modules, the same knowledge checks, the same sources, and one
+            record of what you have finished. Read it, or watch it taught. Switch
+            whenever you like: your progress does not care which one you picked.
           </p>
-          <div className="button-row">
-            <Link className="button button-primary" href="/learn/ai-foundations">
-              Start AI Foundations
-            </Link>
-            <a className="button button-secondary" href="https://guide.project-42.dev">
-              Browse the field guide
-            </a>
-            <Link className="button button-secondary" href="/diagrams">
-              See visual guides
-            </Link>
-          </div>
-          <ul className="trust-list" aria-label="Project 42 promises">
-            <li>Beginner-friendly</li>
-            <li>Provider-neutral</li>
-            <li>Evidence-linked</li>
-            <li>Open source</li>
-          </ul>
-        </div>
-        <div className="hero-map" aria-label="Learning journey preview">
-          <div className="map-orbit map-orbit-one" />
-          <div className="map-orbit map-orbit-two" />
-          <div className="map-node map-node-start">
-            <span>01</span>
-            Understand
-          </div>
-          <div className="map-node map-node-build">
-            <span>02</span>
-            Practice
-          </div>
-          <div className="map-node map-node-prove">
-            <span>03</span>
-            Prove it
-          </div>
-          <div className="map-center">
-            <span className="map-mark">42</span>
-            <small>Your path</small>
-          </div>
         </div>
       </section>
 
       <ProgressSnapshot />
 
-      <section className="section shell" aria-labelledby="two-ways">
-        <div className="section-heading">
-          <p className="eyebrow">Two ways to grow</p>
-          <h2 id="two-ways">Learn deeply. Find answers quickly.</h2>
-          <p>
-            Follow a guided path when you want mastery, or jump into the field guide
-            when you need something useful right now.
-          </p>
-        </div>
+      <section className="section shell" aria-label="Choose how you want to learn">
         <div className="pillar-grid">
-          <article className="pillar-card pillar-learn">
-            <div className="card-index">Academy / 01</div>
-            <h3>Self-paced learning</h3>
+          <article className="pillar-card pillar-selfpaced">
+            <div className="card-index">Self-paced / Available now</div>
+            <h3>Read it at your own pace.</h3>
             <p>
-              Short modules, plain language, practical examples, and a knowledge check
-              at the end of every major section.
+              Short written modules in plain language, worked examples you can copy,
+              and a knowledge check at the end of every one. Stop and start whenever
+              you want.
             </p>
             <ul>
-              <li>{starterCatalog.paths.length} starter paths</li>
-              <li>{starterCatalog.modules.length} assessed modules</li>
-              <li>Device-local transcript in this release</li>
+              <li>
+                {pathCount} learning paths, {moduleCount} assessed modules
+              </li>
+              <li>About {minutes} minutes of material</li>
+              <li>Every claim carries its source and a verification date</li>
+              <li>Progress stays on this device in the current release</li>
             </ul>
-            <Link href="/learn">Explore learning paths →</Link>
+            <Link href="/learn">Browse learning paths →</Link>
           </article>
-          <article className="pillar-card pillar-reference">
-            <div className="card-index">Field guide / 02</div>
-            <h3>Resources for the work</h3>
+
+          <article className="pillar-card pillar-ondemand">
+            <div className="card-index">Instructor-led / Preview</div>
+            <h3>Watch it taught.</h3>
             <p>
-              Checklists, explainers, provider maps, and decision tools with visible
-              verification dates and sources.
+              The same material presented as a lesson rather than a page. A virtual
+              instructor works through each module on video, with captions and a
+              full transcript.
             </p>
             <ul>
-              <li>Practical references on the dedicated Field Guide site</li>
-              <li>{diagramCatalog.length} source-first visual guides</li>
-              <li>Anthropic, OpenAI, and Google coverage</li>
-              <li>Provider-neutral core concepts</li>
+              <li>Captions embedded in the video</li>
+              <li>Full transcript you can search and copy</li>
+              <li>The same knowledge check at the end</li>
+              <li>Nothing is generated while you watch</li>
             </ul>
-            <a href="https://guide.project-42.dev">Open the field guide →</a>
+            <Link href="/ondemand">See the on-demand classroom →</Link>
           </article>
         </div>
-      </section>
-
-      <section className="section shell" aria-labelledby="featured-paths">
-        <div className="section-heading section-heading-inline">
-          <div>
-            <p className="eyebrow">Choose your starting point</p>
-            <h2 id="featured-paths">Paths with a destination</h2>
-          </div>
-          <Link className="text-link" href="/learn">
-            View all paths
-          </Link>
-        </div>
-        <div className="path-grid">
-          {[beginnerPath, practitionerPath].filter(Boolean).map((path, index) => (
-            <article className="path-card" key={path!.id}>
-              <div className="path-card-top">
-                <span className="level-pill">{path!.level}</span>
-                <span>{path!.moduleIds.length} modules</span>
-              </div>
-              <div className="path-number">0{index + 1}</div>
-              <h3>{path!.title}</h3>
-              <p>{path!.summary}</p>
-              <Link href={`/learn/${path!.id}`}>See this path →</Link>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="section shell provider-section" aria-labelledby="provider-title">
-        <div>
-          <p className="eyebrow">No single-provider tunnel vision</p>
-          <h2 id="provider-title">Learn the ideas that transfer.</h2>
-        </div>
-        <div className="provider-stack">
-          {starterCatalog.providers.map((provider) => (
-            <div className="provider-row" key={provider.id}>
-              <span className={`provider-dot provider-${provider.id}`} />
-              <strong>{provider.name}</strong>
-              <p>{provider.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="cta shell">
-        <p className="eyebrow">Your first checkpoint is 12 minutes away</p>
-        <h2>Understanding beats intimidation.</h2>
-        <p>Start with one module. We will remember where you left off on this device.</p>
-        <Link className="button button-primary" href="/learn/ai-foundations/what-ai-does">
-          Begin the first module
-        </Link>
       </section>
     </main>
   );

@@ -26,8 +26,9 @@ test("renders the Project 42 home page", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Project 42/);
-  assert.match(html, /Start curious/);
-  assert.match(html, /Self-paced learning/);
+  assert.match(html, /Two ways to take the same course/);
+  assert.match(html, /Self-paced/);
+  assert.match(html, /Instructor-led/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
   assert.ok(
     html
@@ -214,12 +215,91 @@ test("renders account, approval, and cross-device progress surfaces", async () =
   );
 });
 
-test("renders the Learn home and academy index", async () => {
-  const [home, learn] = await Promise.all([render("/"), render("/learn")]);
+// The landing page offers the choice; each format owns its own route. This
+// guards the defect that prompted the split: the root used to be a copy of the
+// project-42.dev home page, and the header's own Learn link pointed at /learn,
+// so the same nav item landed on two different URLs depending on where it was
+// clicked from and the first page you saw was one you had already seen.
+test("splits the landing choice from the two format routes", async () => {
+  const [home, learn, onDemand] = await Promise.all([
+    render("/"),
+    render("/learn"),
+    render("/ondemand"),
+  ]);
   assert.equal(home.status, 200);
   assert.equal(learn.status, 200);
-  assert.match(await home.text(), /Start curious/);
-  assert.match(await learn.text(), /Learning paths with a clear next step/);
+  assert.equal(onDemand.status, 200);
+
+  const homeHtml = await home.text();
+  const learnHtml = await learn.text();
+  const onDemandHtml = await onDemand.text();
+
+  assert.match(homeHtml, /Two ways to take the same course/);
+  assert.match(homeHtml, /href="\/learn"/, "the landing page offers self-paced");
+  assert.match(homeHtml, /href="\/ondemand"/, "the landing page offers on demand");
+  // Scoped to <main>, because "Start curious. Become capable." is the brand
+  // tagline and legitimately appears in og:image:alt on every page. The defect
+  // was the hero copy, not the social card.
+  const homeBody = /<main\b[^>]*>([\s\S]*?)<\/main>/.exec(homeHtml);
+  assert.ok(homeBody, "the landing page has no main element");
+  assert.doesNotMatch(
+    homeBody[1],
+    /Start curious/,
+    "the landing page must not be a copy of the project-42.dev home page",
+  );
+
+  assert.match(learnHtml, /Learning paths with a clear next step/);
+  assert.match(onDemandHtml, /The classroom, on demand/);
+  assert.doesNotMatch(
+    learnHtml,
+    /agents-and-guardrails-preview\.mp4/,
+    "the film belongs to the on-demand rendering, not to the written index",
+  );
+});
+
+// The instructor-led lesson is a second rendering of one module, so it has to
+// carry the module's own material: the real class script as its transcript,
+// the module's sources, and the same knowledge check. A page that only played
+// a video would be a different product from the one ADR-0020 describes.
+test("renders an on-demand lesson as the full class, not a video embed", async () => {
+  const response = await render("/ondemand/ai-foundations/agents-and-guardrails");
+  assert.equal(response.status, 200);
+  const html = (await response.text()).replaceAll("<!-- -->", "");
+
+  assert.match(html, /agents-and-guardrails-preview\.mp4/, "plays the lesson");
+  assert.match(html, /Partial render/, "says so when the film is incomplete");
+  assert.match(
+    html,
+    /How the class runs, and every word of it/,
+    "carries the transcript",
+  );
+  assert.match(
+    html,
+    /what makes an AI system agentic/,
+    "the transcript is the real class script, not placeholder copy",
+  );
+  assert.match(html, /Sources and verification/, "carries the module's sources");
+  assert.match(html, /knowledge-check/i, "carries the same knowledge check");
+});
+
+test("publishes an on-demand route only for lessons that were filmed", async () => {
+  // A class script exists for forty modules and one has been rendered. The
+  // route must follow the film, not the script, or the catalogue advertises
+  // thirty-nine lessons nobody can watch.
+  const unfilmed = await render("/ondemand/ai-foundations/what-ai-does");
+  assert.equal(unfilmed.status, 404);
+});
+
+test("points the header's Learn link at the landing page, not at a format", async () => {
+  const home = await render("/");
+  const html = await home.text();
+  const nav = /<nav aria-label="Primary navigation">([\s\S]*?)<\/nav>/.exec(html);
+  assert.ok(nav, "primary navigation is missing");
+  assert.match(
+    nav[1],
+    /<a href="\/">Learn<\/a>/,
+    "clicking Learn from inside Learn must not move you to a second page",
+  );
 });
 
 test("renders the complete accessible diagram library", async () => {

@@ -1,0 +1,17 @@
+{
+  "$schemaVersion": 1,
+  "renderings": [
+    {
+      "moduleId": "agents-and-guardrails",
+      "pathId": "ai-foundations",
+      "src": "/preview/agents-and-guardrails-preview.mp4",
+      "renderedSeconds": 86,
+      "renderedSegments": 2,
+      "avatar": "lisa, casual-sitting",
+      "voice": "en-US-Ava:DragonHDLatestNeural",
+      "renderedAt": "2026-08-04",
+      "captions": "embedded",
+      "partial": true
+    }
+  ]
+}
