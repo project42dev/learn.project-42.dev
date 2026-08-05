@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultLearnerDataPolicy, starterCatalog } from "@project42/platform";
-import diagramConfig from "../config/diagrams.json" with { type: "json" };
+import diagramConfig from "../node_modules/@project42/platform/content/diagrams/catalogue.json" with { type: "json" };
 import releaseFacts from "../public/release-facts.json" with { type: "json" };
 
 const hostedIdentityConfigured = Boolean(
@@ -17,7 +17,7 @@ async function render(pathname) {
       headers: { accept: "text/html" },
     }),
     { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
-    { waitUntil() {}, passThroughOnException() {} },
+    { waitUntil() { }, passThroughOnException() { } },
   );
 }
 

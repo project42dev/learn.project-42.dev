@@ -43,10 +43,10 @@ separate from durable issued credentials.
 
 The Learn site also includes eight accessible visual guides for learning evidence,
 grounded research, prompting, provider selection, safe tools, bounded agents,
-multi-agent handoffs, and human-gated content freshness. Mermaid files under
-`diagrams/` are the editable source of truth; reviewed SVG and public source
-artifacts are generated ahead of deployment. See
-[`docs/diagram-authoring.md`](docs/diagram-authoring.md) for the validation,
+multi-agent handoffs, and human-gated content freshness. Mermaid sources live in
+`@project42/platform` under `content/diagrams/` as the single canonical source of
+truth; reviewed SVG and public source artifacts are generated ahead of deployment.
+See [`docs/diagram-authoring.md`](docs/diagram-authoring.md) for the validation,
 accessibility, and security contract.
 
 The virtual instructor player never calls a model at runtime; it only plays

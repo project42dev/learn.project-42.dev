@@ -1,13 +1,15 @@
 # Diagram authoring
 
 Project 42 diagrams are accessible, source-first learning artifacts. Mermaid source
-under `diagrams/` is canonical. SVG and public `.mmd` files under
-`public/diagrams/` are generated and must never be hand-edited.
+lives in `@project42/platform` under `content/diagrams/` and is the single canonical
+source of truth. SVG and public `.mmd` files under `public/diagrams/` are generated
+and must never be hand-edited.
 
 ## Add or change a diagram
 
-1. Add or update its entry in `config/diagrams.json`.
-2. Add the matching `diagrams/<id>.mmd` source.
+1. Add or update its entry in `content/diagrams/catalogue.json` in the
+   `project42-platform` repository.
+2. Add the matching `content/diagrams/<id>.mmd` source in the platform repo.
 3. Include Mermaid `accTitle` and `accDescr` declarations.
 4. Keep links, click handlers, inline initialization, and inline HTML out of source.
 5. Install the Playwright browser once with:

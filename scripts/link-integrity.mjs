@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starterCatalog } from "@project42/platform";
-import diagramConfig from "../config/diagrams.json" with { type: "json" };
+import diagramConfig from "../node_modules/@project42/platform/content/diagrams/catalogue.json" with { type: "json" };
 import instructorRenderingConfig from "../config/instructor-renderings.json" with { type: "json" };
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -461,8 +461,7 @@ export async function checkExternalReferences({
         ...new Set(byTarget.get(target).map((reference) => reference.sourceRoute)),
       ];
       failures.push(
-        `External link failed: ${target} (${
-          result.status ? `HTTP ${result.status}` : result.error
+        `External link failed: ${target} (${result.status ? `HTTP ${result.status}` : result.error
         }; sources: ${sources.join(", ")})`,
       );
     }
@@ -496,7 +495,7 @@ async function createWorkerLoader(workerPath = defaultWorkerPath) {
           fetch: async () => new Response("Not found", { status: 404 }),
         },
       },
-      { waitUntil() {}, passThroughOnException() {} },
+      { waitUntil() { }, passThroughOnException() { } },
     );
     const contentType = response.headers.get("content-type") ?? "";
     const html = contentType.includes("text/html") ? await response.text() : "";
@@ -591,11 +590,11 @@ async function main() {
   const summary = result.summary;
   console.log(
     `Link integrity passed: ${summary.htmlRoutes} HTML routes, ` +
-      `${summary.endpointRoutes} metadata endpoints, ` +
-      `${summary.internalReferences} internal references, ` +
-      `${summary.checkedAssets} static assets, ` +
-      `${summary.uniqueExternalLinks} external links, ` +
-      `${summary.usedExceptions} active exception(s) used.`,
+    `${summary.endpointRoutes} metadata endpoints, ` +
+    `${summary.internalReferences} internal references, ` +
+    `${summary.checkedAssets} static assets, ` +
+    `${summary.uniqueExternalLinks} external links, ` +
+    `${summary.usedExceptions} active exception(s) used.`,
   );
 }
 
