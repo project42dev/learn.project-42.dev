@@ -7,7 +7,7 @@ ENV NEXT_PUBLIC_PROJECT42_API_ORIGIN=$NEXT_PUBLIC_PROJECT42_API_ORIGIN
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 COPY . .
 RUN npm run pages:build
 
