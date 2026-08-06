@@ -1643,8 +1643,8 @@ function LearnerDataControls() {
   const { apiFetch, signIn } = useAuth();
   const { formatDateTime } = useProfilePreferences();
   const [optionalConsents, setOptionalConsents] = useState<OptionalConsent[]>([
-    { purpose: "marketing", decision: "withdrawn" },
-    { purpose: "analytics", decision: "withdrawn" },
+    { purpose: "product-improvement", decision: "withdrawn" },
+    { purpose: "learning-reminders", decision: "withdrawn" },
   ]);
   const [deletions, setDeletions] = useState<DeletionRequest[]>([]);
   const [deletionReceipt, setDeletionReceipt] =
@@ -1721,8 +1721,8 @@ function LearnerDataControls() {
       setHasError(false);
       setMessage(
         granted
-          ? `${purpose === "marketing" ? "Email about new content" : "Analytics beyond what runs the site"} consent granted.`
-          : `${purpose === "marketing" ? "Email about new content" : "Analytics beyond what runs the site"} consent withdrawn.`,
+          ? `${purpose === "product-improvement" ? "Product improvement" : "Learning reminders"} consent granted.`
+          : `${purpose === "product-improvement" ? "Product improvement" : "Learning reminders"} consent withdrawn.`,
       );
     } catch {
       setHasError(true);
@@ -1929,21 +1929,21 @@ function LearnerDataControls() {
               <input
                 type="checkbox"
                 role="switch"
-                checked={optionalConsents.find((c) => c.purpose === "marketing")?.decision === "granted"}
+                checked={optionalConsents.find((c) => c.purpose === "product-improvement")?.decision === "granted"}
                 disabled={busy}
-                onChange={(e) => void toggleConsent("marketing", e.target.checked)}
+                onChange={(e) => void toggleConsent("product-improvement", e.target.checked)}
               />
-              <span>Email about new content</span>
+              <span>Product improvement</span>
             </label>
             <label className="account-consent-toggle">
               <input
                 type="checkbox"
                 role="switch"
-                checked={optionalConsents.find((c) => c.purpose === "analytics")?.decision === "granted"}
+                checked={optionalConsents.find((c) => c.purpose === "learning-reminders")?.decision === "granted"}
                 disabled={busy}
-                onChange={(e) => void toggleConsent("analytics", e.target.checked)}
+                onChange={(e) => void toggleConsent("learning-reminders", e.target.checked)}
               />
-              <span>Analytics beyond what runs the site</span>
+              <span>Learning reminders</span>
             </label>
           </div>
           <h3>Export</h3>
