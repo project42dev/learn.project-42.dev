@@ -371,7 +371,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.replace(target.toString());
   }, []);
 
-  const recordStoredTermsAcceptance = useCallback(async () => {
+  const recordStoredTermsAcceptance = useCallback(async (
+    path = "/v1/me/terms-acceptance",
+  ) => {
     const termsStorageKey = "project42.terms-acceptance.v1";
     try {
       const raw = sessionStorage.getItem(termsStorageKey);
@@ -381,10 +383,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         acceptedAt: string;
       };
       if (!parsed.termsVersion || !parsed.acceptedAt) return;
-      await apiFetch("/v1/me/terms-acceptance", {
+      const response = await apiFetch(path, {
         method: "POST",
         body: JSON.stringify(parsed),
       });
+      if (!response.ok) return;
       sessionStorage.removeItem(termsStorageKey);
     } catch {
       // Terms acceptance recording is best-effort after sign-in.
@@ -392,6 +395,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // on the next sign-in if this one fails.
     }
   }, [apiFetch]);
+
+  useEffect(() => {
+    if (status === "signed-in") {
+      void recordStoredTermsAcceptance();
+      return;
+    }
+    if (registration.phase === "current") {
+      void recordStoredTermsAcceptance(
+        "/v1/registration/terms-acceptance",
+      );
+    }
+  }, [recordStoredTermsAcceptance, registration.phase, status]);
 
   const completeSignIn = useCallback(async () => {
     const query = new URLSearchParams(window.location.search);
@@ -411,7 +426,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new Error(
       "This callback belongs to the retired browser-token flow. Start sign-in again.",
     );
-  }, [refreshAccount, refreshRegistration]);
+  }, [recordStoredTermsAcceptance, refreshAccount, refreshRegistration]);
 
   const renewSession = useCallback(async () => {
     const response = await apiFetch("/v1/auth/renew", { method: "POST" });

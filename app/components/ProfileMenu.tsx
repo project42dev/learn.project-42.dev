@@ -9,7 +9,6 @@ interface ProfileMenuProps {
   accountHref: string;
   profileHref: string;
   learnerDataHref: string;
-  importProgressHref: string;
 }
 
 function ProfileIcon() {
@@ -56,7 +55,6 @@ export function ProfileMenu({
   accountHref,
   profileHref,
   learnerDataHref,
-  importProgressHref,
 }: ProfileMenuProps) {
   const { configured, status, account, apiFetch, signIn, signOut } = useAuth();
   const signedIn = status === "signed-in" && Boolean(account);
@@ -151,9 +149,6 @@ export function ProfileMenu({
         </li>
         <li>
           <Link href={learnerDataHref}>Learner data</Link>
-        </li>
-        <li>
-          <Link href={importProgressHref}>Import previous progress</Link>
         </li>
       </ul>
       {configured && signedIn ? (

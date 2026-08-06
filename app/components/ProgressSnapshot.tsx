@@ -10,8 +10,8 @@ export function ProgressSnapshot() {
   const total = starterCatalog.modules.length;
   const recentModule = progress.recentModule
     ? starterCatalog.modules.find(
-        (module) => module.id === progress.recentModule?.moduleId,
-      )
+      (module) => module.id === progress.recentModule?.moduleId,
+    )
     : undefined;
 
   if (!hydrated || (completed === 0 && !recentModule)) {

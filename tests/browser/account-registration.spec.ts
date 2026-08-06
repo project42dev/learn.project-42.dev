@@ -20,13 +20,15 @@ async function installRegistrationApi(
   page: Page,
   registration:
     | {
-        status?: number;
-        headers?: Record<string, string>;
-        body: unknown;
-      }
+      status?: number;
+      headers?: Record<string, string>;
+      body: unknown;
+    }
     | undefined,
 ) {
   let statusRequests = 0;
+  let acceptanceRequests = 0;
+  let acceptedTerms: unknown;
   await page.route(`${apiOrigin}/**`, async (route) => {
     const target = new URL(route.request().url());
     if (target.pathname === "/v1/auth/session") {
@@ -35,6 +37,21 @@ async function installRegistrationApi(
         headers: responseHeaders(route),
         body: JSON.stringify({
           error: { code: "authentication_required" },
+        }),
+      });
+      return;
+    }
+    if (target.pathname === "/v1/registration/terms-acceptance") {
+      acceptanceRequests += 1;
+      acceptedTerms = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        headers: responseHeaders(route),
+        body: JSON.stringify({
+          acceptance: {
+            purpose: "terms-of-service",
+            policyVersion: "1.0",
+          },
         }),
       });
       return;
@@ -64,6 +81,8 @@ async function installRegistrationApi(
   });
   return {
     statusRequests: () => statusRequests,
+    acceptanceRequests: () => acceptanceRequests,
+    acceptedTerms: () => acceptedTerms,
   };
 }
 
@@ -85,9 +104,10 @@ test.describe("learner account request and private status receipt", () => {
       page.getByRole("heading", { name: "Request a Project 42 account" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", {
-        name: "Continue to sign in or request access",
-      }),
+      page.getByRole("button", { name: "Sign in", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Request an account" }),
     ).toBeVisible();
     await expect(
       page.getByText(/does not create an authenticated learner session/i),
@@ -108,9 +128,41 @@ test.describe("learner account request and private status receipt", () => {
     expect(accessibility.violations).toEqual([]);
   });
 
+  test("allows public catalog browsing but requires sign-in for module participation", async ({
+    page,
+  }) => {
+    await installRegistrationApi(page, undefined);
+    await page.goto("/learn");
+    await expect(
+      page.getByRole("heading", { name: /learning paths with a clear next step/i }),
+    ).toBeVisible();
+
+    const signIn = page.waitForRequest(`${apiOrigin}/v1/auth/start**`);
+    await page.goto("/learn/ai-foundations/research-with-evidence");
+    const request = await signIn;
+    expect(new URL(request.url()).searchParams.get("return_to")).toBe(
+      new URL(
+        "/learn/ai-foundations/research-with-evidence",
+        page.url(),
+      ).toString(),
+    );
+    await expect(
+      page.getByRole("heading", { name: "Research with evidence" }),
+    ).toHaveCount(0);
+  });
+
   test("renders pending status from the HttpOnly receipt without PII or polling", async ({
     page,
   }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem(
+        "project42.terms-acceptance.v1",
+        JSON.stringify({
+          termsVersion: "1.0",
+          acceptedAt: "2026-07-29T09:59:00.000Z",
+        }),
+      );
+    });
     const api = await installRegistrationApi(page, {
       body: {
         registration: {
@@ -140,6 +192,16 @@ test.describe("learner account request and private status receipt", () => {
     await expect(page.getByText("must-not-render")).toHaveCount(0);
     await expect(page).toHaveURL(/\/account\/?$/);
     await expect.poll(api.statusRequests).toBe(1);
+    await expect.poll(api.acceptanceRequests).toBe(1);
+    expect(api.acceptedTerms()).toEqual({
+      termsVersion: "1.0",
+      acceptedAt: "2026-07-29T09:59:00.000Z",
+    });
+    expect(
+      await page.evaluate(() =>
+        sessionStorage.getItem("project42.terms-acceptance.v1"),
+      ),
+    ).toBeNull();
 
     const retry = page.getByRole("button", {
       name: /check again in \d+ seconds/i,

@@ -19,7 +19,6 @@ export function SiteFooter() {
           <a href="https://guide.project-42.dev">Field Guide</a>
           <Link href="/diagrams">Visual guides</Link>
           <Link href="/profile">Your transcript</Link>
-          <Link href="/import-progress">Import previous progress</Link>
           <Link href="/learner-data">Learner data</Link>
         </div>
         <div>

@@ -277,7 +277,7 @@ function AccountRequestCard({
   const [termsAccepted, setTermsAccepted] = useState(false);
   const termsStorageKey = "project42.terms-acceptance.v1";
 
-  function handleContinue() {
+  function handleRequestAccount() {
     sessionStorage.setItem(
       termsStorageKey,
       JSON.stringify({
@@ -296,9 +296,9 @@ function AccountRequestCard({
       <p className="eyebrow">Project 42 access</p>
       <h2 id="request-access-title">Request a Project 42 account</h2>
       <p>
-        Continue to the identity provider configured by this deployment. It
-        verifies who you are; Project 42 Learn never receives your password,
-        provider token, or private status receipt.
+        Existing learners can sign in without accepting the learner-data terms
+        again. If you are new, request an account and accept the terms once as
+        part of that request.
       </p>
       <ul className="registration-expectations">
         <li>
@@ -323,7 +323,19 @@ function AccountRequestCard({
           store, or require a separate password.
         </li>
       </ul>
-      <div className="terms-acceptance-field">
+      <div className="button-row">
+        <button
+          className="button button-primary"
+          onClick={() => void signIn("/account")}
+          type="button"
+        >
+          Sign in
+        </button>
+        <Link className="button button-secondary" href="/learn">
+          Browse the learning catalog
+        </Link>
+      </div>
+      <div className="terms-acceptance-field" id="request-account">
         <label className="terms-acceptance-label">
           <input
             type="checkbox"
@@ -342,14 +354,11 @@ function AccountRequestCard({
         <button
           className="button button-primary"
           disabled={!termsAccepted}
-          onClick={handleContinue}
+          onClick={handleRequestAccount}
           type="button"
         >
-          Continue to sign in or request access
+          Request an account
         </button>
-        <Link className="button button-secondary" href="/learn">
-          Browse the learning catalog
-        </Link>
       </div>
     </section>
   );
@@ -442,9 +451,10 @@ function RegistrationStatusCard({
         </dl>
         {pending ? (
           <p className="registration-notice" role="status">
-            No hosted learner session exists yet. You can keep learning in this
-            browser while the owner reviews the request. Project 42 does not poll
-            automatically.
+            No hosted learner session exists yet. You may browse the public
+            catalog while the owner reviews the request, but module participation
+            requires an approved account and a new secure sign-in. Project 42
+            does not poll automatically.
           </p>
         ) : null}
         {receipt.state === "rejected" ? (

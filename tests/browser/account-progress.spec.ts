@@ -51,9 +51,7 @@ test("renders the account state selected by public account-API configuration", a
       page.getByRole("heading", { name: "Request a Project 42 account" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", {
-        name: "Continue to sign in or request access",
-      }),
+      page.getByRole("button", { name: "Sign in", exact: true }),
     ).toBeVisible();
   } else {
     await expect(
@@ -93,7 +91,7 @@ test("starts API-owned sign-in without storing an identity-provider token", asyn
     .check();
   await page
     .getByRole("button", {
-      name: "Continue to sign in or request access",
+      name: "Request an account",
     })
     .click();
   const request = await requestPromise;
@@ -1204,7 +1202,7 @@ test("signing out clears the session and returns the learner to a signed-out acc
   await page.keyboard.press("Enter");
 
   await expect(
-    page.getByRole("button", { name: "Continue to sign in or request access" }),
+    page.getByRole("button", { name: "Sign in", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Departing learner" }),
@@ -1219,7 +1217,7 @@ test("signing out clears the session and returns the learner to a signed-out acc
   // Reloading must not resurrect the session.
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Continue to sign in or request access" }),
+    page.getByRole("button", { name: "Sign in", exact: true }),
   ).toBeVisible();
 
   const accessibility = await new AxeBuilder({ page })
