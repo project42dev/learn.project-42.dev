@@ -8,7 +8,7 @@ import {
 export const metadata: Metadata = {
   title: "Learner data and account controls",
   description:
-    "What Project 42 stores today and the consent, retention, export, deletion, and recovery rules for future accounts.",
+    "What Project 42 stores and the consent, retention, export, deletion, and recovery rules for learner accounts.",
 };
 
 function label(value: string) {
@@ -25,9 +25,9 @@ export default function LearnerDataPage() {
         <p className="eyebrow">Learner data</p>
         <h1>Your learning data, without fine print.</h1>
         <p>
-          Project 42 is building cross-device learning records deliberately. This
-          page separates what is available now from the account protections that
-          must pass before hosted records turn on.
+          Project 42 uses account-backed learning records so approved learners can
+          continue across browsers and devices. This page explains the controls and
+          protections around those records.
         </p>
         <a
           className="text-link"
@@ -40,11 +40,16 @@ export default function LearnerDataPage() {
       <section className="policy-status" aria-labelledby="policy-status-title">
         <div>
           <p className="eyebrow">Available today</p>
-          <h2 id="policy-status-title">Private to this browser</h2>
-          <p>{policy.currentStorageNotice}</p>
+          <h2 id="policy-status-title">Account-backed learning records</h2>
           <p>
-            You can download a portable JSON backup or CSV transcript and erase the
-            local record from <Link href="/profile">My progress</Link>.
+            {accountServiceConfigured
+              ? "Approved accounts save progress, scores, badges, and transcripts through the account service."
+              : "This deployment has not configured its account service, so course participation and durable progress are unavailable."}
+          </p>
+          <p>
+            Approved learners can download a portable JSON backup or authoritative
+            CSV transcript and manage the account record from{" "}
+            <Link href="/profile">My progress</Link>.
           </p>
         </div>
         <dl>
@@ -57,7 +62,7 @@ export default function LearnerDataPage() {
             */}
             <dd>
               {policy.accountBackedRecords === "available" &&
-              accountServiceConfigured
+                accountServiceConfigured
                 ? "Available"
                 : "Not enabled"}
             </dd>
@@ -67,8 +72,12 @@ export default function LearnerDataPage() {
             <dd>{policy.policyVersion}</dd>
           </div>
           <div>
-            <dt>Current hosted collection</dt>
-            <dd>None</dd>
+            <dt>Hosted collection</dt>
+            <dd>
+              {accountServiceConfigured
+                ? "Account and learning data required to provide the service"
+                : "Not enabled"}
+            </dd>
           </div>
         </dl>
       </section>

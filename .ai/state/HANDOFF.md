@@ -2,7 +2,7 @@
 
 ## Active branch
 
-`main`, based on `2d2ae33` before the final account-backed copy correction.
+`main`, based on `a493c28` before the final active-surface copy cleanup.
 
 ## Current candidate
 
@@ -13,6 +13,8 @@ The candidate:
 - restores Sign in as the first signed-out profile-menu action;
 - describes active learning progress, scores, badges, and transcripts as
   account-backed rather than browser-local;
+- replaces remaining browser-local registration, capstone, profile, and
+  learner-data claims while preserving portable JSON backup and legacy import;
 - keeps account request, sign-in, and recovery reachable from `/account` while
   class, progress, and transcript surfaces remain authentication-gated;
 - removes obsolete browser-local merge and signed-out transcript browser tests;
@@ -38,10 +40,14 @@ The candidate:
   typecheck and a fresh production build passed, and the focused account,
   profile, transcript, and legal browser suite passed with 17 active tests and
   two intentional skips.
+- After the active-surface cleanup, lint passed with the same two pre-existing
+  warnings, typecheck and a fresh production build passed, and all 20 rendered
+  HTML tests passed. The private production registration acceptance remains
+  intentionally gated by its external receipt confirmation and state file.
 
 ## Outstanding release gates
 
-- Commit and push the final account-backed copy correction on `main`.
+- Commit and push the final active-surface copy cleanup on `main`.
 - Confirm required GitHub Actions checks pass for the pushed commit.
 - Confirm the deployed Learn profile menu exposes Sign in first while signed
   out, and confirm authenticated progress/transcript destinations remain gated.

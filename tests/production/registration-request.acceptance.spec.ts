@@ -96,7 +96,7 @@ test("a pending receipt authorizes status only and remains accessible", async ({
     });
     await expect(checkButton).toBeDisabled();
     const continuation = page.getByRole("link", {
-      name: "Keep learning in this browser",
+      name: "Browse the learning catalog",
     });
     await continuation.focus();
     await expect(continuation).toBeFocused();

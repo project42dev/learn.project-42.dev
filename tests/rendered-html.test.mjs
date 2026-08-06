@@ -128,7 +128,7 @@ test("renders the learner-data disclosure and machine-readable policy", async ()
 
   assert.equal(page.status, 200);
   assert.match(html, /Your learning data, without fine print/);
-  assert.match(html, /Private to this browser/);
+  assert.match(html, /Account-backed learning records/);
   assert.match(html, /Account-backed records/);
   // The policy states what the software supports; the page must state what this
   // deployment actually offers, so an unconfigured build still reads "Not
@@ -197,7 +197,7 @@ test("renders account, approval, and cross-device progress surfaces", async () =
 
   // Footer links (outside the auth guard) are still present.
   assert.match(account, /Learner data and controls/);
-  assert.match(profile, /browser privately or synchronize an approved account/i);
+  assert.match(profile, /approved account across browsers and devices/i);
   assert.match(admin, /Project 42 administration/);
   // Duplicate-account reconciliation moved to the learner profile (AB#6231):
   // the owner console must no longer advertise or offer it.

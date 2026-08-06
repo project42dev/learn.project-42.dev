@@ -78,8 +78,8 @@ export function ProfileDashboard() {
           .clone()
           .json()
           .catch(() => null)) as {
-          error?: { code?: string };
-        } | null;
+            error?: { code?: string };
+          } | null;
         if (body?.error?.code === "recent_authentication_required") {
           throw new Error(
             "Sign out and sign in again before downloading your authoritative account transcript.",
@@ -307,7 +307,7 @@ export function ProfileDashboard() {
             <p>
               {authoritativeAccountTranscript
                 ? "Download a local backup or request a spreadsheet-friendly authoritative transcript from your account. The server creates no public download link."
-                : "Download a complete local record, restore one on another device, or save a spreadsheet transcript. Files stay on your device."}
+                : "Download or restore a portable JSON backup. An authoritative CSV transcript is available after account approval."}
             </p>
           </div>
           <div className="profile-transfer">

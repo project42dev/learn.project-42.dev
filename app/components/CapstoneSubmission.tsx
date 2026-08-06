@@ -56,13 +56,13 @@ export function CapstoneSubmission({
         pointsAwarded: rawPoints ? Number(rawPoints) : Number.NaN,
         ...(capstone.requiresCriterionEvidence
           ? {
-              evidenceRefs: (evidenceSelections[criterion.id] ?? []).map(
-                (selection) =>
-                  selection.startsWith("artifact:")
-                    ? artifactRefs[Number(selection.slice("artifact:".length))]
-                    : selection,
-              ),
-            }
+            evidenceRefs: (evidenceSelections[criterion.id] ?? []).map(
+              (selection) =>
+                selection.startsWith("artifact:")
+                  ? artifactRefs[Number(selection.slice("artifact:".length))]
+                  : selection,
+            ),
+          }
           : {}),
       };
     });
@@ -284,8 +284,8 @@ export function CapstoneSubmission({
                                     [criterion.id]: checked
                                       ? [...selected, selection]
                                       : selected.filter(
-                                          (item) => item !== selection,
-                                        ),
+                                        (item) => item !== selection,
+                                      ),
                                   };
                                 });
                               }}
@@ -315,8 +315,8 @@ export function CapstoneSubmission({
                                     [criterion.id]: checked
                                       ? [...selected, evidence.value]
                                       : selected.filter(
-                                          (item) => item !== evidence.value,
-                                        ),
+                                        (item) => item !== evidence.value,
+                                      ),
                                   };
                                 });
                               }}
@@ -357,9 +357,8 @@ export function CapstoneSubmission({
 
       {latest ? (
         <div
-          className={`capstone-result ${
-            latest.passed ? "capstone-result-pass" : "capstone-result-retry"
-          }`}
+          className={`capstone-result ${latest.passed ? "capstone-result-pass" : "capstone-result-retry"
+            }`}
           role="status"
         >
           <strong>
@@ -373,7 +372,7 @@ export function CapstoneSubmission({
                 ? "Your evidence passed. Complete the knowledge check below to finish the module."
                 : "Use the rubric feedback to improve the artifacts, then submit a new evidence record."}
           </p>
-          {submitted ? <small>Saved to this browser.</small> : null}
+          {submitted ? <small>Saved to your account.</small> : null}
           <details className="capstone-latest-evidence">
             <summary>View criterion evidence for this submission</summary>
             <ul>

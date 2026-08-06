@@ -347,8 +347,8 @@ function AccountRequestCard({
         >
           Continue to sign in or request access
         </button>
-        <Link className="button button-secondary" href="/learn/ai-foundations">
-          Keep learning in this browser
+        <Link className="button button-secondary" href="/learn">
+          Browse the learning catalog
         </Link>
       </div>
     </section>
@@ -484,8 +484,8 @@ function RegistrationStatusCard({
                   : "Check request status"}
             </button>
           )}
-          <Link className="button button-secondary" href="/learn/ai-foundations">
-            Keep learning in this browser
+          <Link className="button button-secondary" href="/learn">
+            Browse the learning catalog
           </Link>
           {/*
             A pending or rejected browser holds only the receipt and has no
@@ -567,8 +567,8 @@ function RegistrationStatusCard({
             ? `Try again in ${retrySeconds} seconds`
             : content.action}
         </button>
-        <Link className="button button-secondary" href="/learn/ai-foundations">
-          Keep learning in this browser
+        <Link className="button button-secondary" href="/learn">
+          Browse the learning catalog
         </Link>
       </div>
     </section>

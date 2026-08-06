@@ -14,8 +14,8 @@ export default function ProfilePage() {
         <p className="eyebrow">My progress</p>
         <h1>Your work, made visible.</h1>
         <p>
-          Track completed modules, knowledge-check scores, and badges. Use the
-          browser privately or synchronize an approved account across devices.
+          Track completed modules, knowledge-check scores, and badges in your
+          approved account across browsers and devices.
         </p>
         <div className="policy-link-row" aria-label="Progress policies">
           <Link className="text-link" href="/learner-data">
