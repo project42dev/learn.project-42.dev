@@ -335,6 +335,7 @@ a {
   height: 22px;
   width: 22px;
 }
+
 .profile-photo {
   border-radius: 50%;
   height: 100%;
@@ -593,7 +594,7 @@ a {
   padding: 1.25rem 1.5rem;
 }
 
-.progress-snapshot > div:first-child {
+.progress-snapshot>div:first-child {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -666,7 +667,7 @@ a {
   margin: 0;
 }
 
-.section-heading > p:last-child {
+.section-heading>p:last-child {
   color: var(--ink-soft);
   font-size: 1rem;
   line-height: 1.7;
@@ -714,7 +715,7 @@ a {
   margin: 5rem 0 1rem;
 }
 
-.pillar-card > p {
+.pillar-card>p {
   font-size: 1rem;
   line-height: 1.65;
   max-width: 500px;
@@ -892,7 +893,7 @@ a {
   text-align: center;
 }
 
-.cta > .eyebrow {
+.cta>.eyebrow {
   color: var(--navy);
 }
 
@@ -900,7 +901,7 @@ a {
   max-width: 850px;
 }
 
-.cta > p:not(.eyebrow) {
+.cta>p:not(.eyebrow) {
   color: #38441d;
   line-height: 1.6;
   margin-bottom: 2rem;
@@ -927,13 +928,13 @@ a {
 /* page-hero h1 sets line-height 0.86 with margin 0, which reads well for a
    one-line headline. Any headline that wraps put its second-line descenders
    into the lede underneath, visible on the landing page and About. */
-.page-hero h1 + p {
+.page-hero h1+p {
   margin-top: 1.5rem;
 }
 
-.page-hero > p:last-child,
-.path-hero > div > p,
-.resource-detail-hero > div > p {
+.page-hero>p:last-child,
+.path-hero>div>p,
+.resource-detail-hero>div>p {
   color: var(--ink-soft);
   font-size: clamp(1rem, 2vw, 1.25rem);
   line-height: 1.65;
@@ -1132,7 +1133,7 @@ a {
   font-size: 1.25rem;
 }
 
-.module-copy > span:last-child {
+.module-copy>span:last-child {
   color: var(--ink-soft);
   font-size: 0.83rem;
 }
@@ -1178,7 +1179,7 @@ a {
   font-size: clamp(3rem, 7vw, 6rem);
 }
 
-.lesson-hero > p {
+.lesson-hero>p {
   color: var(--ink-soft);
   font-size: 1.13rem;
   line-height: 1.65;
@@ -1294,7 +1295,7 @@ a {
   margin: 0.25rem 0 0;
 }
 
-.comparison-heading > span {
+.comparison-heading>span {
   border: 1px solid var(--navy);
   border-radius: 999px;
   flex: 0 0 auto;
@@ -1446,11 +1447,9 @@ a {
   border: 1px solid color-mix(in srgb, var(--orange) 42%, var(--line));
   border-radius: var(--radius);
   background:
-    linear-gradient(
-      145deg,
+    linear-gradient(145deg,
       color-mix(in srgb, var(--orange) 10%, transparent),
-      color-mix(in srgb, white 96%, transparent)
-    );
+      color-mix(in srgb, white 96%, transparent));
 }
 
 .learning-activity h2 {
@@ -1509,10 +1508,10 @@ a {
   margin: 0.25rem 0 0.8rem;
 }
 
-.capstone-submission > p,
+.capstone-submission>p,
 .capstone-review-note p,
-.capstone-artifacts > p,
-.capstone-rubric > p {
+.capstone-artifacts>p,
+.capstone-rubric>p {
   color: var(--ink-soft);
   line-height: 1.65;
 }
@@ -1556,7 +1555,7 @@ a {
   margin: 0;
 }
 
-.capstone-exemplars > p:not(.eyebrow) {
+.capstone-exemplars>p:not(.eyebrow) {
   color: var(--ink-soft);
   font-size: 0.78rem;
   line-height: 1.55;
@@ -1607,13 +1606,13 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
-.capstone-exemplar > p,
-.capstone-exemplar > h4,
-.capstone-exemplar > ul {
+.capstone-exemplar>p,
+.capstone-exemplar>h4,
+.capstone-exemplar>ul {
   margin-inline: 1rem;
 }
 
-.capstone-exemplar > p,
+.capstone-exemplar>p,
 .exemplar-artifacts p,
 .exemplar-score-list span {
   color: var(--ink-soft);
@@ -1682,8 +1681,8 @@ a {
   padding: 0 0.5rem;
 }
 
-.capstone-artifacts > p,
-.capstone-rubric > p {
+.capstone-artifacts>p,
+.capstone-rubric>p {
   font-size: 0.76rem;
   margin: 0;
 }
@@ -1728,7 +1727,7 @@ a {
   line-height: 1.5;
 }
 
-.rubric-row div > strong,
+.rubric-row div>strong,
 .rubric-row label span {
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -1763,13 +1762,13 @@ a {
   padding: 0 0.35rem;
 }
 
-.criterion-evidence-map > p {
+.criterion-evidence-map>p {
   color: var(--ink-soft);
   font-size: 0.7rem;
   margin: 0 0 0.65rem;
 }
 
-.criterion-evidence-map > div {
+.criterion-evidence-map>div {
   display: grid;
   gap: 0.45rem;
 }
@@ -1981,7 +1980,7 @@ a {
   top: 110px;
 }
 
-.lesson-rail > div {
+.lesson-rail>div {
   align-items: center;
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -1994,7 +1993,7 @@ a {
   font-size: 0.68rem;
 }
 
-.lesson-rail > div strong {
+.lesson-rail>div strong {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.75rem;
 }
@@ -2043,7 +2042,7 @@ a {
   color: var(--lime);
 }
 
-.knowledge-check > p {
+.knowledge-check>p {
   color: #b9c2d3;
   line-height: 1.6;
 }
@@ -2169,13 +2168,13 @@ a {
   padding: 1rem;
 }
 
-.check-result > div:first-child {
+.check-result>div:first-child {
   align-items: center;
   display: flex;
   gap: 1rem;
 }
 
-.check-result > div:first-child > span {
+.check-result>div:first-child>span {
   color: var(--lime);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 2.3rem;
@@ -2198,7 +2197,7 @@ a {
   color: var(--navy);
 }
 
-.result-retry > div:first-child > span {
+.result-retry>div:first-child>span {
   color: var(--orange);
 }
 
@@ -2216,7 +2215,7 @@ a {
   min-width: 0;
 }
 
-.resource-controls label > span {
+.resource-controls label>span {
   color: #606979;
   font-size: 0.69rem;
   font-weight: 800;
@@ -2297,7 +2296,7 @@ a {
   margin: 3rem 0 0.7rem;
 }
 
-.resource-card > p {
+.resource-card>p {
   color: var(--ink-soft);
   line-height: 1.55;
 }
@@ -2371,7 +2370,7 @@ a {
   padding-top: 1rem;
 }
 
-.resource-foot > div {
+.resource-foot>div {
   align-items: flex-start;
   display: flex;
   flex-direction: column;
@@ -2427,7 +2426,7 @@ a {
   margin: 1rem 0 0.4rem;
 }
 
-.verification-card small + small {
+.verification-card small+small {
   margin-top: 0.35rem;
 }
 
@@ -2493,7 +2492,7 @@ a {
   min-width: 0;
 }
 
-.profile-dashboard > *,
+.profile-dashboard>*,
 .profile-identity form,
 .name-row {
   min-width: 0;
@@ -2532,9 +2531,9 @@ a {
   margin: 0;
 }
 
-.migration-item-review > p,
+.migration-item-review>p,
 .migration-behavior p,
-.retained-migration > p {
+.retained-migration>p {
   color: var(--ink-soft);
   line-height: 1.55;
   margin: 0;
@@ -2558,7 +2557,7 @@ a {
   padding: 0.85rem 1rem;
 }
 
-.migration-item-review li > div {
+.migration-item-review li>div {
   display: grid;
   gap: 0.25rem;
   min-width: 0;
@@ -2570,7 +2569,7 @@ a {
   overflow-wrap: anywhere;
 }
 
-.migration-item-review li > div > span,
+.migration-item-review li>div>span,
 .migration-item-review li code {
   color: var(--ink-soft);
   font-size: 0.72rem;
@@ -2609,7 +2608,7 @@ a {
   margin: 0;
 }
 
-.retained-migration dl > div {
+.retained-migration dl>div {
   display: grid;
   gap: 0.2rem;
   grid-template-columns: minmax(8rem, 0.25fr) minmax(0, 1fr);
@@ -2655,6 +2654,29 @@ a {
   padding: 2rem;
 }
 
+.account-consent-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.account-consent-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.account-consent-toggle input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
 .profile-identity {
   display: grid;
   gap: 1.5rem;
@@ -2663,7 +2685,7 @@ a {
 
 .profile-identity .eyebrow,
 .profile-identity h2,
-.profile-identity > p {
+.profile-identity>p {
   grid-column: 1;
 }
 
@@ -2673,7 +2695,7 @@ a {
   margin: 0;
 }
 
-.profile-identity > p {
+.profile-identity>p {
   color: var(--ink-soft);
   line-height: 1.55;
   margin: 0;
@@ -2685,7 +2707,7 @@ a {
   grid-row: 1 / span 3;
 }
 
-.profile-identity form > label {
+.profile-identity form>label {
   color: #606979;
   display: block;
   font-size: 0.68rem;
@@ -2766,7 +2788,7 @@ a {
   margin: 0.3rem 0 0;
 }
 
-.transcript-list > article > strong {
+.transcript-list>article>strong {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.73rem;
   text-align: right;
@@ -2819,7 +2841,7 @@ a {
   max-width: 250px;
 }
 
-.profile-transfer > small {
+.profile-transfer>small {
   color: #606979;
   font-size: 0.65rem;
   text-align: right;
@@ -2836,14 +2858,14 @@ a {
   min-width: 32rem;
 }
 
-.progress-migration-preview dl > div {
+.progress-migration-preview dl>div {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(10rem, 1fr) minmax(13rem, 1fr);
   padding: 0.75rem 1rem;
 }
 
-.progress-migration-preview dl > div + div {
+.progress-migration-preview dl>div+div {
   border-top: 1px solid var(--line);
 }
 
@@ -3078,7 +3100,7 @@ a {
   margin-top: 0.45rem;
 }
 
-.release-facts-heading > p {
+.release-facts-heading>p {
   color: #cbd2df;
   line-height: 1.7;
   margin: 0;
@@ -3195,11 +3217,11 @@ a {
 
 /* Same wrapped-headline collision as page-hero: line-height 0.98 with margin 0
    puts the second line's descenders into the paragraph below. */
-.open-source-banner h2 + p {
+.open-source-banner h2+p {
   margin-top: 1.25rem;
 }
 
-.open-source-banner > div > p:last-child {
+.open-source-banner>div>p:last-child {
   color: #25565d;
   line-height: 1.6;
   max-width: 700px;
@@ -3293,7 +3315,7 @@ a {
   margin: 0.45rem 0 1rem;
 }
 
-.policy-section-heading > p:last-child {
+.policy-section-heading>p:last-child {
   color: var(--ink-soft);
   line-height: 1.7;
 }
@@ -3411,7 +3433,7 @@ a {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.policy-control-grid article > strong {
+.policy-control-grid article>strong {
   color: var(--cyan-deep);
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(1.8rem, 3vw, 2.6rem);
@@ -3464,7 +3486,7 @@ a {
   max-width: 900px;
 }
 
-.not-found > p:not(.eyebrow) {
+.not-found>p:not(.eyebrow) {
   color: var(--ink-soft);
   font-size: 1.1rem;
   margin-bottom: 2rem;
@@ -3486,13 +3508,13 @@ a {
   margin-bottom: 1rem;
 }
 
-.footer-grid > div:first-child p {
+.footer-grid>div:first-child p {
   color: #aeb7c9;
   line-height: 1.6;
   max-width: 380px;
 }
 
-.footer-grid > div:not(:first-child) {
+.footer-grid>div:not(:first-child) {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
@@ -3533,7 +3555,8 @@ a {
   which collapses the contrast. Hand both back to the system palette.
 */
 @media (forced-colors: active) {
-  .footer-grid > div:first-child p,
+
+  .footer-grid>div:first-child p,
   .footer-grid strong,
   .footer-grid a,
   .footer-bottom {
@@ -3726,7 +3749,7 @@ a {
     justify-content: flex-start;
   }
 
-  .profile-transfer > small {
+  .profile-transfer>small {
     text-align: left;
   }
 
@@ -3829,7 +3852,7 @@ a {
   }
 
   .migration-item-review li,
-  .retained-migration dl > div {
+  .retained-migration dl>div {
     align-items: start;
     grid-template-columns: 1fr;
   }
@@ -3946,6 +3969,27 @@ a {
   margin-top: 1.25rem;
 }
 
+.terms-acceptance-field {
+  margin: 1.25rem 0;
+}
+
+.terms-acceptance-label {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.65rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.terms-acceptance-label input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+}
+
 .registration-expectations {
   display: grid;
   gap: 0.65rem;
@@ -4007,7 +4051,7 @@ a {
   grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
 }
 
-.admin-grid > * {
+.admin-grid>* {
   min-width: 0;
 }
 
@@ -4057,7 +4101,7 @@ a {
   margin-top: 1rem;
 }
 
-.admin-account-filters > div,
+.admin-account-filters>div,
 .admin-account-action {
   display: grid;
   gap: 0.5rem;
@@ -4230,7 +4274,7 @@ a {
   padding-inline: 0.35rem;
 }
 
-.account-profile-form > small,
+.account-profile-form>small,
 .account-checkbox small {
   color: var(--ink-soft);
   line-height: 1.5;
@@ -4330,7 +4374,7 @@ a {
   padding: 0.85rem;
 }
 
-.deletion-history li > div {
+.deletion-history li>div {
   display: grid;
   gap: 0.25rem;
 }
@@ -4472,57 +4516,6 @@ a {
   padding: 0.55rem 0.75rem;
 }
 
-.account-merge-console {
-  grid-column: 1 / -1;
-}
-
-.account-merge-form,
-.account-merge-review,
-.account-merge-receipt {
-  display: grid;
-  gap: 1rem;
-}
-
-.account-merge-account-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.account-merge-account-grid > fieldset,
-.account-merge-review > form > fieldset,
-.account-merge-conflict {
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  display: grid;
-  gap: 0.75rem;
-  margin: 0;
-  min-width: 0;
-  padding: 1rem;
-}
-
-.account-merge-account-grid legend,
-.account-merge-review legend {
-  font-weight: 800;
-  padding: 0 0.35rem;
-}
-
-.account-merge-account-grid select,
-.account-merge-account-grid input,
-.account-merge-account-grid textarea,
-.account-merge-review input,
-.account-merge-review textarea,
-.account-merge-receipt input,
-.account-merge-receipt textarea {
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  color: var(--ink);
-  font: inherit;
-  padding: 0.75rem 0.85rem;
-  width: 100%;
-}
-
 .account-recovery-details {
   border-top: 1px solid var(--line);
   padding-top: 0.75rem;
@@ -4543,91 +4536,15 @@ a {
   gap: 0.5rem;
 }
 
-.recovery-method-list label,
-.account-merge-conflict label {
+.recovery-method-list label {
   align-items: flex-start;
   display: flex;
   gap: 0.55rem;
 }
 
-.recovery-method-list input,
-.account-merge-conflict input {
+.recovery-method-list input {
   margin-top: 0.2rem;
   width: auto;
-}
-
-.account-merge-proof-status,
-.account-merge-warning,
-.account-merge-consequences,
-.account-merge-receipt {
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  padding: 0.85rem;
-}
-
-.account-merge-warning {
-  border-color: #b57c00;
-}
-
-.account-merge-evidence,
-.account-merge-receipt dl {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0;
-}
-
-.account-merge-evidence div,
-.account-merge-receipt dl div {
-  min-width: 0;
-}
-
-.account-merge-evidence dt,
-.account-merge-receipt dt {
-  font-weight: 800;
-}
-
-.account-merge-evidence dd,
-.account-merge-receipt dd {
-  margin: 0.2rem 0 0;
-  overflow-wrap: anywhere;
-}
-
-.account-merge-copyable {
-  margin: 0.5rem 0;
-}
-
-.account-merge-copyable-row {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.account-merge-copyable-row code {
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
-  border-radius: 0.35rem;
-  overflow-wrap: anywhere;
-  padding: 0.3rem 0.5rem;
-}
-
-.account-merge-records {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.account-merge-records span {
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.35rem 0.65rem;
-}
-
-.account-merge-consequences ul {
-  margin-bottom: 0;
 }
 
 .account-sync-card a {
@@ -4654,12 +4571,6 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .account-merge-account-grid,
-  .account-merge-evidence,
-  .account-merge-receipt dl {
-    grid-template-columns: 1fr;
-  }
-
   .admin-account-list article {
     grid-template-columns: 1fr;
   }
@@ -4678,9 +4589,9 @@ a {
     white-space: normal;
   }
 
-  .admin-account-list article > *,
-  .domain-list article > *,
-  .audit-event-list article > * {
+  .admin-account-list article>*,
+  .domain-list article>*,
+  .audit-event-list article>* {
     min-width: 0;
     overflow-wrap: anywhere;
   }
@@ -4804,7 +4715,7 @@ html[data-project42-reduced-motion="true"] *::after {
   padding-bottom: 4rem;
 }
 
-.diagram-index-hero > p:last-child {
+.diagram-index-hero>p:last-child {
   color: var(--ink-soft);
   font-size: 1.12rem;
   line-height: 1.7;
@@ -4877,13 +4788,13 @@ html[data-project42-reduced-motion="true"] *::after {
   margin: 1.5rem 0 0.55rem;
 }
 
-.diagram-card > p {
+.diagram-card>p {
   color: var(--ink-soft);
   line-height: 1.6;
   margin: 0;
 }
 
-.diagram-card > a {
+.diagram-card>a {
   font-size: 0.78rem;
   font-weight: 850;
   margin-top: auto;
@@ -4910,7 +4821,7 @@ html[data-project42-reduced-motion="true"] *::after {
   max-width: 980px;
 }
 
-.diagram-detail-hero > div:first-child > p:last-child {
+.diagram-detail-hero>div:first-child>p:last-child {
   color: var(--ink-soft);
   font-size: 1.08rem;
   line-height: 1.65;
@@ -5160,6 +5071,7 @@ html[data-project42-reduced-motion="true"] *::after {
 }
 
 @media (forced-colors: active) {
+
   .diagram-card,
   .diagram-card-preview,
   .diagram-source-card,
@@ -5192,6 +5104,7 @@ html[data-project42-reduced-motion="true"] *::after {
 }
 
 @media (max-width: 760px) {
+
   .diagram-grid,
   .diagram-detail-hero,
   .diagram-explanation-grid {
@@ -5432,5 +5345,3 @@ html[data-project42-reduced-motion="true"] *::after {
   font-size: 0.8rem;
   margin-top: 1rem;
 }
-
-

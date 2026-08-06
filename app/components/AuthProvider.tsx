@@ -309,8 +309,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await loadRegistration(
           outcome,
           outcome === "pending" ||
-            outcome === "rejected" ||
-            outcome === "success",
+          outcome === "rejected" ||
+          outcome === "success",
         );
         return;
       }
@@ -371,11 +371,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.replace(target.toString());
   }, []);
 
+  const recordStoredTermsAcceptance = useCallback(async () => {
+    const termsStorageKey = "project42.terms-acceptance.v1";
+    try {
+      const raw = sessionStorage.getItem(termsStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        termsVersion: string;
+        acceptedAt: string;
+      };
+      if (!parsed.termsVersion || !parsed.acceptedAt) return;
+      await apiFetch("/v1/me/terms-acceptance", {
+        method: "POST",
+        body: JSON.stringify(parsed),
+      });
+      sessionStorage.removeItem(termsStorageKey);
+    } catch {
+      // Terms acceptance recording is best-effort after sign-in.
+      // The stored acceptance remains in sessionStorage for a retry
+      // on the next sign-in if this one fails.
+    }
+  }, [apiFetch]);
+
   const completeSignIn = useCallback(async () => {
     const query = new URLSearchParams(window.location.search);
     window.history.replaceState({}, "", "/account");
     if (query.get("auth") === "success") {
       await refreshAccount();
+      await recordStoredTermsAcceptance();
       return;
     }
     if (query.get("auth") === "pending" || query.get("auth") === "rejected") {
@@ -517,7 +540,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem(githubLinkFlowKey);
       throw new Error(
         query.get("error_description") ??
-          "GitHub authorization was cancelled or rejected.",
+        "GitHub authorization was cancelled or rejected.",
       );
     }
     const code = query.get("code");

@@ -27,7 +27,6 @@ interface ProfilePreferencesContextValue {
   formatDateTime: (value: string | number | Date) => string;
 }
 
-const storageKey = "project42.profile-preferences.v1";
 const serverDefaults: ProfilePreferences = {
   locale: "en-US",
   timeZone: "UTC",
@@ -68,33 +67,6 @@ function browserDefaults(): ProfilePreferences {
   };
 }
 
-function parseStoredPreferences(
-  value: string | null,
-  defaults: ProfilePreferences,
-): ProfilePreferences | null {
-  if (!value) return null;
-  try {
-    const candidate = JSON.parse(value) as Partial<ProfilePreferences>;
-    const locale = canonicalLocale(candidate.locale);
-    const timeZone = canonicalTimeZone(candidate.timeZone);
-    if (!locale || !timeZone) return null;
-    return {
-      locale,
-      timeZone,
-      reducedMotion:
-        typeof candidate.reducedMotion === "boolean"
-          ? candidate.reducedMotion
-          : defaults.reducedMotion,
-      highContrast:
-        typeof candidate.highContrast === "boolean"
-          ? candidate.highContrast
-          : defaults.highContrast,
-    };
-  } catch {
-    return null;
-  }
-}
-
 export function validateProfilePreferences(
   candidate: ProfilePreferences,
 ): ProfilePreferences | null {
@@ -119,18 +91,10 @@ export function ProfilePreferencesProvider({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const defaults = browserDefaults();
-    let stored: ProfilePreferences | null = null;
-    try {
-      stored = parseStoredPreferences(
-        window.localStorage.getItem(storageKey),
-        defaults,
-      );
-    } catch {
-      // Storage can be unavailable in privacy modes. In-memory preferences still work.
-    }
+    // Preferences belong to the account. On first mount, use browser
+    // defaults until the account dashboard loads hosted preferences.
     const timer = window.setTimeout(() => {
-      setPreferences(stored ?? defaults);
+      setPreferences(browserDefaults());
       setReady(true);
     }, 0);
     return () => window.clearTimeout(timer);
@@ -162,13 +126,10 @@ export function ProfilePreferencesProvider({
 
   const savePreferences = useCallback(
     (next: ProfilePreferences): { persisted: boolean } => {
+      // Preferences are persisted by the account API (see AccountDashboard).
+      // This provider only holds the in-memory session copy.
       setPreferences(next);
-      try {
-        window.localStorage.setItem(storageKey, JSON.stringify(next));
-        return { persisted: true };
-      } catch {
-        return { persisted: false };
-      }
+      return { persisted: true };
     },
     [],
   );

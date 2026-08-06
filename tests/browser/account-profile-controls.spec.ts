@@ -310,42 +310,12 @@ test.describe("hosted profile and learner-data controls", () => {
     expect(accessibility.violations).toEqual([]);
   });
 
-  test("reviews versioned consent and deletion receipts through request and cancellation", async ({
+  test("reviews optional consent toggles and deletion receipts through request and cancellation", async ({
     page,
   }) => {
     const consents = [
-      {
-        id: "consent-old",
-        purpose: "learning-record",
-        policyVersion: "2026-06-01",
-        decision: "withdrawn",
-        decidedAt: "2026-07-27T09:00:00.000Z",
-        contractStatus: "legacy",
-      },
-      {
-        id: "consent-current",
-        purpose: "learning-record",
-        policyVersion: "2026-07-27",
-        decision: "granted",
-        decidedAt: "2026-07-29T09:00:00.000Z",
-        contractStatus: "current",
-      },
-      {
-        id: "consent-optional",
-        purpose: "product-improvement",
-        policyVersion: "2026-07-27",
-        decision: "withdrawn",
-        decidedAt: "2026-07-28T09:00:00.000Z",
-        contractStatus: "legacy",
-      },
-      {
-        id: "consent-legacy",
-        purpose: "learner-records",
-        policyVersion: "2026-06-01",
-        decision: "granted",
-        decidedAt: "2026-07-26T09:00:00.000Z",
-        contractStatus: "legacy",
-      },
+      { purpose: "product-improvement", decision: "withdrawn" },
+      { purpose: "learning-reminders", decision: "withdrawn" },
     ];
     let deletions = [
       {
@@ -363,7 +333,7 @@ test.describe("hosted profile and learner-data controls", () => {
         completedAt: "2026-06-10T10:00:00.000Z",
       },
     ];
-    const consentWrites: Array<Record<string, unknown>> = [];
+    const consentPatches: Array<Record<string, unknown>> = [];
     const deletionWrites: Array<Record<string, unknown>> = [];
 
     await installBaselineApi(page, async (route, pathname) => {
@@ -376,26 +346,14 @@ test.describe("hosted profile and learner-data controls", () => {
         await fulfillJson(route, { consents });
         return true;
       }
-      if (pathname === "/v1/me/consents" && request.method() === "POST") {
+      if (pathname === "/v1/me/consents" && request.method() === "PATCH") {
         const input = request.postDataJSON() as Record<string, unknown>;
-        consentWrites.push(input);
-        const consent = {
-          id: "consent-new",
-          ...input,
-          decidedAt: "2026-07-29T12:10:00.000Z",
-          contractStatus: "current",
-        };
-        consents.push(
-          consent as {
-            id: string;
-            purpose: string;
-            policyVersion: string;
-            decision: string;
-            decidedAt: string;
-            contractStatus: string;
-          },
-        );
-        await fulfillJson(route, { consent }, 201);
+        consentPatches.push(input);
+        const purpose = String(input.purpose);
+        const decision = String(input.decision);
+        const idx = consents.findIndex((c) => c.purpose === purpose);
+        if (idx >= 0) consents[idx] = { purpose, decision };
+        await fulfillJson(route, { consents });
         return true;
       }
       if (pathname === "/v1/me/deletion" && request.method() === "GET") {
@@ -439,34 +397,36 @@ test.describe("hosted profile and learner-data controls", () => {
     });
 
     await page.goto("/account");
-    await expect(page.getByRole("heading", { name: "Consent history" })).toBeVisible();
-    const consentRows = page
-      .getByRole("table", {
-        name: "Every versioned consent decision returned by your account",
-      })
-      .getByRole("row");
-    await expect(consentRows).toHaveCount(5);
-    await expect(consentRows.nth(1)).toContainText("learning-record");
-    await expect(consentRows.nth(1)).toContainText("2026-07-27");
-    await expect(consentRows.nth(1)).toContainText("current");
-    await expect(consentRows.nth(1)).toContainText("granted");
-    await expect(consentRows.nth(2)).toContainText("product-improvement");
-    await expect(
-      page.getByRole("cell", { name: "learner-records" }),
-    ).toBeVisible();
 
-    await page
-      .getByRole("button", { name: "Grant learner-record consent" })
-      .click();
-    await expect(page.getByText("Learner-record consent recorded.")).toBeVisible();
-    expect(consentWrites).toEqual([
-      {
-        purpose: "learning-record",
-        policyVersion: expect.any(String),
-        decision: "granted",
-      },
+    // Optional consent toggles — both start off (withdrawn)
+    await expect(
+      page.getByRole("heading", { name: "Your account and learner data" }),
+    ).toBeVisible();
+    const productImprovementToggle = page.getByRole("switch", {
+      name: "Product improvement",
+    });
+    const learningRemindersToggle = page.getByRole("switch", {
+      name: "Learning reminders",
+    });
+    await expect(productImprovementToggle).not.toBeChecked();
+    await expect(learningRemindersToggle).not.toBeChecked();
+
+    // Grant product-improvement consent
+    await productImprovementToggle.check();
+    await expect(page.getByText("Product improvement consent granted.")).toBeVisible();
+    expect(consentPatches).toEqual([
+      { purpose: "product-improvement", decision: "granted" },
     ]);
 
+    // Withdraw it
+    await productImprovementToggle.uncheck();
+    await expect(page.getByText("Product improvement consent withdrawn.")).toBeVisible();
+
+    // Grant learning-reminders consent
+    await learningRemindersToggle.check();
+    await expect(page.getByText("Learning reminders consent granted.")).toBeVisible();
+
+    // Deletion history and flow
     await expect(
       page.getByLabel("Deletion request identifier deletion-completed"),
     ).toContainText("Request deletion-completed");
@@ -533,22 +493,25 @@ test.describe("hosted profile and learner-data controls", () => {
         await fulfillJson(route, { profile });
         return true;
       }
-      if (pathname === "/v1/me/consents" && request.method() === "POST") {
+      if (pathname === "/v1/me/consents" && request.method() === "GET") {
+        await fulfillJson(route, {
+          consents: [
+            { purpose: "product-improvement", decision: "withdrawn" },
+            { purpose: "learning-reminders", decision: "withdrawn" },
+          ],
+        });
+        return true;
+      }
+      if (pathname === "/v1/me/consents" && request.method() === "PATCH") {
         const url = new URL(request.url());
         const body = request.postDataJSON() as Record<string, unknown>;
         writes.push({ pathname, search: url.search, body });
-        await fulfillJson(
-          route,
-          {
-            consent: {
-              id: "self-scoped-consent",
-              ...body,
-              decidedAt: now,
-              contractStatus: "current",
-            },
-          },
-          201,
-        );
+        await fulfillJson(route, {
+          consents: [
+            { purpose: "product-improvement", decision: "withdrawn" },
+            { purpose: "learning-reminders", decision: "withdrawn" },
+          ],
+        });
         return true;
       }
       return false;
@@ -558,8 +521,8 @@ test.describe("hosted profile and learner-data controls", () => {
     await page.getByLabel("Language tag for dates and times").fill("fr-FR");
     await page.getByRole("button", { name: "Save preferences" }).click();
     await page
-      .getByRole("button", { name: "Grant learner-record consent" })
-      .click();
+      .getByRole("switch", { name: "Product improvement" })
+      .check();
 
     expect(writes).toEqual([
       {
@@ -576,8 +539,7 @@ test.describe("hosted profile and learner-data controls", () => {
         pathname: "/v1/me/consents",
         search: "",
         body: {
-          purpose: "learning-record",
-          policyVersion: expect.any(String),
+          purpose: "product-improvement",
           decision: "granted",
         },
       },
@@ -588,7 +550,7 @@ test.describe("hosted profile and learner-data controls", () => {
     }
   });
 
-  test("uses browser-local preferences when the hosted contract is legacy", async ({
+  test("uses in-memory fallback when the hosted contract is legacy", async ({
     page,
   }) => {
     const legacyProfile = initialProfile() as Partial<Profile>;
@@ -620,11 +582,12 @@ test.describe("hosted profile and learner-data controls", () => {
     await page.getByRole("button", { name: "Save preferences" }).click();
     await expect(page.getByText("Preferences saved in this browser.")).toBeVisible();
     expect(preferenceWrites).toBe(0);
+    // Preferences are in-memory only; no localStorage key is written.
     expect(
       await page.evaluate(() =>
         window.localStorage.getItem("project42.profile-preferences.v1"),
       ),
-    ).toContain("en-CA");
+    ).toBeNull();
   });
 
   test("keeps an accessible in-browser fallback when hosted profile loading is offline", async ({
@@ -780,7 +743,16 @@ test.describe("hosted profile and learner-data controls", () => {
         );
         return true;
       }
-      if (pathname === "/v1/me/consents" && request.method() === "POST") {
+      if (pathname === "/v1/me/consents" && request.method() === "GET") {
+        await fulfillJson(route, {
+          consents: [
+            { purpose: "product-improvement", decision: "withdrawn" },
+            { purpose: "learning-reminders", decision: "withdrawn" },
+          ],
+        });
+        return true;
+      }
+      if (pathname === "/v1/me/consents" && request.method() === "PATCH") {
         await fulfillJson(
           route,
           { error: { code: "internal_error", message: privateDetail } },
@@ -830,8 +802,8 @@ test.describe("hosted profile and learner-data controls", () => {
     ).toBeVisible();
 
     await page
-      .getByRole("button", { name: "Grant learner-record consent" })
-      .click();
+      .getByRole("switch", { name: "Product improvement" })
+      .check();
     await expect(
       page.getByText("Consent could not be recorded. Your previous decision is unchanged."),
     ).toBeVisible();

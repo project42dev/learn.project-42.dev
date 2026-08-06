@@ -40,8 +40,8 @@ rules can be removed without exposing deployment configuration to Learn.
 
 ## Evidence and recovery
 
-The same route shows eligible deletion requests, owner-assisted account-merge
-controls, and request-correlated privileged audit events. Permanent deletion uses
+The same route shows eligible deletion requests and request-correlated
+privileged audit events. Permanent deletion uses
 an in-page review form with an audit reason and an explicit `DELETE` confirmation;
 it never relies on a browser prompt. Sensitive completion actions may require a
 recent sign-in. Deployment identifiers, owner bindings, secrets, rollback records,
