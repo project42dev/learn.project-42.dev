@@ -21,8 +21,8 @@ export function ProgressSnapshot() {
           <span className="snapshot-kicker">Your learning record</span>
           <strong>Ready when you are.</strong>
         </div>
-        <p>Progress, scores, and badges stay on this device in the current release.</p>
-        <Link href="/profile">How progress works →</Link>
+        <p>Sign in to save progress, scores, and badges to your account.</p>
+        <Link href="/account">Sign in to start →</Link>
       </section>
     );
   }

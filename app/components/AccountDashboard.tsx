@@ -306,8 +306,8 @@ function AccountRequestCard({
           learner session.
         </li>
         <li>
-          Browser-local learning remains available while an owner reviews the
-          request.
+          Course participation begins after an owner approves the request and
+          you complete a new secure sign-in.
         </li>
         <li>
           Hosted progress, scores, transcripts, and badges become available only
@@ -519,7 +519,7 @@ function RegistrationStatusCard({
       content = {
         title: "The identity provider did not complete the request",
         detail:
-          "No learner session was created. Start again when you are ready; browser-local progress is unchanged.",
+          "No learner session was created and no account progress was changed. Start again when you are ready.",
         action: "Try the identity provider again",
       };
       break;
@@ -596,7 +596,8 @@ export function AccountDashboard() {
           <h2>Ready for hosted identity configuration</h2>
           <p>
             Account code is installed, but this deployment has not yet been connected
-            to its OIDC tenant and API. Browser-local learning remains available.
+            to its OIDC tenant and API. Account-backed learning is unavailable until
+            that connection is configured.
           </p>
           <p>
             Review <Link href="/learner-data">learner-data and recovery controls</Link>
@@ -649,7 +650,7 @@ export function AccountDashboard() {
           <h2>Account sign-in needs attention</h2>
           <p>{error ?? "The account could not be loaded."}</p>
           <p>
-            Your browser-local record remains available. See{" "}
+            No account progress was changed. See{" "}
             <Link href="/learner-data">learner-data and recovery expectations</Link>
             {" "}or{" "}
             <a href="https://project-42.dev/legal-transparency#service-title">
@@ -710,15 +711,14 @@ export function AccountDashboard() {
         <div aria-live="polite" role="status">
           {account.state === "pending" ? (
             <p>
-              Your request is waiting for owner approval. Learning still works in this
-              browser, but server progress is unavailable until approval.
+              Your request is waiting for owner approval. Course participation and
+              account progress remain unavailable until approval.
             </p>
           ) : null}
           {account.state === "rejected" ? (
             <p>
-              This registration request was rejected. Browser-local learning remains
-              available, and an owner can reconsider the request without using permanent
-              revocation.
+              This registration request was rejected. An owner can reconsider the
+              request without using permanent revocation.
             </p>
           ) : null}
           {account.state === "suspended" ? (
@@ -1077,7 +1077,7 @@ function ProfileEditor() {
     } catch {
       setHasError(true);
       setMessage(
-        "Your profile could not be loaded. Your browser-local learning record is unchanged.",
+        "Your profile could not be loaded. No account progress was changed.",
       );
     } finally {
       setBusy(false);

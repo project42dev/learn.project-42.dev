@@ -52,7 +52,7 @@ export function KnowledgeCheck({
       </div>
       <p>
         Choose the strongest answer for each question. Your attempts become part of
-        your device-local transcript.
+        your account transcript.
       </p>
       <div className="question-list">
         {questions.map((question, questionIndex) => {

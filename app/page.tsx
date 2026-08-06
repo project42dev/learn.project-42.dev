@@ -66,7 +66,7 @@ export default function Home() {
               </li>
               <li>About {hours} hours of material</li>
               <li>Every claim carries its source and a verification date</li>
-              <li>Progress stays on this device in the current release</li>
+              <li>Account-backed progress across browsers and devices</li>
             </ul>
             <Link href="/learn">Browse learning paths →</Link>
           </article>

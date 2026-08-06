@@ -5,7 +5,6 @@ import {
   buildCapstoneHistory,
   buildPortableLearnerRecord,
   buildTranscript,
-  buildTranscriptCsv,
   restorePortableLearnerRecord,
   serializePortableLearnerRecord,
   starterCatalog,
@@ -63,15 +62,10 @@ export function ProfileDashboard() {
   const downloadTranscript = async () => {
     setTranscriptDownloadStatus(null);
     if (!authoritativeAccountTranscript) {
-      downloadTextFile(
-        `project-42-browser-local-transcript-${exportDate}.csv`,
-        buildTranscriptCsv(starterCatalog, progress),
-        "text/csv",
-      );
       setTranscriptDownloadStatus({
-        kind: "success",
+        kind: "error",
         message:
-          "Browser-local transcript downloaded. It is not an authoritative account transcript.",
+          "An authoritative transcript is available after the account is approved.",
       });
       return;
     }
@@ -511,7 +505,7 @@ export function ProfileDashboard() {
         <p className="record-authority-note">
           {authoritativeAccountTranscript
             ? "These achievements can be synchronized in your durable account progress, but they are not issued credentials."
-            : "These achievements are browser-local and are not issued credentials."}
+            : "These achievements are not issued credentials."}
         </p>
         {progress.badges.length ? (
           <div className="badge-grid">
@@ -553,24 +547,24 @@ export function ProfileDashboard() {
           <h3>No durable credentials have been issued.</h3>
           <p>
             A durable credential requires server-side issuance against versioned
-            evidence and an append-only lifecycle. Browser-local achievements never
-            appear here as verified credentials.
+            evidence and an append-only lifecycle. Learning achievements do not appear
+            here as verified credentials.
           </p>
         </div>
       </section>
 
       {progress.attempts.length || (progress.capstoneSubmissions?.length ?? 0) > 0 ? (
         <details className="reset-panel">
-          <summary>Manage local learning data</summary>
-          <p>Resetting removes progress, scores, and badges from this browser.</p>
+          <summary>Manage learning progress</summary>
+          <p>Resetting removes progress, scores, and badges from your account.</p>
           <button
             className="button button-danger"
             onClick={() => {
-              if (window.confirm("Reset all Project 42 progress on this device?")) reset();
+              if (window.confirm("Reset all Project 42 account progress?")) reset();
             }}
             type="button"
           >
-            Reset local record
+            Reset account progress
           </button>
         </details>
       ) : null}
