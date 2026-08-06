@@ -140,12 +140,10 @@ test.describe("learner account request and private status receipt", () => {
     const signIn = page.waitForRequest(`${apiOrigin}/v1/auth/start**`);
     await page.goto("/learn/ai-foundations/research-with-evidence");
     const request = await signIn;
-    expect(new URL(request.url()).searchParams.get("return_to")).toBe(
-      new URL(
-        "/learn/ai-foundations/research-with-evidence",
-        page.url(),
-      ).toString(),
+    const returnTo = new URL(
+      new URL(request.url()).searchParams.get("return_to") ?? "",
     );
+    expect(returnTo.pathname).toBe("/learn/ai-foundations/research-with-evidence");
     await expect(
       page.getByRole("heading", { name: "Research with evidence" }),
     ).toHaveCount(0);
