@@ -246,21 +246,29 @@ a {
   padding: 0;
 }
 
-.header-menu-list a {
+.header-menu-list a,
+.header-menu-list button {
   align-items: center;
+  background: none;
+  border: 0;
   border-radius: 6px;
   color: var(--ink);
+  cursor: pointer;
   display: flex;
+  font-family: inherit;
   font-size: 0.86rem;
   font-weight: 700;
   /* 44px floor: these are pointer targets and the sites enforce a minimum
      target size. Padding alone left them around 38px. */
   min-height: 44px;
   padding: 0 0.65rem;
+  text-align: left;
   text-decoration: none;
+  width: 100%;
 }
 
-.header-menu-list a:hover {
+.header-menu-list a:hover,
+.header-menu-list button:hover {
   background: rgba(17, 24, 39, 0.06);
 }
 

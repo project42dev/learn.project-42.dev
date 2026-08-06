@@ -1,85 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { createEmptyProgress } from "@project42/platform";
 import { readFile } from "node:fs/promises";
 
 const apiOrigin = process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN;
-
-async function installSignedOutApi(page: Page) {
-  if (!apiOrigin) return;
-  await page.route(`${apiOrigin}/**`, async (route) => {
-    const pathname = new URL(route.request().url()).pathname;
-    const origin = route.request().headers().origin ?? "http://localhost";
-    const headers = {
-      "access-control-allow-origin": origin,
-      "access-control-allow-credentials": "true",
-      "content-type": "application/json",
-    };
-    if (
-      pathname === "/v1/auth/session" ||
-      pathname === "/v1/registration/status"
-    ) {
-      await route.fulfill({
-        status: 401,
-        headers,
-        body: JSON.stringify({
-          error: { code: "authentication_required" },
-        }),
-      });
-      return;
-    }
-    await route.fulfill({
-      status: 404,
-      headers,
-      body: JSON.stringify({ error: { code: "not_found" } }),
-    });
-  });
-}
-
-test("labels and exports the signed-out transcript as browser-local", async ({
-  page,
-}) => {
-  await installSignedOutApi(page);
-  await page.goto("/profile");
-
-  await expect(
-    page.getByText(
-      "This transcript is browser-local. It is useful as a portable learning record, but it is not an authoritative account transcript.",
-    ),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Durable issued credentials" }),
-  ).toBeVisible();
-  await expect(
-    page.getByText(
-      "These achievements are browser-local and are not issued credentials.",
-    ),
-  ).toBeVisible();
-
-  const downloadPromise = page.waitForEvent("download");
-  await page
-    .getByRole("button", { name: "Download browser-local CSV transcript" })
-    .click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(
-    /^project-42-browser-local-transcript-/,
-  );
-  const downloadedPath = await download.path();
-  if (!downloadedPath) throw new Error("Local transcript download is unavailable");
-  expect(await readFile(downloadedPath, "utf8")).toContain(
-    "Path,Module,Completed modules",
-  );
-  await expect(
-    page.getByRole("status").filter({
-      hasText: "Browser-local transcript downloaded",
-    }),
-  ).toBeVisible();
-
-  const accessibility = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(accessibility.violations).toEqual([]);
-});
 
 test("approved accounts retry and download the authoritative account transcript", async ({
   page,

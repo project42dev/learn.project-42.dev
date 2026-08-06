@@ -1,7 +1,7 @@
-"use client";
+import type { ReactNode } from "react";
 
-import { RequireAuth } from "../components/RequireAuth";
-
-export default function AccountLayout({ children }: { children: React.ReactNode }) {
-    return <RequireAuth>{children}</RequireAuth>;
+export default function AccountLayout({ children }: { children: ReactNode }) {
+    // Account request, sign-in, and recovery states must remain reachable
+    // before authentication. AccountDashboard enforces private operations.
+    return <>{children}</>;
 }

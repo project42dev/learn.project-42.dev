@@ -244,7 +244,7 @@ test.describe("hosted profile and learner-data controls", () => {
     await page.getByRole("button", { name: "Save preferences" }).click();
     await expect(
       page.getByText(
-        "Preferences saved to your account and this browser’s offline fallback.",
+        "Preferences saved to your account and applied to this session.",
       ),
     ).toBeVisible();
     expect(preferencePatches).toEqual([
@@ -265,16 +265,9 @@ test.describe("hosted profile and learner-data controls", () => {
     );
     expect(
       await page.evaluate(() =>
-        JSON.parse(
-          window.localStorage.getItem("project42.profile-preferences.v1") ?? "{}",
-        ),
+        window.localStorage.getItem("project42.profile-preferences.v1"),
       ),
-    ).toEqual({
-      locale: "en-GB",
-      timeZone: "America/Los_Angeles",
-      reducedMotion: true,
-      highContrast: true,
-    });
+    ).toBeNull();
 
     await page.reload();
     await expect(page.getByLabel("Always reduce motion")).toBeChecked();
@@ -518,6 +511,11 @@ test.describe("hosted profile and learner-data controls", () => {
     });
 
     await page.goto("/account");
+    await expect(
+      page.getByText(
+        "These preferences are synchronized with your approved account and applied to this browser session.",
+      ),
+    ).toBeVisible();
     await page.getByLabel("Language tag for dates and times").fill("fr-FR");
     await page.getByRole("button", { name: "Save preferences" }).click();
     await page
@@ -580,7 +578,9 @@ test.describe("hosted profile and learner-data controls", () => {
     ).toBeVisible();
     await page.getByLabel("Language tag for dates and times").fill("en-CA");
     await page.getByRole("button", { name: "Save preferences" }).click();
-    await expect(page.getByText("Preferences saved in this browser.")).toBeVisible();
+    await expect(
+      page.getByText("Preferences applied to this browser session."),
+    ).toBeVisible();
     expect(preferenceWrites).toBe(0);
     // Preferences are in-memory only; no localStorage key is written.
     expect(
@@ -590,7 +590,7 @@ test.describe("hosted profile and learner-data controls", () => {
     ).toBeNull();
   });
 
-  test("keeps an accessible in-browser fallback when hosted profile loading is offline", async ({
+  test("keeps an accessible session fallback when hosted profile loading is offline", async ({
     page,
   }) => {
     let writes = 0;
@@ -614,7 +614,9 @@ test.describe("hosted profile and learner-data controls", () => {
     ).toBeVisible();
     await page.getByLabel("Time zone").fill("Europe/Paris");
     await page.getByRole("button", { name: "Save preferences" }).click();
-    await expect(page.getByText("Preferences saved in this browser.")).toBeVisible();
+    await expect(
+      page.getByText("Preferences applied to this browser session."),
+    ).toBeVisible();
     expect(writes).toBe(0);
 
     const accessibility = await new AxeBuilder({ page })
@@ -805,7 +807,7 @@ test.describe("hosted profile and learner-data controls", () => {
       .getByRole("switch", { name: "Product improvement" })
       .check();
     await expect(
-      page.getByText("Consent could not be recorded. Your previous decision is unchanged."),
+      page.getByText("Consent could not be updated. Your previous decision is unchanged."),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Download my data" }).click();

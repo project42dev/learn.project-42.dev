@@ -1,7 +1,9 @@
 # Current task
 
-Deliver the public, approval-gated learner account-request and private status
-experience against the immutable Project 42 platform `v0.65.0` registration
-boundary.
+Publish the learner-account simplification and shared profile-menu repair on
+`main`.
 
-Primary work item: AB#5695. Integration context: AB#5697.
+The active implementation removes retired browser-local merge coverage, keeps
+account-backed progress as the active path, restores Sign in as the first
+signed-out profile-menu action, and validates account journeys against hosted
+progress and transcript contracts.

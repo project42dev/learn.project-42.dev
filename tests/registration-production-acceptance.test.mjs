@@ -92,16 +92,24 @@ test("rejects a registration receipt stored inside the repository", () => {
   );
 });
 
-test("rejects an outside symlink that resolves into the repository", () => {
+test("rejects an outside symlink that resolves into the repository", (context) => {
   const environment = fixture();
   const outside = mkdtempSync(
     join(tmpdir(), "project42-registration-link-"),
   );
   const linkedState = join(outside, "linked-state.json");
-  symlinkSync(
-    resolve("tests", "registration-production-acceptance.test.mjs"),
-    linkedState,
-  );
+  try {
+    symlinkSync(
+      resolve("tests", "registration-production-acceptance.test.mjs"),
+      linkedState,
+    );
+  } catch (error) {
+    if (error?.code === "EPERM") {
+      context.skip("The current Windows session cannot create symbolic links.");
+      return;
+    }
+    throw error;
+  }
   environment.PROJECT42_REGISTRATION_ACCEPTANCE_STATE = linkedState;
   assert.throws(
     () => readRegistrationAcceptanceConfig(environment, process.cwd()),

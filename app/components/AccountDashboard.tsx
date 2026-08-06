@@ -1460,12 +1460,12 @@ function ProfilePreferencesEditor({ hosted }: { hosted: boolean }) {
     (!ready || hostedState === "loading"
       ? "Loading your learning preferences…"
       : hostedState === "ready"
-        ? "These preferences are synchronized with your approved account. A browser copy remains available if the account service is temporarily offline."
+        ? "These preferences are synchronized with your approved account and applied to this browser session."
         : hostedState === "legacy"
-          ? "The hosted account API does not yet expose preference fields. Changes use the browser-local fallback until a compatible preference contract is deployed."
+          ? "The hosted account API does not yet expose preference fields. Changes apply to this browser session only until a compatible preference contract is deployed."
           : hostedState === "offline"
-            ? "Hosted preferences could not be reached. Browser-local fallback remains available and no account preference was changed."
-            : "These preferences are stored in this browser until you sign in with an approved account.");
+            ? "Hosted preferences could not be reached. Session-only preferences remain available and no account preference was changed."
+            : "These preferences apply to this browser session until you sign in with an approved account.");
 
   async function persistPreferences(validated: ProfilePreferences) {
     if (hostedState === "ready") {
@@ -1479,13 +1479,9 @@ function ProfilePreferencesEditor({ hosted }: { hosted: boolean }) {
           ? hostedPreferencesFromProfile(body.profile, validated)
           : null;
         if (!response.ok || !confirmed) throw new Error("preference_save_failed");
-        const fallback = savePreferences(confirmed);
-        setHasError(!fallback.persisted);
-        setMessage(
-          fallback.persisted
-            ? "Preferences saved to your account and this browser’s offline fallback."
-            : "Preferences saved to your account. This browser blocked the offline fallback copy.",
-        );
+        savePreferences(confirmed);
+        setHasError(false);
+        setMessage("Preferences saved to your account and applied to this session.");
         return;
       } catch {
         setHasError(true);
@@ -1499,8 +1495,8 @@ function ProfilePreferencesEditor({ hosted }: { hosted: boolean }) {
     setHasError(!result.persisted);
     setMessage(
       result.persisted
-        ? "Preferences saved in this browser."
-        : "The browser blocked preference storage. Your choices apply for this visit only.",
+        ? "Preferences applied to this browser session."
+        : "Your preferences could not be applied.",
     );
   }
 
@@ -1705,8 +1701,16 @@ function LearnerDataControls() {
   );
 
   async function toggleConsent(purpose: string, granted: boolean) {
-    setBusy(true);
     const decision = granted ? "granted" : "withdrawn";
+    const previousDecision =
+      optionalConsents.find((consent) => consent.purpose === purpose)?.decision ??
+      "withdrawn";
+    setOptionalConsents((current) =>
+      current.map((consent) =>
+        consent.purpose === purpose ? { ...consent, decision } : consent,
+      ),
+    );
+    setBusy(true);
     try {
       const response = await apiFetch("/v1/me/consents", {
         method: "PATCH",
@@ -1715,9 +1719,6 @@ function LearnerDataControls() {
       if (!response.ok) {
         throw new Error("consent_write_failed");
       }
-      setOptionalConsents((current) =>
-        current.map((c) => (c.purpose === purpose ? { ...c, decision } : c)),
-      );
       setHasError(false);
       setMessage(
         granted
@@ -1725,6 +1726,13 @@ function LearnerDataControls() {
           : `${purpose === "product-improvement" ? "Product improvement" : "Learning reminders"} consent withdrawn.`,
       );
     } catch {
+      setOptionalConsents((current) =>
+        current.map((consent) =>
+          consent.purpose === purpose
+            ? { ...consent, decision: previousDecision }
+            : consent,
+        ),
+      );
       setHasError(true);
       setMessage("Consent could not be updated. Your previous decision is unchanged.");
     } finally {

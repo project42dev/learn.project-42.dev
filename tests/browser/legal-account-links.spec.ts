@@ -25,12 +25,12 @@ test("keeps legal, privacy, and account expectations visible without dark patter
 
 test("keeps account policy links readable at narrow width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/profile");
+  await page.goto("/account");
   await expect(
-    page.getByRole("link", { name: "How Project 42 protects learner data" }),
+    page.getByRole("link", { name: "Learner data and controls" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Service and legal expectations" }),
+    page.getByRole("link", { name: "Legal & Transparency" }).first(),
   ).toBeVisible();
   const overflow = await page.evaluate(() => {
     const root = document.documentElement;

@@ -41,12 +41,10 @@ function initialsFor(name: string): string {
 /**
  * The learner's own corner of the header.
  *
- * Progress, learner data, and import all work without an account, because the
- * record is device-local in this release, so they are always listed. Only the
- * sign in / sign out control depends on session state, and it is omitted
- * entirely when hosted identity is not configured: a self-hosted deployment
- * without an identity service has nothing to sign in to, and offering it would
- * be a control that cannot work.
+ * The menu keeps the shared cross-site destinations in a stable order. The
+ * sign-in control depends on session state; protected destinations enforce
+ * authentication when opened. An unconfigured self-host can still reach its
+ * account entry page without presenting a nonfunctional hosted sign-in action.
  *
  * The trigger shows the learner's own photo when they have uploaded one. The
  * photo is private: it is not a public URL, it is fetched as a blob through the
@@ -134,6 +132,17 @@ export function ProfileMenu({
         </p>
       ) : null}
       <ul className="header-menu-list">
+        {!signedIn ? (
+          <li>
+            {configured ? (
+              <button onClick={() => void signIn()} type="button">
+                Sign in
+              </button>
+            ) : (
+              <Link href={accountHref}>Sign in</Link>
+            )}
+          </li>
+        ) : null}
         <li>
           <Link href={profileHref}>My progress</Link>
         </li>
@@ -147,17 +156,11 @@ export function ProfileMenu({
           <Link href={importProgressHref}>Import previous progress</Link>
         </li>
       </ul>
-      {configured ? (
+      {configured && signedIn ? (
         <div className="header-menu-footer">
-          {signedIn ? (
-            <button onClick={() => void signOut()} type="button">
-              Sign out
-            </button>
-          ) : (
-            <button onClick={() => void signIn()} type="button">
-              Sign in
-            </button>
-          )}
+          <button onClick={() => void signOut()} type="button">
+            Sign out
+          </button>
         </div>
       ) : null}
     </HeaderMenu>

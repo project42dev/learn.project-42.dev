@@ -1,7 +1,82 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { starterCatalog, type LearningModule } from "@project42/platform";
+import {
+  buildTranscriptCsv,
+  createEmptyProgress,
+  starterCatalog,
+  type LearnerProgress,
+  type LearningModule,
+} from "@project42/platform";
 import { readFile } from "node:fs/promises";
+
+const apiOrigin = process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN;
+
+async function installJourneyApi(page: Page) {
+  if (!apiOrigin) return;
+  let serverProgress = createEmptyProgress("Test Learner");
+  await page.route(`${apiOrigin}/**`, async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    const pathname = new URL(request.url()).pathname;
+    if (pathname === "/v1/auth/session") {
+      await route.fulfill({
+        status: 200,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          account: {
+            id: "test-learner",
+            installationId: "test-install",
+            state: "approved",
+            role: "learner",
+            displayName: "Test Learner",
+          },
+        }),
+      });
+      return;
+    }
+    if (pathname === "/v1/me/progress" && request.method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          progress: { revision: 1, progress: serverProgress },
+        }),
+      });
+      return;
+    }
+    if (pathname === "/v1/me/progress" && request.method() === "PUT") {
+      const body = request.postDataJSON() as { progress: LearnerProgress };
+      serverProgress = body.progress;
+      await route.fulfill({
+        status: 200,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ revision: 1 }),
+      });
+      return;
+    }
+    if (pathname === "/v1/me/transcript.csv") {
+      await route.fulfill({
+        status: 200,
+        headers: {
+          "content-type": "text/csv; charset=utf-8",
+          "content-disposition": 'attachment; filename="project42-transcript.csv"',
+        },
+        body:
+          '"schema_version","record_authority","record_type"\r\n' +
+          buildTranscriptCsv(starterCatalog, serverProgress),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+  });
+}
 
 const path = starterCatalog.paths.find(
   (candidate) => candidate.id === "reliable-agent-workflows",
@@ -29,7 +104,21 @@ async function answerCorrectly(page: Page, learningModule: LearningModule) {
       .nth(question.answerIndex)
       .check();
   }
+  const progressWrite = page.waitForResponse(
+    (response) => {
+      const request = response.request();
+      if (
+        request.method() !== "PUT" ||
+        new URL(response.url()).pathname !== "/v1/me/progress"
+      ) {
+        return false;
+      }
+      const body = request.postDataJSON() as { progress?: LearnerProgress };
+      return body.progress?.completedModuleIds.includes(learningModule.id) ?? false;
+    },
+  );
   await page.getByRole("button", { name: "Check my answers" }).click();
+  await progressWrite;
   await expect(page.getByText("Checkpoint passed")).toBeVisible();
 }
 
@@ -44,6 +133,7 @@ test("completes, revises, badges, and exports the reliable-agent journey", async
   page,
 }) => {
   test.setTimeout(180_000);
+  await installJourneyApi(page);
   expect(modules).toHaveLength(12);
   const capstoneModule = modules.at(-1);
   if (!capstoneModule?.capstone) {
@@ -176,7 +266,7 @@ test("completes, revises, badges, and exports the reliable-agent journey", async
 
   const jsonDownloadPromise = page.waitForEvent("download");
   await page
-    .getByRole("button", { name: "Download browser-local JSON record" })
+    .getByRole("button", { name: "Download JSON record" })
     .click();
   const jsonDownload = await jsonDownloadPromise;
   const jsonPath = await jsonDownload.path();
@@ -195,7 +285,7 @@ test("completes, revises, badges, and exports the reliable-agent journey", async
 
   const csvDownloadPromise = page.waitForEvent("download");
   await page
-    .getByRole("button", { name: "Download browser-local CSV transcript" })
+    .getByRole("button", { name: "Download authoritative account CSV transcript" })
     .click();
   const csvDownload = await csvDownloadPromise;
   const csvPath = await csvDownload.path();
