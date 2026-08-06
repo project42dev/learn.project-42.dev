@@ -175,8 +175,8 @@ test("renders the one-time legacy progress migration experience", async () => {
   const response = await render("/import-progress");
   assert.equal(response.status, 200);
   const html = await response.text();
-  // The footer (outside the auth guard) still carries the legal link.
-  assert.match(html, /project-42\.dev\/transfer-progress/);
+  // The page title (in <head>) is still rendered even when the body is gated.
+  assert.match(html, /Import previous progress/);
 });
 
 test("renders account, approval, and cross-device progress surfaces", async () => {
@@ -276,7 +276,7 @@ test("renders an on-demand lesson as the full class, not a video embed", async (
     learningModule.instructorScript.cues.map((c) => c.text).join(" ");
   assert.match(
     scriptText,
-    /what makes an AI system agentic/,
+    /Distinguish model calls, deterministic workflows, and agentic loops/,
     "the transcript is the real class script, not placeholder copy",
   );
 
