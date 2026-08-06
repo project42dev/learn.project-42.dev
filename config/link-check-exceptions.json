@@ -2,46 +2,6 @@
   "$schemaVersion": 1,
   "exceptions": [
     {
-      "targetPattern": "https://help.openai.com/en/articles/10169521-using-projects-in-chatgpt",
-      "expectedStatuses": [
-        403
-      ],
-      "reason": "The article is public in a normal browser but the help center consistently returns an automated-client 403 to the bounded Project 42 link checker.",
-      "owner": "Project 42 maintainers",
-      "verifiedOn": "2026-07-25",
-      "expires": "2026-10-31"
-    },
-    {
-      "targetPattern": "https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/",
-      "expectedStatuses": [
-        403
-      ],
-      "reason": "The guide is public in a normal browser but consistently returns an automated-client 403 to the bounded Project 42 link checker.",
-      "owner": "Project 42 maintainers",
-      "verifiedOn": "2026-07-29",
-      "expires": "2026-10-31"
-    },
-    {
-      "targetPattern": "https://openai.com/index/unrolling-the-codex-agent-loop/",
-      "expectedStatuses": [
-        403
-      ],
-      "reason": "The article is public in a normal browser but consistently returns an automated-client 403 to the bounded Project 42 link checker.",
-      "owner": "Project 42 maintainers",
-      "verifiedOn": "2026-07-29",
-      "expires": "2026-10-31"
-    },
-    {
-      "targetPattern": "https://docs.vllm.ai/en/latest/serving/openai_compatible_server/",
-      "expectedStatuses": [
-        429
-      ],
-      "reason": "The documentation is public and passed the bounded checker locally, but its host rate-limited the GitHub Actions client after all configured retries.",
-      "owner": "Project 42 maintainers",
-      "verifiedOn": "2026-07-29",
-      "expires": "2026-10-31"
-    },
-    {
       "targetPattern": "https://project-42.dev/legal-transparency*",
       "expectedStatuses": [
         404
