@@ -101,6 +101,11 @@ test("starts API-owned sign-in without storing an identity-provider token", asyn
 
   const requestPromise = page.waitForRequest(startPattern);
   await page
+    .getByRole("checkbox", {
+      name: /records your learning progress/i,
+    })
+    .check();
+  await page
     .getByRole("button", {
       name: "Continue to sign in or request access",
     })
