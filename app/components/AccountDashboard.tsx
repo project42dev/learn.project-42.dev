@@ -61,13 +61,9 @@ interface LinkedIdentity {
   canUnlink: boolean;
 }
 
-interface ConsentRecord {
-  id: string;
+interface OptionalConsent {
   purpose: string;
-  policyVersion: string;
   decision: "granted" | "withdrawn";
-  decidedAt: string;
-  contractStatus?: "current" | "legacy";
 }
 
 interface DeletionRequest {
@@ -278,6 +274,20 @@ function AccountRequestCard({
 }: {
   signIn: (returnPath?: string) => Promise<void>;
 }) {
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const termsStorageKey = "project42.terms-acceptance.v1";
+
+  function handleContinue() {
+    sessionStorage.setItem(
+      termsStorageKey,
+      JSON.stringify({
+        termsVersion: "1.0",
+        acceptedAt: new Date().toISOString(),
+      }),
+    );
+    void signIn("/account");
+  }
+
   return (
     <section
       className="profile-card account-card registration-card"
@@ -313,11 +323,26 @@ function AccountRequestCard({
           store, or require a separate password.
         </li>
       </ul>
+      <div className="terms-acceptance-field">
+        <label className="terms-acceptance-label">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+          />
+          <span>
+            Project 42 records your learning progress so you can resume where
+            you left off and receive credit for completed work. I understand
+            and agree.
+          </span>
+        </label>
+      </div>
       <AccountExpectationLinks />
       <div className="button-row">
         <button
           className="button button-primary"
-          onClick={() => void signIn("/account")}
+          disabled={!termsAccepted}
+          onClick={handleContinue}
           type="button"
         >
           Continue to sign in or request access
@@ -683,37 +708,37 @@ export function AccountDashboard() {
           explanation is a live region rather than silent text.
         */}
         <div aria-live="polite" role="status">
-        {account.state === "pending" ? (
-          <p>
-            Your request is waiting for owner approval. Learning still works in this
-            browser, but server progress is unavailable until approval.
-          </p>
-        ) : null}
-        {account.state === "rejected" ? (
-          <p>
-            This registration request was rejected. Browser-local learning remains
-            available, and an owner can reconsider the request without using permanent
-            revocation.
-          </p>
-        ) : null}
-        {account.state === "suspended" ? (
-          <p>
-            This account is suspended. Server progress is preserved but cannot be
-            read or changed until an owner restores access.
-          </p>
-        ) : null}
-        {account.state === "revoked" ? (
-          <p>
-            This account is revoked. Revocation is permanent for this identity
-            binding; contact the deployment owner if you believe this is an error.
-          </p>
-        ) : null}
-        {account.state === "approved" ? (
-          <p>
-            Your account is approved. Learn can synchronize progress, scores,
-            transcript entries, and badges with the server.
-          </p>
-        ) : null}
+          {account.state === "pending" ? (
+            <p>
+              Your request is waiting for owner approval. Learning still works in this
+              browser, but server progress is unavailable until approval.
+            </p>
+          ) : null}
+          {account.state === "rejected" ? (
+            <p>
+              This registration request was rejected. Browser-local learning remains
+              available, and an owner can reconsider the request without using permanent
+              revocation.
+            </p>
+          ) : null}
+          {account.state === "suspended" ? (
+            <p>
+              This account is suspended. Server progress is preserved but cannot be
+              read or changed until an owner restores access.
+            </p>
+          ) : null}
+          {account.state === "revoked" ? (
+            <p>
+              This account is revoked. Revocation is permanent for this identity
+              binding; contact the deployment owner if you believe this is an error.
+            </p>
+          ) : null}
+          {account.state === "approved" ? (
+            <p>
+              Your account is approved. Learn can synchronize progress, scores,
+              transcript entries, and badges with the server.
+            </p>
+          ) : null}
         </div>
         <button
           className="button button-secondary"
@@ -733,7 +758,6 @@ export function AccountDashboard() {
       ) : null}
       <ProfilePreferencesEditor hosted={account.state === "approved"} />
       <LearnerDataControls />
-      {account.roles.includes("owner") ? <OwnerAdministration /> : null}
     </div>
   );
 }
@@ -1248,48 +1272,48 @@ function ProfileEditor() {
             </form>
           </div>
           <form className="account-profile-form" key={profile.updatedAt} onSubmit={saveProfile}>
-          <label htmlFor="profile-display-name">Display name</label>
-          <input
-            defaultValue={profile.displayName ?? ""}
-            id="profile-display-name"
-            maxLength={80}
-            name="displayName"
-          />
-          <label htmlFor="profile-organization">Organization</label>
-          <input
-            defaultValue={profile.organization ?? ""}
-            id="profile-organization"
-            maxLength={120}
-            name="organization"
-          />
-          <label htmlFor="profile-location">Location</label>
-          <input
-            defaultValue={profile.location ?? ""}
-            id="profile-location"
-            maxLength={120}
-            name="location"
-          />
-          <label htmlFor="profile-website">Website</label>
-          <input
-            defaultValue={profile.websiteUrl ?? ""}
-            id="profile-website"
-            inputMode="url"
-            maxLength={2048}
-            name="websiteUrl"
-            placeholder="https://example.com"
-            type="url"
-          />
-          <label htmlFor="profile-bio">About you</label>
-          <textarea
-            defaultValue={profile.bio ?? ""}
-            id="profile-bio"
-            maxLength={500}
-            name="bio"
-            rows={4}
-          />
-          <button className="button button-primary" disabled={busy} type="submit">
-            Save profile
-          </button>
+            <label htmlFor="profile-display-name">Display name</label>
+            <input
+              defaultValue={profile.displayName ?? ""}
+              id="profile-display-name"
+              maxLength={80}
+              name="displayName"
+            />
+            <label htmlFor="profile-organization">Organization</label>
+            <input
+              defaultValue={profile.organization ?? ""}
+              id="profile-organization"
+              maxLength={120}
+              name="organization"
+            />
+            <label htmlFor="profile-location">Location</label>
+            <input
+              defaultValue={profile.location ?? ""}
+              id="profile-location"
+              maxLength={120}
+              name="location"
+            />
+            <label htmlFor="profile-website">Website</label>
+            <input
+              defaultValue={profile.websiteUrl ?? ""}
+              id="profile-website"
+              inputMode="url"
+              maxLength={2048}
+              name="websiteUrl"
+              placeholder="https://example.com"
+              type="url"
+            />
+            <label htmlFor="profile-bio">About you</label>
+            <textarea
+              defaultValue={profile.bio ?? ""}
+              id="profile-bio"
+              maxLength={500}
+              name="bio"
+              rows={4}
+            />
+            <button className="button button-primary" disabled={busy} type="submit">
+              Save profile
+            </button>
           </form>
         </>
       ) : (
@@ -1618,7 +1642,10 @@ function ProfilePreferencesEditor({ hosted }: { hosted: boolean }) {
 function LearnerDataControls() {
   const { apiFetch, signIn } = useAuth();
   const { formatDateTime } = useProfilePreferences();
-  const [consents, setConsents] = useState<ConsentRecord[]>([]);
+  const [optionalConsents, setOptionalConsents] = useState<OptionalConsent[]>([
+    { purpose: "marketing", decision: "withdrawn" },
+    { purpose: "analytics", decision: "withdrawn" },
+  ]);
   const [deletions, setDeletions] = useState<DeletionRequest[]>([]);
   const [deletionReceipt, setDeletionReceipt] =
     useState<DeletionStatusReceipt | null>(null);
@@ -1635,7 +1662,7 @@ function LearnerDataControls() {
         apiFetch("/v1/me/deletion"),
       ]);
       const consentBody = (await consentResponse.json()) as {
-        consents?: ConsentRecord[];
+        consents?: OptionalConsent[];
       };
       const deletionBody = (await deletionResponse.json()) as {
         requests?: DeletionRequest[];
@@ -1643,7 +1670,13 @@ function LearnerDataControls() {
       if (!consentResponse.ok || !deletionResponse.ok) {
         throw new Error("privacy_controls_load_failed");
       }
-      setConsents(consentBody.consents ?? []);
+      const serverConsents = consentBody.consents ?? [];
+      setOptionalConsents((current) =>
+        current.map((c) => {
+          const server = serverConsents.find((s) => s.purpose === c.purpose);
+          return server ?? c;
+        }),
+      );
       setDeletions(deletionBody.requests ?? []);
       setHasError(false);
       setMessage("Privacy controls are current.");
@@ -1662,18 +1695,6 @@ function LearnerDataControls() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  const orderedConsents = [...consents].sort(
-    (left, right) =>
-      Date.parse(right.decidedAt) - Date.parse(left.decidedAt) ||
-      right.id.localeCompare(left.id),
-  );
-  const latestLearnerRecordConsent = orderedConsents.find(
-    (record) =>
-      record.contractStatus === "current" ||
-      (record.contractStatus === undefined &&
-        record.purpose === "learning-record" &&
-        record.policyVersion === learnerDataPolicy.policyVersion),
-  );
   const orderedDeletions = [...deletions].sort(
     (left, right) =>
       Date.parse(right.requestedAt) - Date.parse(left.requestedAt) ||
@@ -1683,33 +1704,29 @@ function LearnerDataControls() {
     ["requested", "processing"].includes(request.state),
   );
 
-  async function recordConsent(decision: "granted" | "withdrawn") {
+  async function toggleConsent(purpose: string, granted: boolean) {
     setBusy(true);
+    const decision = granted ? "granted" : "withdrawn";
     try {
       const response = await apiFetch("/v1/me/consents", {
-        method: "POST",
-        body: JSON.stringify({
-          purpose: "learning-record",
-          policyVersion: learnerDataPolicy.policyVersion,
-          decision,
-        }),
+        method: "PATCH",
+        body: JSON.stringify({ purpose, decision }),
       });
-      const body = (await response.json()) as {
-        consent?: ConsentRecord;
-      };
-      if (!response.ok || !body.consent) {
+      if (!response.ok) {
         throw new Error("consent_write_failed");
       }
-      setConsents((current) => [...current, body.consent as ConsentRecord]);
+      setOptionalConsents((current) =>
+        current.map((c) => (c.purpose === purpose ? { ...c, decision } : c)),
+      );
       setHasError(false);
       setMessage(
-        decision === "granted"
-          ? "Learner-record consent recorded."
-          : "Learner-record consent withdrawn. You can still export or delete your data.",
+        granted
+          ? `${purpose === "marketing" ? "Email about new content" : "Analytics beyond what runs the site"} consent granted.`
+          : `${purpose === "marketing" ? "Email about new content" : "Analytics beyond what runs the site"} consent withdrawn.`,
       );
     } catch {
       setHasError(true);
-      setMessage("Consent could not be recorded. Your previous decision is unchanged.");
+      setMessage("Consent could not be updated. Your previous decision is unchanged.");
     } finally {
       setBusy(false);
     }
@@ -1786,11 +1803,11 @@ function LearnerDataControls() {
       setMessage(
         body.receipt
           ? `Deletion requested. Save the one-time private status receipt before leaving this page. Cancellation remains available until ${formatDateTime(
-              body.deletionRequest.cancellationDeadline,
-            )}.`
+            body.deletionRequest.cancellationDeadline,
+          )}.`
           : `Deletion requested. This account API did not return a private post-deletion status receipt. Cancellation remains available until ${formatDateTime(
-              body.deletionRequest.cancellationDeadline,
-            )}.`,
+            body.deletionRequest.cancellationDeadline,
+          )}.`,
       );
     } catch {
       setHasError(true);
@@ -1893,8 +1910,8 @@ function LearnerDataControls() {
       </p>
       <p className="account-policy-note">
         These controls follow the current{" "}
-        <Link href="/learner-data">learner-data policy</Link>. Consent is recorded
-        separately from the{" "}
+        <Link href="/learner-data">learner-data policy</Link>. Optional consents
+        are separate from the{" "}
         <a href="https://project-42.dev/legal-transparency">
           Legal &amp; Transparency page
         </a>
@@ -1902,29 +1919,35 @@ function LearnerDataControls() {
       </p>
       <div className="admin-grid">
         <section className="profile-card">
-          <h3>Consent and export</h3>
+          <h3>Optional consents</h3>
           <p>
-            Learner-record consent is currently{" "}
-            <strong>{latestLearnerRecordConsent?.decision ?? "not recorded"}</strong>.
-            Every decision is retained as versioned history.
+            These are genuinely optional. Refusing either leaves every learning
+            feature working.
           </p>
+          <div className="account-consent-toggles">
+            <label className="account-consent-toggle">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={optionalConsents.find((c) => c.purpose === "marketing")?.decision === "granted"}
+                disabled={busy}
+                onChange={(e) => void toggleConsent("marketing", e.target.checked)}
+              />
+              <span>Email about new content</span>
+            </label>
+            <label className="account-consent-toggle">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={optionalConsents.find((c) => c.purpose === "analytics")?.decision === "granted"}
+                disabled={busy}
+                onChange={(e) => void toggleConsent("analytics", e.target.checked)}
+              />
+              <span>Analytics beyond what runs the site</span>
+            </label>
+          </div>
+          <h3>Export</h3>
           <div className="button-row">
-            <button
-              className="button button-primary"
-              disabled={busy}
-              onClick={() => void recordConsent("granted")}
-              type="button"
-            >
-              Grant learner-record consent
-            </button>
-            <button
-              className="button button-secondary"
-              disabled={busy}
-              onClick={() => void recordConsent("withdrawn")}
-              type="button"
-            >
-              Withdraw consent
-            </button>
             <button
               className="button button-secondary"
               disabled={busy}
@@ -1948,46 +1971,6 @@ function LearnerDataControls() {
           >
             Sign in again
           </button>
-          <div className="account-history">
-            <h4>Consent history</h4>
-            {orderedConsents.length === 0 ? (
-              <p>No consent decisions have been recorded.</p>
-            ) : (
-              <div className="account-history-table-wrap">
-                <table>
-                  <caption>
-                    Every versioned consent decision returned by your account
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Purpose</th>
-                      <th scope="col">Policy version</th>
-                      <th scope="col">Contract</th>
-                      <th scope="col">Decision</th>
-                      <th scope="col">Decided</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orderedConsents.map((record) => (
-                      <tr key={record.id}>
-                        <td>
-                          <code>{record.purpose}</code>
-                        </td>
-                        <td>{record.policyVersion}</td>
-                        <td>{record.contractStatus ?? "unclassified"}</td>
-                        <td>{record.decision}</td>
-                        <td>
-                          <time dateTime={record.decidedAt}>
-                            {formatDateTime(record.decidedAt)}
-                          </time>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </section>
 
         <section className="profile-card">
@@ -2340,15 +2323,15 @@ export function OwnerAdministration() {
     try {
       const [accountResponse, domainResponse, deletionResponse, auditResponse] =
         await Promise.all([
-        apiFetch(
-          adminListPath("accounts", {
-            state: accountStateFilter,
-          }),
-        ),
-        apiFetch("/v1/admin/domains"),
-        apiFetch(adminListPath("deletions")),
-        apiFetch(adminListPath("audit")),
-      ]);
+          apiFetch(
+            adminListPath("accounts", {
+              state: accountStateFilter,
+            }),
+          ),
+          apiFetch("/v1/admin/domains"),
+          apiFetch(adminListPath("deletions")),
+          apiFetch(adminListPath("audit")),
+        ]);
       const accountBody = (await accountResponse.json()) as {
         accounts?: Project42Account[];
         page?: unknown;
@@ -2377,10 +2360,10 @@ export function OwnerAdministration() {
       ) {
         throw new Error(
           accountBody.error?.message ??
-            domainBody.error?.message ??
-            deletionBody.error?.message ??
-            auditBody.error?.message ??
-            "Owner data could not be loaded.",
+          domainBody.error?.message ??
+          deletionBody.error?.message ??
+          auditBody.error?.message ??
+          "Owner data could not be loaded.",
         );
       }
       const nextAccounts = accountBody.accounts ?? [];
@@ -2468,8 +2451,7 @@ export function OwnerAdministration() {
       setAccounts(combinedAccounts);
       setAccountPage(nextPage);
       setAccountAnnouncement(
-        `Loaded ${addedAccounts} more account${
-          addedAccounts === 1 ? "" : "s"
+        `Loaded ${addedAccounts} more account${addedAccounts === 1 ? "" : "s"
         }. ${combinedAccounts.length} total loaded.`,
       );
       window.requestAnimationFrame(() =>
@@ -2531,8 +2513,7 @@ export function OwnerAdministration() {
       setDeletionRequests(combined);
       setDeletionPage(nextPage);
       setDeletionAnnouncement(
-        `Loaded ${added} more deletion request${
-          added === 1 ? "" : "s"
+        `Loaded ${added} more deletion request${added === 1 ? "" : "s"
         }. ${combined.length} total loaded.`,
       );
       window.requestAnimationFrame(() =>
@@ -2596,8 +2577,7 @@ export function OwnerAdministration() {
       setAuditEvents(combinedEvents);
       setAuditPage(nextPage);
       setAuditAnnouncement(
-        `Loaded ${addedEvents} more audit event${
-          addedEvents === 1 ? "" : "s"
+        `Loaded ${addedEvents} more audit event${addedEvents === 1 ? "" : "s"
         }. ${combinedEvents.length} total loaded.`,
       );
       window.requestAnimationFrame(() =>
@@ -2752,9 +2732,9 @@ export function OwnerAdministration() {
       if (!response.ok || !body.domain) {
         throw new Error(
           body.error?.message ??
-            (remove
-              ? "Domain rule could not be removed."
-              : "Domain rule could not be changed."),
+          (remove
+            ? "Domain rule could not be removed."
+            : "Domain rule could not be changed."),
         );
       }
       if (remove) {
@@ -3015,13 +2995,12 @@ export function OwnerAdministration() {
                   </dl>
                 ) : null}
                 {accountAction?.accountId === candidate.id &&
-                selectedAccount ? (
+                  selectedAccount ? (
                   <form
-                    className={`admin-account-action${
-                      accountAction.nextState === "revoked"
-                        ? " admin-account-action-danger"
-                        : ""
-                    }`}
+                    className={`admin-account-action${accountAction.nextState === "revoked"
+                      ? " admin-account-action-danger"
+                      : ""
+                      }`}
                     onSubmit={(event) => void changeState(event)}
                   >
                     <h4 ref={accountActionHeading} tabIndex={-1}>
@@ -3213,11 +3192,10 @@ export function OwnerAdministration() {
                 </div>
                 {domainAction?.ruleId === rule.id && selectedDomain ? (
                   <form
-                    className={`admin-account-action${
-                      domainAction.kind === "remove"
-                        ? " admin-account-action-danger"
-                        : ""
-                    }`}
+                    className={`admin-account-action${domainAction.kind === "remove"
+                      ? " admin-account-action-danger"
+                      : ""
+                      }`}
                     onSubmit={(event) => void submitDomainAction(event)}
                   >
                     <h4 ref={domainActionHeading} tabIndex={-1}>
@@ -3314,7 +3292,7 @@ export function OwnerAdministration() {
                       </button>
                     </div>
                     {deletionActionId === request.id &&
-                    selectedDeletionRequest ? (
+                      selectedDeletionRequest ? (
                       <form
                         className="admin-account-action admin-account-action-danger"
                         onSubmit={(event) => void completeDeletion(event)}
