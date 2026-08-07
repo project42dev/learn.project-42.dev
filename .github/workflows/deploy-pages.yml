@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux, x64, hcs]
     env:
       NEXT_PUBLIC_PROJECT42_API_ORIGIN: ${{ vars.NEXT_PUBLIC_PROJECT42_API_ORIGIN }}
     steps:
