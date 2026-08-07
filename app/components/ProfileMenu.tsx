@@ -116,6 +116,21 @@ export function ProfileMenu({
     <ProfileIcon />
   );
 
+  // When signed out and the identity provider is configured, clicking the
+  // profile icon goes straight to sign-in — no dropdown, no intermediate page.
+  if (!signedIn && configured) {
+    return (
+      <button
+        aria-label="Sign in to your account"
+        className="profile-trigger"
+        onClick={() => void signIn()}
+        type="button"
+      >
+        <ProfileIcon />
+      </button>
+    );
+  }
+
   return (
     <HeaderMenu
       accessibleLabel={signedIn && name ? `Your account, ${name}` : "Your account"}

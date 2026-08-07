@@ -262,9 +262,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ? "provider-error"
               : outcome === "unavailable"
                 ? "account-unavailable"
-                : expectedReceipt
-                  ? "expired"
-                  : "none";
+                : outcome === "pending"
+                  ? "none"
+                  : expectedReceipt
+                    ? "expired"
+                    : "none";
           setRegistration({ phase, receipt: null, retryAt: null });
           setError(null);
           setStatus("signed-out");
