@@ -293,12 +293,11 @@ function AccountRequestCard({
       className="profile-card account-card registration-card"
       aria-labelledby="request-access-title"
     >
-      <p className="eyebrow">Project 42 access</p>
+      <p className="eyebrow">New learner</p>
       <h2 id="request-access-title">Request a Project 42 account</h2>
       <p>
-        Existing learners can sign in without accepting the learner-data terms
-        again. If you are new, request an account and accept the terms once as
-        part of that request.
+        If you are new to Project 42, request an account and accept the
+        learner-data terms once as part of that request.
       </p>
       <ul className="registration-expectations">
         <li>
@@ -323,18 +322,6 @@ function AccountRequestCard({
           store, or require a separate password.
         </li>
       </ul>
-      <div className="button-row">
-        <button
-          className="button button-primary"
-          onClick={() => void signIn("/account")}
-          type="button"
-        >
-          Sign in
-        </button>
-        <Link className="button button-secondary" href="/learn">
-          Browse the learning catalog
-        </Link>
-      </div>
       <div className="terms-acceptance-field" id="request-account">
         <label className="terms-acceptance-label">
           <input
@@ -637,6 +624,29 @@ export function AccountDashboard() {
   if (status === "signed-out") {
     return (
       <div className="account-dashboard">
+        <section
+          className="profile-card account-card"
+          aria-labelledby="sign-in-title"
+        >
+          <p className="eyebrow">Existing learner</p>
+          <h2 id="sign-in-title">Sign in to your account</h2>
+          <p>
+            Already have a Project 42 account? Sign in to access your
+            progress, transcript, and account settings.
+          </p>
+          <div className="button-row">
+            <button
+              className="button button-primary"
+              onClick={() => void signIn("/account")}
+              type="button"
+            >
+              Sign in
+            </button>
+            <Link className="button button-secondary" href="/learn">
+              Browse the learning catalog
+            </Link>
+          </div>
+        </section>
         {registration.phase === "none" ? (
           <AccountRequestCard signIn={signIn} />
         ) : (
