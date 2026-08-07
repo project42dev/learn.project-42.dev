@@ -24,7 +24,7 @@ test("self-host image is non-root and uses the supported public configuration", 
   );
 
   assert.match(dockerfile, /USER 101/);
-  assert.match(dockerfile, /RUN npm ci\r?\n/);
+  assert.match(dockerfile, /RUN npm ci( --legacy-peer-deps)?\r?\n/);
   assert.doesNotMatch(dockerfile, /npm ci --ignore-scripts/);
   assert.match(dockerfile, /COPY --from=build .*dist\/pages/);
   assert.match(dockerfile, /NEXT_PUBLIC_PROJECT42_API_ORIGIN/);
@@ -39,10 +39,10 @@ test("self-host image is non-root and uses the supported public configuration", 
   assert.match(nginx, /error_page 404 \/404\.html/);
   assert.equal(
     packageDocument.dependencies["@project42/platform"],
-    "github:project42dev/project42-platform#v0.72.0",
+    "github:project42dev/project42-platform#v0.72.1",
   );
   assert.equal(compatibility.application.version, packageDocument.version);
-  assert.equal(compatibility.platform.requiredVersion, "0.72.0");
+  assert.equal(compatibility.platform.requiredVersion, "0.72.1");
   assert.equal(compatibility.runtime.containerPort, 8080);
   assert.equal(
     compatibility.identity.protocol,

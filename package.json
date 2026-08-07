@@ -54,7 +54,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.12.1",
+    "@axe-core/playwright": "^4.12.1",
     "@cloudflare/vite-plugin": "1.47.0",
     "@mermaid-js/mermaid-cli": "11.15.0",
     "@playwright/test": "1.62.0",
@@ -78,7 +78,8 @@
   "overrides": {
     "minimatch": "10.2.5",
     "postcss": "8.5.22",
-    "sharp": "0.35.3"
+    "sharp": "0.35.3",
+    "playwright-core": "1.62.0"
   },
   "type": "module",
   "allowScripts": {
