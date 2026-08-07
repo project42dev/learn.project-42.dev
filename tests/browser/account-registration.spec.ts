@@ -144,6 +144,9 @@ test.describe("learner account request and private status receipt", () => {
       new URL(request.url()).searchParams.get("return_to") ?? "",
     );
     expect(returnTo.pathname).toBe("/learn/ai-foundations/research-with-evidence");
+    // Next.js may include a trailing slash; normalize before comparing.
+    const normalized = returnTo.pathname.replace(/\/$/, "");
+    expect(normalized).toBe("/learn/ai-foundations/research-with-evidence");
     await expect(
       page.getByRole("heading", { name: "Research with evidence" }),
     ).toHaveCount(0);
