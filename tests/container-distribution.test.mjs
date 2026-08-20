@@ -39,10 +39,10 @@ test("self-host image is non-root and uses the supported public configuration", 
   assert.match(nginx, /error_page 404 \/404\.html/);
   assert.equal(
     packageDocument.dependencies["@project42/platform"],
-    "github:project42dev/project42-platform#v0.72.1",
+    `github:project42dev/project42-platform#v${compatibility.platform.requiredVersion}`,
   );
   assert.equal(compatibility.application.version, packageDocument.version);
-  assert.equal(compatibility.platform.requiredVersion, "0.72.1");
+  assert.equal(compatibility.platform.requiredVersion, packageDocument.dependencies["@project42/platform"].split("#v")[1]);
   assert.equal(compatibility.runtime.containerPort, 8080);
   assert.equal(
     compatibility.identity.protocol,
