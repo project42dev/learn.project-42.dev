@@ -5,9 +5,9 @@
   "contentVersion": "0.42.0",
   "counts": {
     "learningPaths": 9,
-    "assessedModules": 74,
+    "assessedModules": 83,
     "evidenceActivities": 69,
-    "reviewedQuestions": 372,
+    "reviewedQuestions": 419,
     "resources": 0,
     "providerScopes": 4,
     "providerImplementations": 3

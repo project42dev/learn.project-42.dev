@@ -69,7 +69,7 @@ Project 42 Learn is available under the
 
 ## Release 0.12.1
 
-Learn `0.12.1` consumes the signed Platform `0.70.0` release. Approved learners
+Learn `0.12.1` consumes the signed Platform `0.80.0` release. Approved learners
 can request an authoritative, recent-authentication-protected account transcript
 while signed-out and non-approved learners retain a clearly labelled
 browser-local export. The profile distinguishes portable local records, durable
@@ -81,7 +81,7 @@ the HttpOnly-cookie session boundary or presenting achievements as credentials.
 - Site release `0.12.1`
 - Platform package `0.80.0`
 - Content release `0.42.0`
-- 9 learning paths, 74 assessed modules, 69 evidence activities, and 372 reviewed questions
+- 9 learning paths, 83 assessed modules, 69 evidence activities, and 419 reviewed questions
 - 9 dedicated learning paths and 4 provider scopes
 
 These facts are generated from `package.json` and the tagged platform catalog into
