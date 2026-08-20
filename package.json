@@ -48,7 +48,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
-    "@project42/platform": "github:project42dev/project42-platform#v0.80.0",
+    "@project42/platform": "github:project42dev/project42-platform#v0.81.0",
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.8"
@@ -79,11 +79,12 @@
     "minimatch": "10.2.5",
     "postcss": "8.5.22",
     "sharp": "0.35.3",
-    "playwright-core": "1.62.0"
+    "playwright-core": "1.62.0",
+    "nanoid": "^3.3.18"
   },
   "type": "module",
   "allowScripts": {
-    "github:project42dev/project42-platform#v0.80.0": true,
-    "puppeteer": false
+    "puppeteer": false,
+    "github:project42dev/project42-platform#v0.81.0": true
   }
 }
