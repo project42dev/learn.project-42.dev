@@ -316,8 +316,8 @@ test("renders the complete accessible diagram library", async () => {
   const index = await render("/diagrams");
   const indexHtml = await index.text();
   assert.equal(index.status, 200);
-  assert.equal(diagramCatalog.length, 8);
-  assert.equal((indexHtml.match(/class="diagram-card"/g) ?? []).length, 8);
+  assert.equal(diagramCatalog.length, diagramConfig.diagrams.length);
+  assert.equal((indexHtml.match(/class="diagram-card"/g) ?? []).length, diagramConfig.diagrams.length);
   assert.match(indexHtml, /See the system, not just the steps/);
 
   for (const diagram of diagramCatalog) {
