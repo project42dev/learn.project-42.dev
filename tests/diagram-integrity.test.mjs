@@ -11,7 +11,7 @@ import {
 
 test("publishes a substantial, uniquely identified diagram catalog", () => {
   const diagrams = validateDiagramConfig(diagramConfig);
-  assert.equal(diagrams.length, 8);
+  assert.equal(diagrams.length, diagramConfig.diagrams.length);
   assert.equal(new Set(diagrams.map(({ id }) => id)).size, diagrams.length);
   assert.ok(diagrams.some(({ category }) => category === "Providers"));
   assert.ok(diagrams.some(({ category }) => category === "Safety"));
@@ -46,7 +46,7 @@ test("rejects generated SVG active content", () => {
 
 test("generated SVG and public Mermaid artifacts match canonical sources", async () => {
   const result = await runDiagramIntegrity({ generate: false });
-  assert.equal(result.diagramCount, 8);
+  assert.equal(result.diagramCount, diagramConfig.diagrams.length);
   for (const diagram of diagramConfig.diagrams) {
     const source = await readFile(
       new URL(`../public/diagrams/${diagram.source}`, import.meta.url),
