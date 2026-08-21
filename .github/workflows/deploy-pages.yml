@@ -49,7 +49,7 @@ jobs:
       # target repo's own dist/pages content is unchanged if nothing in that
       # route subtree changed, so this is a no-op push on most runs.
       - name: Publish account.project-42.dev and admin.project-42.dev
-        if: github.ref == 'refs/heads/main' && secrets.SUBDOMAIN_PUBLISH_APP_ID != ''
+        if: github.ref == 'refs/heads/main'
         env:
           GH_APP_ID: ${{ secrets.SUBDOMAIN_PUBLISH_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.SUBDOMAIN_PUBLISH_APP_PRIVATE_KEY }}
