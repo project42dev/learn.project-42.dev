@@ -19,22 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_PROJECT42_API_ORIGIN: ${{ vars.NEXT_PUBLIC_PROJECT42_API_ORIGIN }}
-      GIT_CONFIG_GLOBAL: /tmp/.gitconfig
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
-      - name: Configure git URL rewrites for npm
-        run: |
-          git config --file /tmp/.gitconfig url."https://github.com/".insteadOf "git@github.com:"
-          git config --file /tmp/.gitconfig url."https://github.com/".insteadOf "ssh://git@github.com/"
-          git config --file /tmp/.gitconfig url."https://github.com/".insteadOf "git+ssh://git@github.com/"
-          git config --file /tmp/.gitconfig url."https://".insteadOf "ssh://"
-          git config --file /tmp/.gitconfig url."https://".insteadOf "git+ssh://"
-          git config --file /tmp/.gitconfig url."https://".insteadOf "git://"
-          rm -rf ~/.npm/_cacache
       - run: npm install
         env:
           PUPPETEER_SKIP_DOWNLOAD: "true"
