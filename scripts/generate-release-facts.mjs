@@ -49,7 +49,7 @@ assert.match(contentLicense, /Creative Commons Attribution 4\.0 International/);
 const platformSpec = packageMetadata.dependencies?.["@project42/platform"];
 assert.equal(typeof platformSpec, "string");
 const platformMatch = platformSpec.match(
-  /^github:project42dev\/project42-platform#v(\d+\.\d+\.\d+)$/,
+  /^(?:github:project42dev\/project42-platform|git\+https:\/\/github\.com\/project42dev\/project42-platform\.git)#v(\d+\.\d+\.\d+)$/,
 );
 assert.ok(platformMatch, "The platform dependency must use a reviewed v-prefixed tag.");
 assert.equal(
