@@ -79,7 +79,7 @@ test("self-host image is non-root and uses the supported public configuration", 
     authProvider,
     /hasSingleSearchParam\(target, "code_challenge_method", "S256"\)/,
   );
-  assert.match(environmentExample, /NEXT_PUBLIC_PROJECT42_API_ORIGIN=https:\/\/api\.project-42\.dev/);
+  assert.match(environmentExample, /NEXT_PUBLIC_PROJECT42_API_ORIGIN=https:\/\/api\.example\.invalid/);
   assert.doesNotMatch(environmentExample, /NEXT_PUBLIC_PROJECT42_OIDC_AUTHORITY/);
   assert.doesNotMatch(environmentExample, /NEXT_PUBLIC_PROJECT42_OIDC_CLIENT_ID/);
   assert.doesNotMatch(environmentExample, /NEXT_PUBLIC_PROJECT42_OIDC_SCOPE/);
