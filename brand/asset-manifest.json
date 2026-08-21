@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "sources": {
+    "project-42-app-icon.svg": "68a6bcb1875722b87075de9023ac2fc5ad795a0b87abbed23d4e0c5b64ae6375",
+    "project-42-maskable-icon.svg": "9f2c55c781caa613de1ddd101039193639b57f41d10342c21aa99f45071f8099",
+    "project-42-social.svg": "08bf26e0fd3fff17f5942ac22bd40c7f8583ea5c89d59f202c74b9de43844208"
+  },
+  "generated": {
+    "favicon-16x16.png": {
+      "bytes": 490,
+      "sha256": "1b4a16e20d15be3659fff19c72aebb8d350709494a73bdaa1dd8eae007e69c2f"
+    },
+    "favicon-32x32.png": {
+      "bytes": 830,
+      "sha256": "0a5aa12808426961ffec571c5509257f3880e0827fc124aa78640c1d5287a20d"
+    },
+    "favicon-48x48.png": {
+      "bytes": 1212,
+      "sha256": "38132bf65f5eeeb0a0d9a0837e506249fd3f92a96f2d89adbd494e4e5dc0cbd7"
+    },
+    "apple-touch-icon.png": {
+      "bytes": 3963,
+      "sha256": "ef8723aaedabdf4d088e24daaf333229f0a4c9eb7816f36f83955134d4ac2ffc"
+    },
+    "icon-192x192.png": {
+      "bytes": 3996,
+      "sha256": "ed9691b4a1ad78c051acdb3571fe04741f2811996d245adaabbcee4eacdb2724"
+    },
+    "icon-512x512.png": {
+      "bytes": 24273,
+      "sha256": "f35309771371ce535f40210af0816b0b126dc473489b9da32ab09a3c148ad391"
+    },
+    "icon-maskable-512x512.png": {
+      "bytes": 16996,
+      "sha256": "380db0ada71e0dfd04d0a9b2a4681187e9ca51e4e3241c42b02dbc3b15a89196"
+    },
+    "og.png": {
+      "bytes": 48197,
+      "sha256": "1b22747394c7aec75393e5c0597b50060ed374e53de218e86d49eabb82e364a6"
+    },
+    "favicon.ico": {
+      "bytes": 8088,
+      "sha256": "1c51802aa4aae14c8d6527a25b88c97edae3b6db5e27613829cdafb79f3d70e3"
+    }
+  }
+}

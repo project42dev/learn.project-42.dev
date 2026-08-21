@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img">
+  <title>Project 42 — Start curious. Become capable.</title>
+  <rect width="1200" height="630" fill="#f6f3eb" />
+  <circle cx="1060" cy="86" r="260" fill="#63d7e4" opacity=".2" />
+  <circle cx="1130" cy="610" r="300" fill="#c9f25f" opacity=".22" />
+  <g transform="translate(92 82) scale(2.35)">
+    <rect width="64" height="64" rx="13" fill="#0b1225" />
+    <path
+      fill="#c9f25f"
+      fill-rule="evenodd"
+      d="M7 36 23 9h10v26h6v10h-6v10H22V45H7v-9Zm15-1V25l-6 10h6Z"
+    />
+    <path
+      fill="#63d7e4"
+      d="M36 21c0-8 5-13 14-13 8 0 14 5 14 13 0 6-3 10-9 14l-7 5h16v10H35V39l13-10c4-3 5-5 5-8 0-3-1-5-4-5s-4 2-4 6h-9Z"
+    />
+  </g>
+  <text
+    x="284"
+    y="175"
+    fill="#0b1225"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="72"
+    font-weight="780"
+    letter-spacing="-3"
+  >Project 42</text>
+  <text
+    x="92"
+    y="350"
+    fill="#0b1225"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="78"
+    font-weight="820"
+    letter-spacing="-3.5"
+  >Start curious.</text>
+  <text
+    x="92"
+    y="438"
+    fill="#0b1225"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="78"
+    font-weight="820"
+    letter-spacing="-3.5"
+  >Become capable.</text>
+  <text
+    x="96"
+    y="535"
+    fill="#455066"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="31"
+    font-weight="620"
+  >Free, open, provider-neutral AI learning and field guides.</text>
+</svg>

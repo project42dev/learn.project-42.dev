@@ -1,0 +1,351 @@
+{
+  "_AuthProvider-MR5E-BzG.js": {
+    "file": "_next/static/chunks/AuthProvider-MR5E-BzG.js",
+    "name": "AuthProvider",
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js"
+    ]
+  },
+  "_RequireAuth-FV-f6APF.js": {
+    "file": "_next/static/chunks/RequireAuth-FV-f6APF.js",
+    "name": "RequireAuth",
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "virtual:vinext-app-browser-entry",
+      "_AuthProvider-MR5E-BzG.js"
+    ]
+  },
+  "_dist-7OfdOIco.js": {
+    "file": "_next/static/chunks/dist-7OfdOIco.js",
+    "name": "dist",
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js"
+    ]
+  },
+  "_framework-BQUlGUOV.js": {
+    "file": "_next/static/chunks/framework-BQUlGUOV.js",
+    "name": "framework",
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js"
+    ]
+  },
+  "_navigation-errors-CoFGy5r3.js": {
+    "file": "_next/static/chunks/navigation-errors-CoFGy5r3.js",
+    "name": "navigation-errors",
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js"
+    ]
+  },
+  "_rolldown-runtime-QTnfLwEv.js": {
+    "file": "_next/static/chunks/rolldown-runtime-QTnfLwEv.js",
+    "name": "rolldown-runtime"
+  },
+  "_subdomainLinks-DLSnXlv8.js": {
+    "file": "_next/static/chunks/subdomainLinks-DLSnXlv8.js",
+    "name": "subdomainLinks",
+    "imports": [
+      "virtual:vinext-app-browser-entry"
+    ]
+  },
+  "app/account/github/callback/page.tsx": {
+    "file": "_next/static/chunks/page-ZUU7k3RN.js",
+    "name": "page",
+    "src": "app/account/github/callback/page.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_AuthProvider-MR5E-BzG.js",
+      "_subdomainLinks-DLSnXlv8.js"
+    ]
+  },
+  "app/admin/layout.tsx": {
+    "file": "_next/static/chunks/layout-tNKxO1xw.js",
+    "name": "layout",
+    "src": "app/admin/layout.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_framework-BQUlGUOV.js",
+      "_RequireAuth-FV-f6APF.js"
+    ]
+  },
+  "app/auth/callback/page.tsx": {
+    "file": "_next/static/chunks/page-Bbgjk2H4.js",
+    "name": "page",
+    "src": "app/auth/callback/page.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_AuthProvider-MR5E-BzG.js"
+    ]
+  },
+  "app/components/AccountDashboard.tsx": {
+    "file": "_next/static/chunks/AccountDashboard-CS0kCooT.js",
+    "name": "AccountDashboard",
+    "src": "app/components/AccountDashboard.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_AuthProvider-MR5E-BzG.js",
+      "_subdomainLinks-DLSnXlv8.js",
+      "node_modules/vinext/dist/shims/link.js",
+      "_dist-7OfdOIco.js",
+      "app/components/ProfilePreferencesProvider.tsx"
+    ]
+  },
+  "app/components/CapstoneSubmission.tsx": {
+    "file": "_next/static/chunks/CapstoneSubmission-BrVasEA6.js",
+    "name": "CapstoneSubmission",
+    "src": "app/components/CapstoneSubmission.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "app/components/ProgressProvider.tsx"
+    ]
+  },
+  "app/components/CopyCodeButton.tsx": {
+    "file": "_next/static/chunks/CopyCodeButton-Cy--84AU.js",
+    "name": "CopyCodeButton",
+    "src": "app/components/CopyCodeButton.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js"
+    ]
+  },
+  "app/components/DiagramViewer.tsx": {
+    "file": "_next/static/chunks/DiagramViewer-DqdcXSD1.js",
+    "name": "DiagramViewer",
+    "src": "app/components/DiagramViewer.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js"
+    ]
+  },
+  "app/components/HeaderMenu.tsx": {
+    "file": "_next/static/chunks/HeaderMenu-Coq_XY05.js",
+    "name": "HeaderMenu",
+    "src": "app/components/HeaderMenu.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js"
+    ]
+  },
+  "app/components/KnowledgeCheck.tsx": {
+    "file": "_next/static/chunks/KnowledgeCheck-ARk4oYaB.js",
+    "name": "KnowledgeCheck",
+    "src": "app/components/KnowledgeCheck.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "node_modules/vinext/dist/shims/link.js",
+      "_dist-7OfdOIco.js",
+      "app/components/ProgressProvider.tsx"
+    ]
+  },
+  "app/components/ModuleVisitTracker.tsx": {
+    "file": "_next/static/chunks/ModuleVisitTracker-D7Wu5Jb8.js",
+    "name": "ModuleVisitTracker",
+    "src": "app/components/ModuleVisitTracker.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "app/components/ProgressProvider.tsx"
+    ]
+  },
+  "app/components/PathModuleList.tsx": {
+    "file": "_next/static/chunks/PathModuleList-BhbOWIDB.js",
+    "name": "PathModuleList",
+    "src": "app/components/PathModuleList.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_framework-BQUlGUOV.js",
+      "node_modules/vinext/dist/shims/link.js",
+      "app/components/ProgressProvider.tsx"
+    ]
+  },
+  "app/components/ProfileDashboard.tsx": {
+    "file": "_next/static/chunks/ProfileDashboard-QjtLV6H1.js",
+    "name": "ProfileDashboard",
+    "src": "app/components/ProfileDashboard.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_AuthProvider-MR5E-BzG.js",
+      "_subdomainLinks-DLSnXlv8.js",
+      "node_modules/vinext/dist/shims/link.js",
+      "_dist-7OfdOIco.js",
+      "app/components/ProgressProvider.tsx"
+    ]
+  },
+  "app/components/ProfileMenu.tsx": {
+    "file": "_next/static/chunks/ProfileMenu-D5jWahAY.js",
+    "name": "ProfileMenu",
+    "src": "app/components/ProfileMenu.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_AuthProvider-MR5E-BzG.js",
+      "node_modules/vinext/dist/shims/link.js",
+      "app/components/HeaderMenu.tsx"
+    ]
+  },
+  "app/components/ProfilePreferencesProvider.tsx": {
+    "file": "_next/static/chunks/ProfilePreferencesProvider-CLhEn_kB.js",
+    "name": "ProfilePreferencesProvider",
+    "src": "app/components/ProfilePreferencesProvider.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js"
+    ]
+  },
+  "app/components/ProgressMigration.tsx": {
+    "file": "_next/static/chunks/ProgressMigration-COlCevX3.js",
+    "name": "ProgressMigration",
+    "src": "app/components/ProgressMigration.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "app/components/ProgressProvider.tsx"
+    ]
+  },
+  "app/components/ProgressProvider.tsx": {
+    "file": "_next/static/chunks/ProgressProvider-BlbsfBEw.js",
+    "name": "ProgressProvider",
+    "src": "app/components/ProgressProvider.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_AuthProvider-MR5E-BzG.js",
+      "_dist-7OfdOIco.js"
+    ]
+  },
+  "app/components/ProgressSnapshot.tsx": {
+    "file": "_next/static/chunks/ProgressSnapshot-_DlxjMn8.js",
+    "name": "ProgressSnapshot",
+    "src": "app/components/ProgressSnapshot.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_framework-BQUlGUOV.js",
+      "node_modules/vinext/dist/shims/link.js",
+      "_dist-7OfdOIco.js",
+      "app/components/ProgressProvider.tsx"
+    ]
+  },
+  "app/import-progress/layout.tsx": {
+    "file": "_next/static/chunks/layout-DCZ50mRI.js",
+    "name": "layout",
+    "src": "app/import-progress/layout.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_framework-BQUlGUOV.js",
+      "_RequireAuth-FV-f6APF.js"
+    ]
+  },
+  "app/learn/[pathId]/[moduleId]/layout.tsx": {
+    "file": "_next/static/chunks/layout-DyBAynld.js",
+    "name": "layout",
+    "src": "app/learn/[pathId]/[moduleId]/layout.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_framework-BQUlGUOV.js",
+      "_RequireAuth-FV-f6APF.js"
+    ]
+  },
+  "app/ondemand/[pathId]/[moduleId]/layout.tsx": {
+    "file": "_next/static/chunks/layout-Ca06vuIn.js",
+    "name": "layout",
+    "src": "app/ondemand/[pathId]/[moduleId]/layout.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_framework-BQUlGUOV.js",
+      "_RequireAuth-FV-f6APF.js"
+    ]
+  },
+  "app/profile/layout.tsx": {
+    "file": "_next/static/chunks/layout-BGXyKFqi.js",
+    "name": "layout",
+    "src": "app/profile/layout.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_framework-BQUlGUOV.js",
+      "_RequireAuth-FV-f6APF.js"
+    ]
+  },
+  "node_modules/vinext/dist/shims/layout-segment-context.js": {
+    "file": "_next/static/chunks/layout-segment-context-Cux781c3.js",
+    "name": "layout-segment-context",
+    "src": "node_modules/vinext/dist/shims/layout-segment-context.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_navigation-errors-CoFGy5r3.js",
+      "virtual:vinext-app-browser-entry"
+    ]
+  },
+  "node_modules/vinext/dist/shims/link.js": {
+    "file": "_next/static/chunks/link-C7YxRx-P.js",
+    "name": "link",
+    "src": "node_modules/vinext/dist/shims/link.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "virtual:vinext-app-browser-entry"
+    ]
+  },
+  "virtual:vinext-app-browser-entry": {
+    "file": "_next/static/chunks/index-V2t86TrF.js",
+    "name": "index",
+    "src": "virtual:vinext-app-browser-entry",
+    "isEntry": true,
+    "imports": [
+      "_rolldown-runtime-QTnfLwEv.js",
+      "_framework-BQUlGUOV.js",
+      "_navigation-errors-CoFGy5r3.js"
+    ],
+    "dynamicImports": [
+      "virtual:vinext-app-browser-entry",
+      "app/components/ProfilePreferencesProvider.tsx",
+      "app/components/ProgressSnapshot.tsx",
+      "node_modules/vinext/dist/shims/layout-segment-context.js",
+      "app/components/CapstoneSubmission.tsx",
+      "app/components/CopyCodeButton.tsx",
+      "app/profile/layout.tsx",
+      "app/learn/[pathId]/[moduleId]/layout.tsx",
+      "app/components/HeaderMenu.tsx",
+      "app/components/PathModuleList.tsx",
+      "app/components/KnowledgeCheck.tsx",
+      "app/admin/layout.tsx",
+      "app/components/ProfileDashboard.tsx",
+      "app/components/ProgressMigration.tsx",
+      "app/account/github/callback/page.tsx",
+      "app/ondemand/[pathId]/[moduleId]/layout.tsx",
+      "app/components/DiagramViewer.tsx",
+      "app/components/AccountDashboard.tsx",
+      "app/components/ProfileMenu.tsx",
+      "node_modules/vinext/dist/shims/link.js",
+      "app/auth/callback/page.tsx",
+      "app/components/ProgressProvider.tsx",
+      "app/import-progress/layout.tsx",
+      "app/components/ModuleVisitTracker.tsx",
+      "_AuthProvider-MR5E-BzG.js"
+    ]
+  }
+}

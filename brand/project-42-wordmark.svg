@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img">
+  <title>Project 42</title>
+  <g transform="translate(8 8) scale(1.25)">
+    <rect width="64" height="64" rx="13" fill="#0b1225" />
+    <path
+      fill="#c9f25f"
+      fill-rule="evenodd"
+      d="M7 36 23 9h10v26h6v10h-6v10H22V45H7v-9Zm15-1V25l-6 10h6Z"
+    />
+    <path
+      fill="#63d7e4"
+      d="M36 21c0-8 5-13 14-13 8 0 14 5 14 13 0 6-3 10-9 14l-7 5h16v10H35V39l13-10c4-3 5-5 5-8 0-3-1-5-4-5s-4 2-4 6h-9Z"
+    />
+  </g>
+  <text
+    x="116"
+    y="62"
+    fill="#0b1225"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="44"
+    font-weight="760"
+    letter-spacing="-1.8"
+  >Project 42</text>
+</svg>

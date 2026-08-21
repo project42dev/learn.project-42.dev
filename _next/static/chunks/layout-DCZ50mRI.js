@@ -1,0 +1,1 @@
+import{i as e}from"./framework-BQUlGUOV.js";import{t}from"./RequireAuth-FV-f6APF.js";var n=e();function r({children:e}){return(0,n.jsx)(t,{children:e})}export{r as default};

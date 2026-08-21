@@ -1,0 +1,83 @@
+{
+  "$schemaVersion": 1,
+  "renderer": "@mermaid-js/mermaid-cli@11.15.0",
+  "entries": [
+    {
+      "id": "learning-evidence-loop",
+      "source": "learning-evidence-loop.mmd",
+      "sourceSha256": "bb7320b9964e2fac205eb30ebda50d9078a9abdfda571e41c7775f9b7088c63c",
+      "svg": "learning-evidence-loop.svg",
+      "svgSha256": "a6089d235133746aec2d5f5502f940436af92f36c0f08004cdbca2687ed5bbc6"
+    },
+    {
+      "id": "grounded-answer-workflow",
+      "source": "grounded-answer-workflow.mmd",
+      "sourceSha256": "695373c14bff83c3868c7a5de4bf01ac7526fbf638add2cbc194e95913f7a65f",
+      "svg": "grounded-answer-workflow.svg",
+      "svgSha256": "c577859a4949c807fb2526e12e7fd1c31085cf4ccb21312570a2296761d5f522"
+    },
+    {
+      "id": "safe-agent-loop",
+      "source": "safe-agent-loop.mmd",
+      "sourceSha256": "3b1a5b83b184a9ff4ce362ef7d253f7f13bb7ee9fc3d668c686bac7e0fe6728d",
+      "svg": "safe-agent-loop.svg",
+      "svgSha256": "0d442c0aae7c0681b403eea08500a96ec5bc17e419e11d1a7887a7e6ced16dab"
+    },
+    {
+      "id": "prompt-contract",
+      "source": "prompt-contract.mmd",
+      "sourceSha256": "b9363b897918e4dbf1754d38ce7d190f719a7a74cade87d3e4dc6fe7c141b9bd",
+      "svg": "prompt-contract.svg",
+      "svgSha256": "65ec83bfff217df4b9d5930c69e1aedcbd0ca0ff801baf863e72baad0aedd200"
+    },
+    {
+      "id": "provider-selection",
+      "source": "provider-selection.mmd",
+      "sourceSha256": "1699442d4a4b5e31636d95eab8800fb3f83ce0ca499ebb7cbd6cfe1552e58779",
+      "svg": "provider-selection.svg",
+      "svgSha256": "9e73535c6e012a79e9bf647b55a192d45d43d6784fa6b520edfcb8b4ffc6b845"
+    },
+    {
+      "id": "tool-trust-boundaries",
+      "source": "tool-trust-boundaries.mmd",
+      "sourceSha256": "a3401e369dcd11f479b6cc04f3580e3d44b0c08542fca9596f2858013c1887be",
+      "svg": "tool-trust-boundaries.svg",
+      "svgSha256": "2fb4cc145e447a5eacec8a498e2670eecb706ba12bf529d7d635eb30eef501a9"
+    },
+    {
+      "id": "multi-agent-handoff",
+      "source": "multi-agent-handoff.mmd",
+      "sourceSha256": "4656b3b0f5a5e871cd1c944a180c57caef1da8f5764c93556d47776759504eb8",
+      "svg": "multi-agent-handoff.svg",
+      "svgSha256": "bc3b66703e0becacb9c314e8a3c48ada68100d7fbfe820ea7395afa6a643fd71"
+    },
+    {
+      "id": "content-freshness-release",
+      "source": "content-freshness-release.mmd",
+      "sourceSha256": "e2ffa6894a362a2ce0e76506c9c94ea7afed095938a59619967ef41436eb3485",
+      "svg": "content-freshness-release.svg",
+      "svgSha256": "23a9acabafb75820b1565d3fb5bb69e901f0f3d473c7aec51808170f900107f1"
+    },
+    {
+      "id": "agent-orchestration",
+      "source": "agent-orchestration.mmd",
+      "sourceSha256": "c44fcba43ca4c1b90cbafe1a6941c03a3bf829292f01d89fff15ee7d324642a8",
+      "svg": "agent-orchestration.svg",
+      "svgSha256": "255ed96f23f5c8f44c11062faa2714c67701ea8f73de1e3df9d263ec942b6212"
+    },
+    {
+      "id": "cost-and-capacity-management",
+      "source": "cost-and-capacity-management.mmd",
+      "sourceSha256": "a50cf355bd46f30b6d1f02d67c348f2e8272106f33a5c979e25fc61b80a84738",
+      "svg": "cost-and-capacity-management.svg",
+      "svgSha256": "94bb8b6a6fe3788ae9c9317921a492805c0a34341ab67e3cb61ff00748a8fc24"
+    },
+    {
+      "id": "orchard-lifecycle",
+      "source": "orchard-lifecycle.mmd",
+      "sourceSha256": "688ba9a6364d406e54fa25940f88535db30dc843f78f6603bacb5cb8c34e7906",
+      "svg": "orchard-lifecycle.svg",
+      "svgSha256": "8cf213829ff52732334a703b15c1c223fba31d0fd485b31b0dbaca623cead597"
+    }
+  ]
+}

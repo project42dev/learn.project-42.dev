@@ -1,0 +1,64 @@
+{
+  "$schemaVersion": 1,
+  "siteVersion": "0.12.1",
+  "platformVersion": "0.81.0",
+  "contentVersion": "0.42.0",
+  "counts": {
+    "learningPaths": 12,
+    "assessedModules": 94,
+    "evidenceActivities": 69,
+    "reviewedQuestions": 475,
+    "resources": 0,
+    "providerScopes": 4,
+    "providerImplementations": 3
+  },
+  "providers": [
+    {
+      "id": "provider-neutral",
+      "name": "Core concepts",
+      "description": "Ideas that apply across AI products and model providers."
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "description": "Claude products, APIs, and agent workflows."
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "description": "ChatGPT, OpenAI APIs, and Codex workflows."
+    },
+    {
+      "id": "google",
+      "name": "Google",
+      "description": "Gemini products and cross-provider comparisons."
+    }
+  ],
+  "learnerDataPolicy": {
+    "schemaVersion": 1,
+    "policyId": "project42-learner-data",
+    "policyVersion": "2026-07-27",
+    "accountBackedRecords": "available",
+    "hostedRecordStore": "cloudflare-d1",
+    "referenceRecordStore": "postgresql"
+  },
+  "homepage": "https://learn.project-42.dev",
+  "repositories": {
+    "site": "https://github.com/project42dev/learn.project-42.dev",
+    "platform": "https://github.com/project42dev/project42-platform",
+    "issues": "https://github.com/project42dev/learn.project-42.dev/issues",
+    "roadmap": "https://github.com/project42dev/project-42.dev/issues?q=is%3Aissue%20label%3Aroadmap"
+  },
+  "licenses": {
+    "software": {
+      "spdx": "Apache-2.0",
+      "label": "Apache License 2.0",
+      "url": "https://github.com/project42dev/learn.project-42.dev/blob/main/LICENSE"
+    },
+    "curriculum": {
+      "spdx": "CC-BY-4.0",
+      "label": "Creative Commons Attribution 4.0",
+      "url": "https://github.com/project42dev/project42-platform/blob/main/LICENSE-CONTENT.md"
+    }
+  }
+}
