@@ -174,12 +174,12 @@ test("a filtered --domain/--routes export publishes only its own routes with cro
   );
   assert.match(
     accountPage,
-    /<a href="https:\/\/learn\.project-42\.dev\/">Learn<\/a>/,
+    /<a\s+[^>]*href="https:\/\/learn\.project-42\.dev\/"[^>]*>Learn<\/a>/,
     "a route this export doesn't own must link back to Learn absolutely",
   );
   assert.match(
     accountPage,
-    /<a href="\/account">Account<\/a>/,
+    /<a\s+[^>]*href="\/account"[^>]*>Account<\/a>/,
     "a route this export does own must stay a same-host relative link",
   );
 
