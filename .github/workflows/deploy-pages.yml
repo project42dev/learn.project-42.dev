@@ -26,6 +26,7 @@ jobs:
           node-version: 22
           cache: npm
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" && git config --global url."https://github.com/".insteadOf "git@github.com:"
       - run: npm install
         env:
           PUPPETEER_SKIP_DOWNLOAD: "true"
