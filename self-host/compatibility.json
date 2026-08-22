@@ -5,7 +5,7 @@
     "version": "0.12.1"
   },
   "platform": {
-    "requiredVersion": "0.85.0"
+    "requiredVersion": "0.86.0"
   },
   "runtime": {
     "containerPort": 8080,
