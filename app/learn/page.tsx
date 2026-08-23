@@ -47,7 +47,7 @@ const defaultFocusAreas = [
 ];
 
 export default function LearnPage() {
-  const focusAreas = starterCatalog.focusAreas ?? defaultFocusAreas;
+  const focusAreas = (starterCatalog as any).focusAreas ?? defaultFocusAreas;
 
 
   return (
@@ -63,7 +63,7 @@ export default function LearnPage() {
 
       <div className="focus-areas-container">
         {focusAreas.map((area) => {
-          const areaPaths = starterCatalog.paths.filter((p) => {
+          const areaPaths = starterCatalog.paths.filter((p: any) => {
             if (p.focusArea) return p.focusArea === area.id;
             if (area.id === "ai-literacy-and-foundations") return p.id === "ai-foundations" || p.id === "agentic-ai-literacy";
             if (area.id === "developer-and-practitioner-ai") return p.id.includes("practice") || p.id === "providers-in-practice";

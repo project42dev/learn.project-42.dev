@@ -53,7 +53,7 @@ const defaultFocusAreas = [
 ];
 
 export default function OnDemandPage() {
-  const focusAreas = starterCatalog.focusAreas ?? defaultFocusAreas;
+  const focusAreas = (starterCatalog as any).focusAreas ?? defaultFocusAreas;
 
   const paths = starterCatalog.paths.map((path) => {
     const lessons = path.moduleIds.flatMap((moduleId) => {
@@ -115,7 +115,7 @@ export default function OnDemandPage() {
 
       <div className="focus-areas-container">
         {focusAreas.map((area) => {
-          const areaEntries = paths.filter(({ path }) => {
+          const areaEntries = paths.filter(({ path }: any) => {
             if (path.focusArea) return path.focusArea === area.id;
             if (area.id === "ai-literacy-and-foundations") return path.id === "ai-foundations" || path.id === "agentic-ai-literacy";
             if (area.id === "developer-and-practitioner-ai") return path.id.includes("practice") || path.id === "providers-in-practice";
