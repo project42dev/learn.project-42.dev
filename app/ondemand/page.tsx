@@ -10,20 +10,51 @@ import { getInstructorRendering, instructorRenderings } from "../lib/instructorM
 export const metadata: Metadata = {
   title: "On-demand classroom",
   description:
-    "Instructor-led lessons on demand: the same Project 42 modules, taught on video with captions and a full transcript.",
+    "Instructor-led lessons on demand: the same Project 42 modules organized by Focus Area, taught on video with captions and a full transcript.",
 };
 
-// The instructor-led catalogue, and it must line up with /learn exactly.
-//
-// It previously listed only the three paths that have class scripts and
-// numbered them 01-03, so "02" meant Providers in Practice on /learn and
-// Reliable Agent Workflows here, and five paths simply vanished. Two views of
-// ONE catalogue (ADR-0020) cannot disagree about what is in it or what order
-// it comes in.
-//
-// So: every path, in catalog order, carrying its catalog number. A path with
-// no class scripts says so and still links to where its material can be read.
+const defaultFocusAreas = [
+  {
+    id: "ai-literacy-and-foundations",
+    number: 1,
+    title: "AI Literacy & Foundations",
+    summary: "Core mental models, language model generation, prompt anatomy, context tokens, verification, and privacy without assuming technical experience.",
+  },
+  {
+    id: "developer-and-practitioner-ai",
+    number: 2,
+    title: "Developer & Practitioner AI",
+    summary: "Provider-neutral evaluation, capability comparison, structured outputs, function calling, and hands-on practice across Anthropic, OpenAI, and Google Gemini.",
+  },
+  {
+    id: "frontier-agentic-systems-and-mcp",
+    number: 3,
+    title: "Frontier Agentic Systems & MCP",
+    summary: "Bounded agent loops, tool authority, memory boundaries, Model Context Protocol (MCP) architecture, multi-agent handoffs, and scored capstone.",
+  },
+  {
+    id: "retrieval-rag-and-fine-tuning",
+    number: 4,
+    title: "Retrieval, RAG & Fine-Tuning",
+    summary: "Advanced retrieval architectures, hybrid search, embedding stores, knowledge graphs, and LoRA/QLoRA fine-tuning.",
+  },
+  {
+    id: "self-hosted-and-aiops",
+    number: 5,
+    title: "Self-Hosted, Open-Weight & AIOps",
+    summary: "Open-weight model selection, vLLM/Ollama serving, VRAM calculations, artifact integrity, endpoint security, and disaster recovery.",
+  },
+  {
+    id: "ai-security-and-governance",
+    number: 6,
+    title: "AI Security, Red-Teaming & Governance",
+    summary: "OWASP Top 10 for LLMs, sandboxing, guardrails, compliance frameworks, and cryptographic audit receipts.",
+  },
+];
+
 export default function OnDemandPage() {
+  const focusAreas = starterCatalog.focusAreas ?? defaultFocusAreas;
+
   const paths = starterCatalog.paths.map((path) => {
     const lessons = path.moduleIds.flatMap((moduleId) => {
       const classScript = getClassScriptPackage(moduleId);
@@ -55,6 +86,8 @@ export default function OnDemandPage() {
   const pathsWithScripts = paths.filter((entry) => entry.scriptedCount > 0).length;
   const filmedCount = instructorRenderings.length;
 
+  let globalCourseIndex = 0;
+
   return (
     <main className="page-shell shell">
       <header className="page-hero">
@@ -65,81 +98,121 @@ export default function OnDemandPage() {
         <p>
           The same material, taught rather than read. A virtual instructor works
           through each module on video, with captions and a full transcript, so you
-          can watch a lesson instead of reading one. Same course, same knowledge
-          checks, same sources, and one record either way.
+          can watch a lesson instead of reading one. Same Focus Areas, same courses,
+          same knowledge checks, same sources, and one record either way.
         </p>
       </header>
 
-      {/*
-        Counting out loud, because the honest numbers are small and they are
-        three different numbers. Collapsing them into one would be the same
-        silent-success failure this project keeps finding in its own checks: a
-        figure that looks healthy and measures the wrong thing.
-      */}
       <p className="ondemand-status">
         <strong>
           {filmedCount} lesson{filmedCount === 1 ? "" : "s"} filmed so far
         </strong>{" "}
         out of {scriptedTotal} written for the classroom, across{" "}
-        {pathsWithScripts} of {starterCatalog.paths.length} paths. The paths and
-        their order are the same as the self-paced side. Every module is already
+        {pathsWithScripts} of {starterCatalog.paths.length} paths. The Focus Areas and
+        their courses are identical to the self-paced curriculum. Every module is already
         available to read, and anything you finish now carries straight over when
         its lesson is published.
       </p>
 
-      <div className="learning-path-list">
-        {paths.map(({ path, lessons, scriptedCount, minutes, filmed }, index) => (
-          <article
-            className={
-              scriptedCount > 0 ? "learning-path-row" : "learning-path-row is-unwritten"
-            }
-            key={path.id}
-          >
-            <div className="learning-path-number">{String(index + 1).padStart(2, "0")}</div>
-            <div>
-              <div className="path-card-top">
-                <span className="level-pill">{path.level}</span>
-                <span>
-                  {scriptedCount > 0
-                    ? `${scriptedCount} lessons · ${minutes} min of video`
-                    : `${lessons.length} modules · no lessons written yet`}
-                </span>
+      <div className="focus-areas-container">
+        {focusAreas.map((area) => {
+          const areaEntries = paths.filter(({ path }) => {
+            if (path.focusArea) return path.focusArea === area.id;
+            if (area.id === "ai-literacy-and-foundations") return path.id === "ai-foundations" || path.id === "agentic-ai-literacy";
+            if (area.id === "developer-and-practitioner-ai") return path.id.includes("practice") || path.id === "providers-in-practice";
+            if (area.id === "frontier-agentic-systems-and-mcp") return path.id === "reliable-agent-workflows";
+            if (area.id === "self-hosted-and-aiops") return path.id === "self-hosted-model-operations";
+            return false;
+          });
+
+          if (areaEntries.length === 0) return null;
+
+          return (
+            <section className="focus-area-group" key={area.id} aria-labelledby={`focus-area-ondemand-${area.id}`} style={{ marginBottom: "3.5rem" }}>
+              <div className="focus-area-header" style={{ marginBottom: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "1rem" }}>
+                <p className="eyebrow" style={{ color: "#38bdf8", marginBottom: "0.25rem" }}>Focus Area {String(area.number).padStart(2, "0")}</p>
+                <h2 id={`focus-area-ondemand-${area.id}`} style={{ fontSize: "1.75rem", margin: "0 0 0.5rem 0" }}>{area.title}</h2>
+                <p style={{ color: "#94a3b8", margin: 0, maxWidth: "800px" }}>{area.summary}</p>
               </div>
-              <h2>{path.title}</h2>
-              <p>{path.summary}</p>
-              <small>For {path.audience.toLowerCase()}</small>
-            </div>
-            <div className="learning-path-modules" aria-label={`${path.title} lessons`}>
-              {lessons.map((lesson, lessonIndex) => (
-                <span
-                  className={lesson.rendering ? "lesson-filmed" : undefined}
-                  key={lesson.moduleId}
-                >
-                  {lessonIndex + 1}. {lesson.title}
-                  {lesson.rendering ? <em>Filmed</em> : null}
-                </span>
-              ))}
-            </div>
-            {filmed ? (
-              <Link
-                className="button button-primary"
-                href={`/ondemand/${path.id}/${filmed.moduleId}`}
-              >
-                Watch the lesson
-              </Link>
-            ) : (
-              <Link className="button button-secondary" href={`/learn/${path.id}`}>
-                Read this path
-              </Link>
-            )}
-          </article>
-        ))}
+
+              <div className="learning-path-list">
+                {areaEntries.map(({ path, lessons, scriptedCount, minutes, filmed }) => {
+                  globalCourseIndex += 1;
+                  const currentCourseNumber = globalCourseIndex;
+
+                  return (
+                    <article
+                      className={
+                        scriptedCount > 0 ? "learning-path-row" : "learning-path-row is-unwritten"
+                      }
+                      key={path.id}
+                    >
+                      <div className="learning-path-number">{String(currentCourseNumber).padStart(2, "0")}</div>
+                      <div>
+                        <div className="path-card-top">
+                          <span className="level-pill">{path.level}</span>
+                          <span>
+                            {scriptedCount > 0
+                              ? `${scriptedCount} scripted · ~${minutes} min`
+                              : "Not scripted yet"}
+                          </span>
+                        </div>
+                        <h2>{path.title}</h2>
+                        <p>{path.summary}</p>
+                        <small>For {path.audience.toLowerCase()}</small>
+                      </div>
+                      <div className="ondemand-lessons" aria-label={`${path.title} lessons`}>
+                        {lessons.map((lesson, lessonIndex) => (
+                          <div className="ondemand-lesson-item" key={lesson.moduleId}>
+                            <span className="ondemand-lesson-title">
+                              {lessonIndex + 1}. {lesson.title}
+                            </span>
+                            {lesson.rendering ? (
+                              <Link
+                                className="ondemand-pill is-filmed"
+                                href={`/ondemand/${path.id}/${lesson.moduleId}`}
+                              >
+                                Watch lesson →
+                              </Link>
+                            ) : lesson.scripted ? (
+                              <span className="ondemand-pill is-scripted">
+                                Scripted · filming soon
+                              </span>
+                            ) : (
+                              <Link
+                                className="ondemand-pill is-read-only"
+                                href={`/learn/${path.id}/${lesson.moduleId}`}
+                              >
+                                Read module →
+                              </Link>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {filmed ? (
+                        <Link
+                          className="button button-primary"
+                          href={`/ondemand/${path.id}/${filmed.moduleId}`}
+                        >
+                          Watch published lesson
+                        </Link>
+                      ) : (
+                        <Link className="button button-secondary" href={`/learn/${path.id}`}>
+                          Read path online
+                        </Link>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
 
-      <p className="learn-format-switch">
-        Nothing is generated while you watch. Every lesson is produced and reviewed
-        before it is published, then served as a fixed package.{" "}
-        <Link href="/learn">Browse the written paths →</Link>
+      <p className="learn-format-switch" style={{ marginTop: "2rem" }}>
+        Prefer reading the text-first modules?{" "}
+        <Link href="/learn">Explore the self-paced library →</Link>
       </p>
     </main>
   );
