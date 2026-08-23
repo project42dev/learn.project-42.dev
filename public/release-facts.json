@@ -4,10 +4,10 @@
   "platformVersion": "0.97.0",
   "contentVersion": "0.42.0",
   "counts": {
-    "learningPaths": 8,
-    "assessedModules": 72,
-    "evidenceActivities": 69,
-    "reviewedQuestions": 363,
+    "learningPaths": 14,
+    "assessedModules": 160,
+    "evidenceActivities": 157,
+    "reviewedQuestions": 727,
     "resources": 0,
     "providerScopes": 4,
     "providerImplementations": 3
