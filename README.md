@@ -79,7 +79,7 @@ the HttpOnly-cookie session boundary or presenting achievements as credentials.
 ## Current release facts
 
 - Site release `0.12.1`
-- Platform package `0.99.0`
+- Platform package `0.100.0`
 - Content release `0.42.0`
 - 13 learning paths, 92 assessed modules, 89 evidence activities, and 384 reviewed questions
 - 13 dedicated learning paths and 4 provider scopes
