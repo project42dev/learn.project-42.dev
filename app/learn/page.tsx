@@ -62,7 +62,7 @@ export default function LearnPage() {
       </header>
 
       <div className="focus-areas-container">
-        {focusAreas.map((area) => {
+        {focusAreas.map((area: any) => {
           const areaPaths = starterCatalog.paths.filter((p: any) => {
             if (p.focusArea) return p.focusArea === area.id;
             if (area.id === "ai-literacy-and-foundations") return p.id === "ai-foundations" || p.id === "agentic-ai-literacy";

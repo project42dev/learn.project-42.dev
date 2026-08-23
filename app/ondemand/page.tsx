@@ -114,7 +114,7 @@ export default function OnDemandPage() {
       </p>
 
       <div className="focus-areas-container">
-        {focusAreas.map((area) => {
+        {focusAreas.map((area: any) => {
           const areaEntries = paths.filter(({ path }: any) => {
             if (path.focusArea) return path.focusArea === area.id;
             if (area.id === "ai-literacy-and-foundations") return path.id === "ai-foundations" || path.id === "agentic-ai-literacy";
