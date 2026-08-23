@@ -49,7 +49,6 @@ const defaultFocusAreas = [
 export default function LearnPage() {
   const focusAreas = starterCatalog.focusAreas ?? defaultFocusAreas;
 
-  let globalCourseIndex = 0;
 
   return (
     <main className="page-shell shell">
@@ -85,8 +84,7 @@ export default function LearnPage() {
 
               <div className="learning-path-list">
                 {areaPaths.map((path) => {
-                  globalCourseIndex += 1;
-                  const currentCourseNumber = globalCourseIndex;
+                  const currentCourseNumber = starterCatalog.paths.findIndex((p) => p.id === path.id) + 1;
 
                   const modules = path.moduleIds
                     .map((moduleId) =>

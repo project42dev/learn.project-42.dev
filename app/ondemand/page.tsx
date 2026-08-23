@@ -86,7 +86,6 @@ export default function OnDemandPage() {
   const pathsWithScripts = paths.filter((entry) => entry.scriptedCount > 0).length;
   const filmedCount = instructorRenderings.length;
 
-  let globalCourseIndex = 0;
 
   return (
     <main className="page-shell shell">
@@ -137,8 +136,7 @@ export default function OnDemandPage() {
 
               <div className="learning-path-list">
                 {areaEntries.map(({ path, lessons, scriptedCount, minutes, filmed }) => {
-                  globalCourseIndex += 1;
-                  const currentCourseNumber = globalCourseIndex;
+                  const currentCourseNumber = starterCatalog.paths.findIndex((p) => p.id === path.id) + 1;
 
                   return (
                     <article
