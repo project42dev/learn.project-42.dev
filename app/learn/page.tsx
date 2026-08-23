@@ -7,7 +7,24 @@ export const metadata: Metadata = {
   description: "Choose a guided Project 42 learning path organized by Focus Area.",
 };
 
-const defaultFocusAreas = [
+interface FocusAreaItem {
+  id: string;
+  number: number;
+  title: string;
+  summary: string;
+}
+
+interface LearningPathWithFocus {
+  id: string;
+  title: string;
+  summary: string;
+  audience: string;
+  level: string;
+  moduleIds: string[];
+  focusArea?: string;
+}
+
+const defaultFocusAreas: FocusAreaItem[] = [
   {
     id: "ai-literacy-and-foundations",
     number: 1,
@@ -47,23 +64,23 @@ const defaultFocusAreas = [
 ];
 
 export default function LearnPage() {
-  const focusAreas = (starterCatalog as any).focusAreas ?? defaultFocusAreas;
-
+  const focusAreas = defaultFocusAreas;
+  const paths = starterCatalog.paths as unknown as LearningPathWithFocus[];
 
   return (
     <main className="page-shell shell">
       <header className="page-hero">
-        <p className="eyebrow">Self-paced Curriculum</p>
+        <p className="eyebrow">Self-paced</p>
         <h1>Learning paths with a clear next step.</h1>
         <p>
-          Start from first principles or jump straight into practitioner workflows. Every
-          module ends with hands-on practice and an assessed knowledge check.
+          Start from first principles or jump into practical provider decisions across 6 Focus Areas. Every
+          module ends with a short knowledge check.
         </p>
       </header>
 
       <div className="focus-areas-container">
-        {focusAreas.map((area: any) => {
-          const areaPaths = starterCatalog.paths.filter((p: any) => {
+        {focusAreas.map((area: FocusAreaItem) => {
+          const areaPaths = paths.filter((p: LearningPathWithFocus) => {
             if (p.focusArea) return p.focusArea === area.id;
             if (area.id === "ai-literacy-and-foundations") return p.id === "ai-foundations" || p.id === "agentic-ai-literacy";
             if (area.id === "developer-and-practitioner-ai") return p.id.includes("practice") || p.id === "providers-in-practice";
@@ -84,7 +101,7 @@ export default function LearnPage() {
 
               <div className="learning-path-list">
                 {areaPaths.map((path) => {
-                  const currentCourseNumber = starterCatalog.paths.findIndex((p) => p.id === path.id) + 1;
+                  const currentCourseNumber = paths.findIndex((p) => p.id === path.id) + 1;
 
                   const modules = path.moduleIds
                     .map((moduleId) =>

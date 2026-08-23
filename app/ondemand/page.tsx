@@ -13,7 +13,40 @@ export const metadata: Metadata = {
     "Instructor-led lessons on demand: the same Project 42 modules organized by Focus Area, taught on video with captions and a full transcript.",
 };
 
-const defaultFocusAreas = [
+interface FocusAreaItem {
+  id: string;
+  number: number;
+  title: string;
+  summary: string;
+}
+
+interface LearningPathWithFocus {
+  id: string;
+  title: string;
+  summary: string;
+  audience: string;
+  level: string;
+  moduleIds: string[];
+  focusArea?: string;
+}
+
+interface OnDemandLesson {
+  moduleId: string;
+  title: string;
+  seconds: number;
+  scripted: boolean;
+  rendering?: unknown;
+}
+
+interface OnDemandPathEntry {
+  path: LearningPathWithFocus;
+  lessons: OnDemandLesson[];
+  scriptedCount: number;
+  minutes: number;
+  filmed?: OnDemandLesson;
+}
+
+const defaultFocusAreas: FocusAreaItem[] = [
   {
     id: "ai-literacy-and-foundations",
     number: 1,
@@ -53,10 +86,11 @@ const defaultFocusAreas = [
 ];
 
 export default function OnDemandPage() {
-  const focusAreas = (starterCatalog as any).focusAreas ?? defaultFocusAreas;
+  const focusAreas = defaultFocusAreas;
+  const rawPaths = starterCatalog.paths as unknown as LearningPathWithFocus[];
 
-  const paths = starterCatalog.paths.map((path) => {
-    const lessons = path.moduleIds.flatMap((moduleId) => {
+  const paths: OnDemandPathEntry[] = rawPaths.map((path) => {
+    const lessons: OnDemandLesson[] = path.moduleIds.flatMap((moduleId) => {
       const classScript = getClassScriptPackage(moduleId);
       const lessonModule = getLearningModule(moduleId);
       if (!lessonModule) return [];
@@ -86,7 +120,6 @@ export default function OnDemandPage() {
   const pathsWithScripts = paths.filter((entry) => entry.scriptedCount > 0).length;
   const filmedCount = instructorRenderings.length;
 
-
   return (
     <main className="page-shell shell">
       <header className="page-hero">
@@ -114,8 +147,8 @@ export default function OnDemandPage() {
       </p>
 
       <div className="focus-areas-container">
-        {focusAreas.map((area: any) => {
-          const areaEntries = paths.filter(({ path }: any) => {
+        {focusAreas.map((area: FocusAreaItem) => {
+          const areaEntries = paths.filter(({ path }: OnDemandPathEntry) => {
             if (path.focusArea) return path.focusArea === area.id;
             if (area.id === "ai-literacy-and-foundations") return path.id === "ai-foundations" || path.id === "agentic-ai-literacy";
             if (area.id === "developer-and-practitioner-ai") return path.id.includes("practice") || path.id === "providers-in-practice";
@@ -136,7 +169,7 @@ export default function OnDemandPage() {
 
               <div className="learning-path-list">
                 {areaEntries.map(({ path, lessons, scriptedCount, minutes, filmed }) => {
-                  const currentCourseNumber = starterCatalog.paths.findIndex((p) => p.id === path.id) + 1;
+                  const currentCourseNumber = paths.findIndex((e) => e.path.id === path.id) + 1;
 
                   return (
                     <article
