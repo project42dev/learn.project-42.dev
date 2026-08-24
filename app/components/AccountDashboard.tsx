@@ -2872,7 +2872,7 @@ export function OwnerAdministration() {
       </p>
 
       <div className="admin-grid">
-        <section className="profile-card">
+        <section className="profile-card" id="accounts">
           <div className="admin-account-heading">
             <div>
               <h3>Account approval queue</h3>
@@ -3151,7 +3151,7 @@ export function OwnerAdministration() {
           </div>
         </section>
 
-        <section className="profile-card">
+        <section className="profile-card" id="domains">
           <h3>Approved email domains</h3>
           <p>
             Matching is exact and only applies when the identity provider marks the
@@ -3276,7 +3276,7 @@ export function OwnerAdministration() {
           </div>
         </section>
 
-        <section className="profile-card">
+        <section className="profile-card" id="deletions">
           <div className="admin-account-heading">
             <div>
               <h3>Deletion requests</h3>
@@ -3437,7 +3437,7 @@ export function OwnerAdministration() {
           </div>
         </section>
 
-        <section className="profile-card">
+        <section className="profile-card" id="audit">
           <div className="admin-account-heading">
             <div>
               <h3>Privileged audit events</h3>

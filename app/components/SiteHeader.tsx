@@ -6,7 +6,6 @@ import { BrandMark } from "./BrandMark";
 import { HeaderMenu, MenuChevron } from "./HeaderMenu";
 import { ProfileMenu } from "./ProfileMenu";
 import { AdminHeader } from "../admin/components/AdminHeader";
-import { siteFacts } from "../lib/siteFacts";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -15,8 +14,6 @@ export function SiteHeader() {
   if (pathname && pathname.startsWith("/admin")) {
     return <AdminHeader />;
   }
-
-  const supportHref = `${siteFacts.repositories.site}/blob/main/SUPPORT.md`;
 
   return (
     <header className="site-header">
