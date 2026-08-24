@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { BrandMark } from "../../components/BrandMark";
 import { ProfileMenu } from "../../components/ProfileMenu";
+import { useAuth } from "../../components/AuthProvider";
+import { clientCrossDomainHref } from "../../lib/subdomainLinks";
 
 export function AdminHeader() {
+  const { status, signIn } = useAuth();
+  const signedIn = status === "signed-in";
+
   return (
     <header className="site-header">
       <div className="shell header-inner">
@@ -36,10 +41,20 @@ export function AdminHeader() {
         <nav aria-label="Admin navigation">
           <Link href="/admin">Accounts &amp; Registrations</Link>
           <a href="https://guide.project-42.dev">Field Guide</a>
-          <Link href="/diagrams">Visual guides</Link>
+          <a href="https://learn.project-42.dev/diagrams">Visual guides</a>
         </nav>
 
         <div className="header-actions">
+          {!signedIn && (
+            <button
+              className="button button-primary"
+              onClick={() => void signIn("/admin")}
+              type="button"
+              style={{ fontSize: "0.85rem", padding: "0.35rem 0.9rem" }}
+            >
+              Sign in
+            </button>
+          )}
           <a
             className="header-action"
             href="https://project-42.dev"
@@ -48,9 +63,9 @@ export function AdminHeader() {
             ← Exit Console
           </a>
           <ProfileMenu
-            accountHref="/account"
-            learnerDataHref="/learner-data"
-            profileHref="/profile"
+            accountHref={clientCrossDomainHref("/account")}
+            learnerDataHref={clientCrossDomainHref("/learner-data")}
+            profileHref={clientCrossDomainHref("/profile")}
           />
         </div>
       </div>

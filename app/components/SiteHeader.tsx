@@ -6,6 +6,7 @@ import { BrandMark } from "./BrandMark";
 import { HeaderMenu, MenuChevron } from "./HeaderMenu";
 import { ProfileMenu } from "./ProfileMenu";
 import { AdminHeader } from "../admin/components/AdminHeader";
+import { clientCrossDomainHref } from "../lib/subdomainLinks";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -68,9 +69,9 @@ export function SiteHeader() {
             Start learning
           </Link>
           <ProfileMenu
-            accountHref="/account"
-            learnerDataHref="/learner-data"
-            profileHref="/profile"
+            accountHref={clientCrossDomainHref("/account")}
+            learnerDataHref={clientCrossDomainHref("/learner-data")}
+            profileHref={clientCrossDomainHref("/profile")}
           />
         </div>
       </div>
