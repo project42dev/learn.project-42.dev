@@ -3471,7 +3471,7 @@ export function OwnerAdministration({
           </>
         )}
 
-        {(view === "logs" || view === "accounts" || view === undefined) && (
+        {(view === "logs" || view === undefined) && (
           <section className="profile-card" id="audit">
             <div className="admin-account-heading">
               <div>
