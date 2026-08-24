@@ -2884,8 +2884,8 @@ export function OwnerAdministration({
     {
       id: "04-field-signal",
       number: "04",
-      name: "Field Signal (Production Master)",
-      desc: "Durable tactical identity with beacon lantern, compass needle, and crisp high-contrast white text.",
+      name: "Field Signal",
+      desc: "Practical bearings with beacon lantern, compass needle, and durable tactical typography.",
       colors: ["#071f1a", "#f6edd9", "#ff9b19", "#4bd9d0"],
     },
     {
