@@ -91,7 +91,7 @@ interface BrowserSession {
 }
 
 const apiOrigin = readApiOrigin(
-  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
+  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN ?? "https://api.project-42.dev",
 );
 const configured = Boolean(apiOrigin);
 const githubLinkFlowKey = "project42.identity-link.github.v1";
