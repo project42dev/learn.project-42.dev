@@ -46,7 +46,7 @@ test("keeps the migrated routes live in the default export AB#6851 AB#6227", asy
     assert.doesNotMatch(html, /<meta http-equiv="refresh"/);
   }
   assert.match(account, /One learning record/);
-  assert.match(admin, /Project 42 administration/);
+  assert.match(admin, /Accounts &amp; Registrations/);
 });
 
 test("retires the routes that moved to their own subdomains AB#6851 AB#6227", async () => {
@@ -83,7 +83,7 @@ test("retires the routes that moved to their own subdomains AB#6851 AB#6227", as
   }
 
   assert.doesNotMatch(account, /One learning record/);
-  assert.doesNotMatch(admin, /Project 42 administration/);
+  assert.doesNotMatch(admin, /Accounts &amp; Registrations/);
 
   // /account/github/callback is the live GitHub identity-link redirect URI
   // (GITHUB_LINK_REDIRECT_URI still points at learn.project-42.dev), so it is
