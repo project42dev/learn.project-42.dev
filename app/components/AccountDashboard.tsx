@@ -2856,17 +2856,52 @@ export function OwnerAdministration({
     }
   }
 
-  const [selectedTheme, setSelectedTheme] = useState("default");
+  const [selectedTheme, setSelectedTheme] = useState("04-field-signal");
   const [selectedLayout, setSelectedLayout] = useState("standard");
 
   const themes = [
-    { id: "default", name: "System Default", desc: "Balanced dark slate background with sky-blue accents." },
-    { id: "slate", name: "Slate Modern", desc: "Clean neutral slate tones with crisp monochrome contrast." },
-    { id: "indigo", name: "Midnight Indigo", desc: "Deep violet and indigo background with cyan highlights." },
-    { id: "emerald", name: "Emerald Forest", desc: "Deep pine green with vibrant emerald accents." },
-    { id: "amber", name: "Amber Glow", desc: "Warm obsidian base with energetic amber highlights." },
-    { id: "rose", name: "Rose Quartz", desc: "Rich dark ruby palette with soft rose borders." },
-    { id: "light", name: "High Contrast Light", desc: "Pure high-contrast light mode with deep ink text." },
+    {
+      id: "01-cosmic-answer",
+      number: "01",
+      name: "Cosmic Answer",
+      desc: "Deep space indigo with glowing orbital answer apertures and gold star verification.",
+      colors: ["#080d2a", "#754cff", "#39d8ff", "#ffca68"],
+    },
+    {
+      id: "02-learning-portal",
+      number: "02",
+      name: "Learning Portal",
+      desc: "Warm human education aesthetic with open arch doorways and ascending steps.",
+      colors: ["#fbf7ef", "#ea580c", "#ff5630", "#0d9488"],
+    },
+    {
+      id: "03-model-constellation",
+      number: "03",
+      name: "Model Constellation",
+      desc: "Provider-neutral neural network mesh with electric cyan interconnects.",
+      colors: ["#080c14", "#58e4c2", "#8d64ff", "#4a6fff"],
+    },
+    {
+      id: "04-field-signal",
+      number: "04",
+      name: "Field Signal (Production Master)",
+      desc: "Durable tactical identity with beacon lantern, compass needle, and crisp high-contrast white text.",
+      colors: ["#071f1a", "#f6edd9", "#ff9b19", "#4bd9d0"],
+    },
+    {
+      id: "05-open-orbit",
+      number: "05",
+      name: "Open Orbit",
+      desc: "Modern modular layout with open review velocity loops and bright cobalt/green accents.",
+      colors: ["#f4f7ff", "#2054f6", "#65c943", "#f1258e"],
+    },
+    {
+      id: "06-galactic-guide",
+      number: "06",
+      name: "The Galactic Guide",
+      desc: "Retro-futuristic golden pocket datapad aesthetic with friendly Don't Panic survival guidance.",
+      colors: ["#090d16", "#f59e0b", "#10b981", "#fef3c7"],
+    },
   ];
 
   const layouts = [
@@ -3558,7 +3593,7 @@ export function OwnerAdministration({
               <div>
                 <h3>Console themes and customization</h3>
                 <p>
-                  Switch the active platform theme across the 7 default system palettes or customize layout presets.
+                  Switch the active platform theme across the 6 permanent built-in themes from the Project 42 Theme Studio or customize layout presets.
                 </p>
               </div>
               <a
@@ -3573,8 +3608,8 @@ export function OwnerAdministration({
             </div>
 
             <div style={{ marginBottom: "28px" }}>
-              <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>Platform Theme Palettes (7 Built-in)</h4>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
+              <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>Built-In Permanent Themes (6 Packages)</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
                 {themes.map((theme) => {
                   const isActive = selectedTheme === theme.id;
                   return (
@@ -3582,19 +3617,49 @@ export function OwnerAdministration({
                       key={theme.id}
                       onClick={() => setSelectedTheme(theme.id)}
                       style={{
-                        padding: "14px",
-                        borderRadius: "8px",
+                        padding: "16px",
+                        borderRadius: "10px",
                         border: `1.5px solid ${isActive ? "#38bdf8" : "rgba(255, 255, 255, 0.1)"}`,
                         background: isActive ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.02)",
                         cursor: "pointer",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
                         transition: "all 0.15s ease",
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                        <strong style={{ fontSize: "14px", color: isActive ? "#38bdf8" : "inherit" }}>{theme.name}</strong>
-                        {isActive && <span style={{ fontSize: "11px", fontWeight: 700, color: "#38bdf8" }}>Active</span>}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <span style={{ fontSize: "10.5px", fontWeight: 800, color: "#38bdf8", fontFamily: "monospace", letterSpacing: "0.08em" }}>
+                            {theme.number} · {theme.id.toUpperCase().replace(/^\d+-/, "")}
+                          </span>
+                          <strong style={{ display: "block", fontSize: "15px", color: isActive ? "#38bdf8" : "inherit", marginTop: "2px" }}>
+                            {theme.name}
+                          </strong>
+                        </div>
+                        {isActive && (
+                          <span style={{ fontSize: "11px", fontWeight: 800, color: "#080d2a", background: "#38bdf8", padding: "2px 8px", borderRadius: "999px" }}>
+                            Active
+                          </span>
+                        )}
                       </div>
-                      <small style={{ display: "block", color: "#94a3b8", lineHeight: "1.4" }}>{theme.desc}</small>
+                      <small style={{ color: "#cbd5e1", lineHeight: "1.45" }}>{theme.desc}</small>
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "auto", paddingTop: "6px" }}>
+                        {theme.colors.map((color, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              width: "18px",
+                              height: "18px",
+                              borderRadius: "50%",
+                              background: color,
+                              border: "1px solid rgba(255, 255, 255, 0.25)",
+                              display: "inline-block",
+                            }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
                     </div>
                   );
                 })}
