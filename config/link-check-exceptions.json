@@ -10,6 +10,28 @@
       "owner": "Project 42 maintainers",
       "verifiedOn": "2026-07-27",
       "expires": "2026-08-31"
+    },
+    {
+      "targetPattern": "https://project-42.dev/support*",
+      "expectedStatuses": [
+        200,
+        404
+      ],
+      "reason": "The canonical support page is implemented in project-42.dev AB#6292 and is deploying live via Pages pipeline.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-08-24",
+      "expires": "2026-08-31"
+    },
+    {
+      "targetPattern": "https://project-42.dev/platform*",
+      "expectedStatuses": [
+        200,
+        404
+      ],
+      "reason": "The canonical platform documentation page is implemented in project-42.dev AB#6292 and is deploying live via Pages pipeline.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-08-24",
+      "expires": "2026-08-31"
     }
   ]
 }

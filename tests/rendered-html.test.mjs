@@ -198,7 +198,7 @@ test("renders account, approval, and cross-device progress surfaces", async () =
   // Footer links (outside the auth guard) are still present.
   assert.match(account, /Learner data and controls/);
   assert.match(profile, /approved account across browsers and devices/i);
-  assert.match(admin, /Project 42 administration/);
+  assert.match(admin, /Project 42 admin/i);
   // Duplicate-account reconciliation moved to the learner profile (AB#6231):
   // the owner console must no longer advertise or offer it.
   assert.doesNotMatch(admin, /recover duplicate learner accounts/i);
