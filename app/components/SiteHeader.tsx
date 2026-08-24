@@ -1,36 +1,21 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BrandMark } from "./BrandMark";
 import { HeaderMenu, MenuChevron } from "./HeaderMenu";
 import { ProfileMenu } from "./ProfileMenu";
+import { AdminHeader } from "../admin/components/AdminHeader";
 import { siteFacts } from "../lib/siteFacts";
-import { crossDomainHref } from "../lib/subdomainLinks";
 
-// Primary navigation is four items: Learn, Field Guide, Visual guides, About.
-// Account and progress moved into the profile menu on the right, where a
-// learner looks for their own things, which also keeps the nav about the
-// material rather than about the session.
-export async function SiteHeader() {
-  const [
-    learnHref,
-    diagramsHref,
-    aboutHref,
-    profileHref,
-    accountHref,
-    learnerDataHref,
-  ] = await Promise.all([
-    // The landing page, not /learn. Off-site headers link to the bare origin,
-    // so pointing this at /learn made the same nav item land on two different
-    // URLs depending on where it was clicked from.
-    crossDomainHref("/"),
-    crossDomainHref("/diagrams"),
-    crossDomainHref("/about"),
-    crossDomainHref("/profile"),
-    crossDomainHref("/account"),
-    crossDomainHref("/learner-data"),
-  ]);
+export function SiteHeader() {
+  const pathname = usePathname();
 
-  // Support is the only About item without a page, so it points at the
-  // canonical file in the repository. Releases and roadmap are real pages now.
+  // If in Admin Console, render dedicated AdminHeader
+  if (pathname && pathname.startsWith("/admin")) {
+    return <AdminHeader />;
+  }
+
   const supportHref = `${siteFacts.repositories.site}/blob/main/SUPPORT.md`;
 
   return (
@@ -43,9 +28,9 @@ export async function SiteHeader() {
           </span>
         </a>
         <nav aria-label="Primary navigation">
-          <Link href={learnHref}>Learn</Link>
+          <Link href="/">Learn</Link>
           <a href="https://guide.project-42.dev">Field Guide</a>
-          <Link href={diagramsHref}>Visual guides</Link>
+          <Link href="/diagrams">Visual guides</Link>
           <HeaderMenu
             label={
               <>
@@ -56,7 +41,7 @@ export async function SiteHeader() {
           >
             <ul className="header-menu-list">
               <li>
-                <Link href={aboutHref}>About Project 42</Link>
+                <a href="https://project-42.dev/about">About Project 42</a>
               </li>
               <li>
                 <a href="https://project-42.dev/platform">Open-source platform &amp; docs</a>
@@ -82,13 +67,13 @@ export async function SiteHeader() {
           </HeaderMenu>
         </nav>
         <div className="header-actions">
-          <Link className="header-action" href={learnHref}>
+          <Link className="header-action" href="/">
             Start learning
           </Link>
           <ProfileMenu
-            accountHref={accountHref}
-            learnerDataHref={learnerDataHref}
-            profileHref={profileHref}
+            accountHref="/account"
+            learnerDataHref="/learner-data"
+            profileHref="/profile"
           />
         </div>
       </div>
