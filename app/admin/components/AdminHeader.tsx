@@ -46,28 +46,31 @@ export function AdminHeader() {
 
         <nav aria-label="Admin navigation">
           <Link
+            aria-current={isAccounts ? "page" : undefined}
             href="/admin"
             style={{
-              fontWeight: isAccounts ? 700 : 500,
-              color: isAccounts ? "var(--accent, #0284c7)" : undefined,
+              color: isAccounts ? "var(--ink)" : undefined,
+              textDecoration: isAccounts ? "underline" : "none",
             }}
           >
             Accounts
           </Link>
           <Link
+            aria-current={isLogs ? "page" : undefined}
             href="/admin/logs"
             style={{
-              fontWeight: isLogs ? 700 : 500,
-              color: isLogs ? "var(--accent, #0284c7)" : undefined,
+              color: isLogs ? "var(--ink)" : undefined,
+              textDecoration: isLogs ? "underline" : "none",
             }}
           >
             Audit Logs
           </Link>
           <Link
+            aria-current={isSettings ? "page" : undefined}
             href="/admin/settings"
             style={{
-              fontWeight: isSettings ? 700 : 500,
-              color: isSettings ? "var(--accent, #0284c7)" : undefined,
+              color: isSettings ? "var(--ink)" : undefined,
+              textDecoration: isSettings ? "underline" : "none",
             }}
           >
             Settings &amp; Themes

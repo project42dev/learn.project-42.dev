@@ -2845,10 +2845,7 @@ export function OwnerAdministration({
         throw new Error(body.error?.message ?? "Deletion could not be completed.");
       }
       setDeletionRequests((current) =>
-      current.filter((candidate) => candidate.id !== selectedDeletionRequest.id),
-      );
-      setAccounts((current) =>
-        current.filter((candidate) => candidate.id !== selectedDeletionRequest.userId),
+        current.filter((candidate) => candidate.id !== selectedDeletionRequest.id),
       );
       setMessage("Account and learner data deletion completed.");
       cancelDeletionAction();
@@ -2861,32 +2858,6 @@ export function OwnerAdministration({
 
   const [selectedTheme, setSelectedTheme] = useState("default");
   const [selectedLayout, setSelectedLayout] = useState("standard");
-  const [auditFilterAction, setAuditFilterAction] = useState("all");
-  const [auditSearch, setAuditSearch] = useState("");
-
-  const filteredAuditEvents = auditEvents.filter((event) => {
-    if (auditFilterAction !== "all" && event.action !== auditFilterAction) return false;
-    if (auditSearch.trim()) {
-      const q = auditSearch.toLowerCase();
-      return (
-        event.action.toLowerCase().includes(q) ||
-        event.reason.toLowerCase().includes(q) ||
-        event.requestId.toLowerCase().includes(q) ||
-        event.outcome.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
-
-  const downloadAuditLogsJson = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditEvents, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `project42-audit-events-${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
 
   const themes = [
     { id: "default", name: "System Default", desc: "Balanced dark slate background with sky-blue accents." },
@@ -3071,31 +3042,43 @@ export function OwnerAdministration({
                           <dd>{new Date(candidate.updatedAt).toLocaleString()}</dd>
                         </div>
                         <div>
+                          {/*
+                            The internal account identifier is what correlates this
+                            request with the privileged audit record below. The
+                            provider issuer and subject are deliberately not shown:
+                            an owner never needs them to decide, and they are the
+                            identity key.
+                          */}
                           <dt>Account reference</dt>
                           <dd>{candidate.id}</dd>
                         </div>
                       </dl>
                     ) : null}
                     {accountAction?.accountId === candidate.id &&
-                    selectedAccount ? (
+                      selectedAccount ? (
                       <form
-                        className={`admin-account-action${
-                          accountAction.nextState === "revoked"
-                            ? " admin-account-action-danger"
-                            : ""
-                        }`}
-                        onSubmit={(event) => void completeStateChange(event)}
+                        className={`admin-account-action${accountAction.nextState === "revoked"
+                          ? " admin-account-action-danger"
+                          : ""
+                          }`}
+                        onSubmit={(event) => void changeState(event)}
                       >
                         <h4 ref={accountActionHeading} tabIndex={-1}>
-                          {accountActionModalTitle(
-                            selectedAccount,
+                          {accountActionLabel(
+                            selectedAccount.state,
                             accountAction.nextState,
-                          )}
+                          )}{" "}
+                          {accountLabel(selectedAccount)}
                         </h4>
+                        <p>
+                          Change this account from <strong>{selectedAccount.state}</strong>{" "}
+                          to <strong>{accountAction.nextState}</strong>. The reason is
+                          written to the privileged audit record.
+                        </p>
                         {accountAction.nextState === "revoked" ? (
                           <p role="alert">
-                            Revoking this account disables sign-in and deletes its
-                            active session.
+                            Revocation is permanent for this identity. It cannot be
+                            restored from this console.
                           </p>
                         ) : null}
                         <label htmlFor="admin-account-action-reason">Reason</label>
@@ -3137,13 +3120,11 @@ export function OwnerAdministration({
                             }
                             type="submit"
                           >
-                            {accountAction.nextState === "approved"
-                              ? "Confirm approval"
-                              : accountAction.nextState === "rejected"
-                              ? "Confirm rejection"
-                              : accountAction.nextState === "suspended"
-                              ? "Confirm suspension"
-                              : "Confirm revocation"}
+                            Confirm{" "}
+                            {accountActionLabel(
+                              selectedAccount.state,
+                              accountAction.nextState,
+                            ).toLocaleLowerCase()}
                           </button>
                           <button
                             className="button button-secondary"
@@ -3159,7 +3140,7 @@ export function OwnerAdministration({
                   </article>
                 ))}
               </div>
-              <div className="admin-pagination" aria-label="Account pages">
+              <div className="admin-pagination" aria-label="Account result pages">
                 {accountAnnouncement ? (
                   <p
                     className="admin-pagination-status"
@@ -3169,6 +3150,13 @@ export function OwnerAdministration({
                   >
                     {accountAnnouncement}
                   </p>
+                ) : accountPage.mode === "legacy" && !accountsLoading ? (
+                  <p className="admin-pagination-status" role="status">
+                    The current account service returned all matching accounts without
+                    continuation metadata.
+                  </p>
+                ) : !accountPage.hasMore && accounts.length > 0 && !accountsLoading ? (
+                  <p className="admin-pagination-status">End of account results.</p>
                 ) : null}
                 <div className="button-row">
                   {accountPage.hasMore && accountPage.nextCursor ? (
@@ -3178,7 +3166,17 @@ export function OwnerAdministration({
                       onClick={() => void loadMoreAccounts()}
                       type="button"
                     >
-                      {accountsLoading ? "Loading more…" : "Load more accounts"}
+                      {accountsLoading ? "Loading more accounts…" : "Load more accounts"}
+                    </button>
+                  ) : null}
+                  {accountsStale ? (
+                    <button
+                      className="button button-secondary"
+                      disabled={busy}
+                      onClick={() => void load()}
+                      type="button"
+                    >
+                      Reload accounts from start
                     </button>
                   ) : null}
                 </div>
@@ -3192,79 +3190,119 @@ export function OwnerAdministration({
                 primary email verified.
               </p>
               {!automaticDomainApprovalEnabled ? (
-                <p>
-                  Automatic approval for exact-matched domains is not enabled on this
-                  deployment.
+                <p role="status">
+                  Automatic approval remains locked until the deployment validates real
+                  signed verified-email claims. You can safely stage disabled rules now.
                 </p>
               ) : null}
-              <form
-                className="admin-domain-form"
-                onSubmit={(event) => void addDomain(event)}
-              >
-                <div>
-                  <label htmlFor="admin-new-domain">Add approved domain</label>
-                  <input
-                    disabled={busy || !automaticDomainApprovalEnabled}
-                    id="admin-new-domain"
-                    onChange={(event) => setNewDomain(event.target.value)}
-                    placeholder="example.edu"
-                    required
-                    type="text"
-                    value={newDomain}
-                  />
-                </div>
+              <form className="domain-form" onSubmit={(event) => void createDomain(event)}>
+                <label htmlFor="approved-domain">Exact domain</label>
+                <input
+                  id="approved-domain"
+                  name="domain"
+                  placeholder="example.com"
+                  required
+                />
+                <label htmlFor="domain-reason">Reason</label>
+                <input
+                  id="domain-reason"
+                  minLength={5}
+                  name="reason"
+                  required
+                />
                 <button
                   className="button button-primary"
-                  disabled={busy || !automaticDomainApprovalEnabled}
+                  disabled={busy}
                   type="submit"
                 >
-                  Add domain
+                  {automaticDomainApprovalEnabled ? "Add enabled rule" : "Stage disabled rule"}
                 </button>
               </form>
-              <div className="admin-domain-list">
-                {domainsLoading && domains.length === 0 ? (
-                  <p className="admin-empty-state" role="status">
-                    Loading domain rules…
-                  </p>
-                ) : null}
-                {!domainsLoading && domains.length === 0 ? (
-                  <p className="admin-empty-state">
-                    No approved domain rules are configured.
-                  </p>
-                ) : null}
+              <div className="domain-list">
                 {domains.map((rule) => (
-                  <article key={rule.domain}>
+                  <article key={rule.id}>
                     <div>
-                      <strong>@{rule.domain}</strong>
+                      <strong>{rule.domain}</strong>
                       <small>
-                        Added {new Date(rule.createdAt).toLocaleString()} by{" "}
-                        {rule.addedByUserId}
+                        {rule.enabled ? "Auto-approval enabled" : "Disabled"} · policy v
+                        {rule.policyVersion}
                       </small>
-                      <small>{rule.state === "active" ? "Active" : "Disabled"}</small>
                     </div>
                     <div className="admin-actions">
                       <button
                         className="button button-secondary"
-                        disabled={busy || !automaticDomainApprovalEnabled}
+                        disabled={
+                          busy || (!automaticDomainApprovalEnabled && !rule.enabled)
+                        }
                         onClick={() =>
-                          void toggleDomainState(
-                            rule.domain,
-                            rule.state === "active" ? "disabled" : "active",
-                          )
+                          beginDomainAction(rule, rule.enabled ? "disable" : "enable")
                         }
                         type="button"
                       >
-                        {rule.state === "active" ? "Disable" : "Enable"}
+                        {rule.enabled ? "Disable" : "Enable"}
                       </button>
                       <button
                         className="button button-secondary"
-                        disabled={busy || !automaticDomainApprovalEnabled}
-                        onClick={() => void removeDomain(rule.domain)}
+                        disabled={busy || rule.enabled}
+                        onClick={() => beginDomainAction(rule, "remove")}
                         type="button"
                       >
                         Remove
                       </button>
                     </div>
+                    {domainAction?.ruleId === rule.id && selectedDomain ? (
+                      <form
+                        className={`admin-account-action${domainAction.kind === "remove"
+                          ? " admin-account-action-danger"
+                          : ""
+                          }`}
+                        onSubmit={(event) => void submitDomainAction(event)}
+                      >
+                        <h4 ref={domainActionHeading} tabIndex={-1}>
+                          {domainAction.kind === "remove"
+                            ? "Remove"
+                            : domainAction.kind === "enable"
+                              ? "Enable"
+                              : "Disable"}{" "}
+                          {selectedDomain.domain}
+                        </h4>
+                        <p>
+                          {domainAction.kind === "remove"
+                            ? "Remove this disabled exact-domain rule. The rule must be recreated before it can be used again."
+                            : `${domainAction.kind === "enable" ? "Enable" : "Disable"} automatic approval for this exact verified-email domain.`}{" "}
+                          The reason is written to the privileged audit record.
+                        </p>
+                        <label htmlFor="admin-domain-action-reason">Reason</label>
+                        <textarea
+                          id="admin-domain-action-reason"
+                          maxLength={500}
+                          minLength={5}
+                          onChange={(event) =>
+                            setDomainActionReason(event.target.value)
+                          }
+                          required
+                          rows={3}
+                          value={domainActionReason}
+                        />
+                        <div className="button-row">
+                          <button
+                            className="button button-primary"
+                            disabled={busy || domainActionReason.trim().length < 5}
+                            type="submit"
+                          >
+                            Confirm {domainAction.kind}
+                          </button>
+                          <button
+                            className="button button-secondary"
+                            disabled={busy}
+                            onClick={cancelDomainAction}
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : null}
                   </article>
                 ))}
               </div>
@@ -3284,11 +3322,12 @@ export function OwnerAdministration({
                 <p role="status">Loading deletion requests…</p>
               ) : null}
               {!deletionsLoading && deletionRequests.length === 0 ? (
-                <p>No deletion requests are currently pending.</p>
+                <p>No account deletion requests are waiting.</p>
               ) : (
-                <div className="admin-deletion-list">
+                <div className="admin-account-list">
                   {deletionRequests.map((request) => {
-                    const cancellationOpen = deletionCancellationOpen(request);
+                    const cancellationOpen =
+                      loadedAt < Date.parse(request.cancellationDeadline);
                     return (
                       <article key={request.id}>
                         <div>
@@ -3313,7 +3352,7 @@ export function OwnerAdministration({
                           </button>
                         </div>
                         {deletionActionId === request.id &&
-                        selectedDeletionRequest ? (
+                          selectedDeletionRequest ? (
                           <form
                             className="admin-account-action admin-account-action-danger"
                             onSubmit={(event) => void completeDeletion(event)}
@@ -3391,6 +3430,17 @@ export function OwnerAdministration({
                   >
                     {deletionAnnouncement}
                   </p>
+                ) : deletionPage.mode === "legacy" && !deletionsLoading ? (
+                  <p className="admin-pagination-status" role="status">
+                    The current account service returned all deletion requests
+                    without continuation metadata.
+                  </p>
+                ) : !deletionPage.hasMore &&
+                  deletionRequests.length > 0 &&
+                  !deletionsLoading ? (
+                  <p className="admin-pagination-status">
+                    End of deletion requests.
+                  </p>
                 ) : null}
                 <div className="button-row">
                   {deletionPage.hasMore && deletionPage.nextCursor ? (
@@ -3405,13 +3455,23 @@ export function OwnerAdministration({
                         : "Load more deletion requests"}
                     </button>
                   ) : null}
+                  {deletionsStale ? (
+                    <button
+                      className="button button-secondary"
+                      disabled={busy}
+                      onClick={() => void load()}
+                      type="button"
+                    >
+                      Reload deletion requests from start
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </section>
           </>
         )}
 
-        {view === "logs" && (
+        {(view === "logs" || view === "accounts" || view === undefined) && (
           <section className="profile-card" id="audit">
             <div className="admin-account-heading">
               <div>
@@ -3421,56 +3481,19 @@ export function OwnerAdministration({
                   are shown first.
                 </p>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <strong aria-live="polite">
-                  {filteredAuditEvents.length} shown · {auditEvents.length} loaded
-                </strong>
-                <button
-                  className="button button-secondary"
-                  onClick={downloadAuditLogsJson}
-                  type="button"
-                  style={{ fontSize: "12.5px", padding: "4px 10px" }}
-                >
-                  Export JSON
-                </button>
-              </div>
+              <strong aria-live="polite">
+                {auditEvents.length} loaded
+                {auditPage.hasMore ? " · more available" : ""}
+              </strong>
             </div>
-
-            <div className="admin-account-filters" style={{ marginBottom: "16px" }}>
-              <div>
-                <label htmlFor="audit-search">Search audit events</label>
-                <input
-                  id="audit-search"
-                  onChange={(e) => setAuditSearch(e.target.value)}
-                  placeholder="Filter by action, reason, or request ID"
-                  type="search"
-                  value={auditSearch}
-                />
-              </div>
-              <div>
-                <label htmlFor="audit-filter-action">Action type</label>
-                <select
-                  id="audit-filter-action"
-                  onChange={(e) => setAuditFilterAction(e.target.value)}
-                  value={auditFilterAction}
-                >
-                  <option value="all">All actions</option>
-                  <option value="account_approved">account_approved</option>
-                  <option value="account_rejected">account_rejected</option>
-                  <option value="domain_rule_added">domain_rule_added</option>
-                  <option value="deletion_completed">deletion_completed</option>
-                </select>
-              </div>
-            </div>
-
             {auditLoading && auditEvents.length === 0 ? (
               <p role="status">Loading privileged audit events…</p>
             ) : null}
-            {!auditLoading && filteredAuditEvents.length === 0 ? (
-              <p>No privileged audit events match this filter.</p>
+            {!auditLoading && auditEvents.length === 0 ? (
+              <p>No privileged audit events are recorded.</p>
             ) : (
               <div className="audit-event-list">
-                {filteredAuditEvents.map((event) => (
+                {auditEvents.map((event) => (
                   <article key={event.id}>
                     <div>
                       <strong>{event.action}</strong>
@@ -3484,6 +3507,23 @@ export function OwnerAdministration({
               </div>
             )}
             <div className="admin-pagination" aria-label="Audit result pages">
+              {auditAnnouncement ? (
+                <p
+                  className="admin-pagination-status"
+                  ref={auditPaginationStatus}
+                  role={auditStale ? "alert" : "status"}
+                  tabIndex={-1}
+                >
+                  {auditAnnouncement}
+                </p>
+              ) : auditPage.mode === "legacy" && !auditLoading ? (
+                <p className="admin-pagination-status" role="status">
+                  The current account service returned all audit events without
+                  continuation metadata.
+                </p>
+              ) : !auditPage.hasMore && auditEvents.length > 0 && !auditLoading ? (
+                <p className="admin-pagination-status">End of audit results.</p>
+              ) : null}
               <div className="button-row">
                 {auditPage.hasMore && auditPage.nextCursor ? (
                   <button
@@ -3492,7 +3532,19 @@ export function OwnerAdministration({
                     onClick={() => void loadMoreAuditEvents()}
                     type="button"
                   >
-                    {auditLoading ? "Loading more audit events…" : "Load more audit events"}
+                    {auditLoading
+                      ? "Loading more audit events…"
+                      : "Load more audit events"}
+                  </button>
+                ) : null}
+                {auditStale ? (
+                  <button
+                    className="button button-secondary"
+                    disabled={busy}
+                    onClick={() => void load()}
+                    type="button"
+                  >
+                    Reload audit from start
                   </button>
                 ) : null}
               </div>
