@@ -11,7 +11,9 @@ export function SiteFooter() {
             <BrandMark />
             <span>Project 42</span>
           </div>
-          <p>Free, open AI learning for curious people and capable teams.</p>
+          <p>
+            Free, open AI learning for curious minds and capable teams — built with AI, for humans mastering AI.
+          </p>
         </div>
         <div>
           <strong>Explore</strong>
