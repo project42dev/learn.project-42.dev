@@ -56,7 +56,7 @@ export function SiteHeader() {
                 <a href="https://project-42.dev/roadmap">Roadmap</a>
               </li>
               <li>
-                <a href={supportHref}>Support</a>
+                <a href="https://project-42.dev/support">Support &amp; Content Requests</a>
               </li>
               <li>
                 <a href="https://project-42.dev/legal-transparency">
