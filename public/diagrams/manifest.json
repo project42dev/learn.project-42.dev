@@ -71,6 +71,13 @@
       "sourceSha256": "a50cf355bd46f30b6d1f02d67c348f2e8272106f33a5c979e25fc61b80a84738",
       "svg": "cost-and-capacity-management.svg",
       "svgSha256": "94bb8b6a6fe3788ae9c9317921a492805c0a34341ab67e3cb61ff00748a8fc24"
+    },
+    {
+      "id": "orchard-lifecycle",
+      "source": "orchard-lifecycle.mmd",
+      "sourceSha256": "688ba9a6364d406e54fa25940f88535db30dc843f78f6603bacb5cb8c34e7906",
+      "svg": "orchard-lifecycle.svg",
+      "svgSha256": "8cf213829ff52732334a703b15c1c223fba31d0fd485b31b0dbaca623cead597"
     }
   ]
 }
