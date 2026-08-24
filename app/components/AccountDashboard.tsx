@@ -2152,7 +2152,11 @@ function LearnerDataControls() {
   );
 }
 
-export function AdminDashboard() {
+export function AdminDashboard({
+  view = "accounts",
+}: {
+  view?: "accounts" | "logs" | "settings";
+} = {}) {
   const {
     configured,
     status,
@@ -2239,10 +2243,14 @@ export function AdminDashboard() {
     );
   }
 
-  return <OwnerAdministration />;
+  return <OwnerAdministration view={view} />;
 }
 
-export function OwnerAdministration() {
+export function OwnerAdministration({
+  view = "accounts",
+}: {
+  view?: "accounts" | "logs" | "settings";
+} = {}) {
   const { account: ownerAccount, apiFetch } = useAuth();
   const [accounts, setAccounts] = useState<Project42Account[]>([]);
   const [accountPage, setAccountPage] = useState<AdminPageState>(
@@ -2837,7 +2845,7 @@ export function OwnerAdministration() {
         throw new Error(body.error?.message ?? "Deletion could not be completed.");
       }
       setDeletionRequests((current) =>
-        current.filter((candidate) => candidate.id !== selectedDeletionRequest.id),
+      current.filter((candidate) => candidate.id !== selectedDeletionRequest.id),
       );
       setAccounts((current) =>
         current.filter((candidate) => candidate.id !== selectedDeletionRequest.userId),
@@ -2851,12 +2859,63 @@ export function OwnerAdministration() {
     }
   }
 
+  const [selectedTheme, setSelectedTheme] = useState("default");
+  const [selectedLayout, setSelectedLayout] = useState("standard");
+  const [auditFilterAction, setAuditFilterAction] = useState("all");
+  const [auditSearch, setAuditSearch] = useState("");
+
+  const filteredAuditEvents = auditEvents.filter((event) => {
+    if (auditFilterAction !== "all" && event.action !== auditFilterAction) return false;
+    if (auditSearch.trim()) {
+      const q = auditSearch.toLowerCase();
+      return (
+        event.action.toLowerCase().includes(q) ||
+        event.reason.toLowerCase().includes(q) ||
+        event.requestId.toLowerCase().includes(q) ||
+        event.outcome.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const downloadAuditLogsJson = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditEvents, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `project42-audit-events-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const themes = [
+    { id: "default", name: "System Default", desc: "Balanced dark slate background with sky-blue accents." },
+    { id: "slate", name: "Slate Modern", desc: "Clean neutral slate tones with crisp monochrome contrast." },
+    { id: "indigo", name: "Midnight Indigo", desc: "Deep violet and indigo background with cyan highlights." },
+    { id: "emerald", name: "Emerald Forest", desc: "Deep pine green with vibrant emerald accents." },
+    { id: "amber", name: "Amber Glow", desc: "Warm obsidian base with energetic amber highlights." },
+    { id: "rose", name: "Rose Quartz", desc: "Rich dark ruby palette with soft rose borders." },
+    { id: "light", name: "High Contrast Light", desc: "Pure high-contrast light mode with deep ink text." },
+  ];
+
+  const layouts = [
+    { id: "standard", name: "Standard Shell", desc: "Default constrained container with centered reading line lengths." },
+    { id: "wide", name: "Wide Canvas", desc: "Expanded container width for high-density administrative dashboards." },
+    { id: "compact", name: "Compact Minimal", desc: "Tightened vertical spacing and smaller typography for dense data." },
+  ];
+
   return (
     <section className="owner-console" aria-labelledby="owner-console-title">
       <div className="section-heading section-heading-inline">
         <div>
           <p className="eyebrow">Owner administration</p>
-          <h2 id="owner-console-title">Accounts and exact-domain approval</h2>
+          <h2 id="owner-console-title">
+            {view === "logs"
+              ? "Privileged audit events"
+              : view === "settings"
+              ? "Console settings and themes"
+              : "Accounts and exact-domain approval"}
+          </h2>
         </div>
         <button
           className="button button-secondary"
@@ -2872,510 +2931,224 @@ export function OwnerAdministration() {
       </p>
 
       <div className="admin-grid">
-        <section className="profile-card" id="accounts">
-          <div className="admin-account-heading">
-            <div>
-              <h3>Account approval queue</h3>
-              <p>
-                New registrations appear under Pending. Search by name, verified
-                email, role, state, or account identifier.
-              </p>
-            </div>
-            <strong aria-live="polite">
-              {filteredAccounts.length} shown · {accounts.length} loaded
-              {accountPage.hasMore ? " · more available" : ""}
-            </strong>
-          </div>
-          <div className="admin-account-filters">
-            <div>
-              <label htmlFor="admin-account-search">Search accounts</label>
-              <input
-                id="admin-account-search"
-                onChange={(event) => setAccountSearch(event.target.value)}
-                placeholder="Name or verified email"
-                type="search"
-                value={accountSearch}
-              />
-            </div>
-            <div>
-              <label htmlFor="admin-account-state">Account state</label>
-              <select
-                disabled={busy || accountsLoading}
-                id="admin-account-state"
-                onChange={(event) => {
-                  setAccountStateFilter(event.target.value as AccountStateFilter);
-                  setAccounts([]);
-                  setAccountPage(legacyAdminPage(0));
-                  setAccountsLoading(true);
-                  setAccountsStale(false);
-                  setAccountAnnouncement("");
-                  cancelStateChange();
-                }}
-                value={accountStateFilter}
-              >
-                {accountStateFilters.map((state) => (
-                  <option key={state} value={state}>
-                    {state === "all"
-                      ? "All accounts"
-                      : state.charAt(0).toUpperCase() + state.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="admin-account-list">
-            {accountsLoading && accounts.length === 0 ? (
-              <p className="admin-empty-state" role="status">
-                Loading accounts…
-              </p>
-            ) : null}
-            {!accountsLoading && filteredAccounts.length === 0 ? (
-              <p className="admin-empty-state">
-                {accounts.length === 0
-                  ? "No accounts were returned for this state."
-                  : "No accounts match this state and search."}
-              </p>
-            ) : null}
-            {filteredAccounts.map((candidate) => (
-              <article key={candidate.id}>
+        {(view === "accounts" || view === undefined) && (
+          <>
+            <section className="profile-card" id="accounts">
+              <div className="admin-account-heading">
                 <div>
-                  <strong>{accountLabel(candidate)}</strong>
-                  <small>{candidate.primaryEmail ?? "No verified email"}</small>
-                  <small>
-                    {candidate.emailVerified ? "Verified email" : "Email not verified"} ·{" "}
-                    {candidate.roles.join(", ")}
-                  </small>
+                  <h3>Account approval queue</h3>
+                  <p>
+                    New registrations appear under Pending. Search by name, verified
+                    email, role, state, or account identifier.
+                  </p>
                 </div>
-                <span className={`account-state account-state-${candidate.state}`}>
-                  {candidate.state}
-                </span>
-                <div className="admin-actions">
-                  <button
-                    aria-controls={`admin-account-detail-${candidate.id}`}
-                    aria-expanded={detailAccountId === candidate.id}
-                    className="button button-secondary"
-                    onClick={() =>
-                      setDetailAccountId((current) =>
-                        current === candidate.id ? null : candidate.id,
-                      )
-                    }
-                    type="button"
-                  >
-                    {detailAccountId === candidate.id
-                      ? "Hide request detail"
-                      : "View request detail"}
-                  </button>
-                  {nextStates[candidate.state].map((next) => (
-                    <button
-                      className="button button-secondary"
-                      disabled={busy}
-                      key={next}
-                      onClick={() => beginStateChange(candidate, next)}
-                      type="button"
-                    >
-                      {accountActionLabel(candidate.state, next)}
-                    </button>
-                  ))}
-                </div>
-                {detailAccountId === candidate.id ? (
-                  <dl
-                    className="admin-account-detail"
-                    id={`admin-account-detail-${candidate.id}`}
-                  >
-                    <div>
-                      <dt>Verified email</dt>
-                      <dd>
-                        {candidate.primaryEmail ?? "None recorded"}
-                        {candidate.primaryEmail
-                          ? candidate.emailVerified
-                            ? " · verified by the identity provider"
-                            : " · not verified"
-                          : ""}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Current state</dt>
-                      <dd>{candidate.state}</dd>
-                    </div>
-                    <div>
-                      <dt>Roles</dt>
-                      <dd>{candidate.roles.join(", ") || "None"}</dd>
-                    </div>
-                    <div>
-                      <dt>Requested</dt>
-                      <dd>{new Date(candidate.createdAt).toLocaleString()}</dd>
-                    </div>
-                    <div>
-                      <dt>Last updated</dt>
-                      <dd>{new Date(candidate.updatedAt).toLocaleString()}</dd>
-                    </div>
-                    <div>
-                      {/*
-                        The internal account identifier is what correlates this
-                        request with the privileged audit record below. The
-                        provider issuer and subject are deliberately not shown:
-                        an owner never needs them to decide, and they are the
-                        identity key.
-                      */}
-                      <dt>Account reference</dt>
-                      <dd>{candidate.id}</dd>
-                    </div>
-                  </dl>
-                ) : null}
-                {accountAction?.accountId === candidate.id &&
-                  selectedAccount ? (
-                  <form
-                    className={`admin-account-action${accountAction.nextState === "revoked"
-                      ? " admin-account-action-danger"
-                      : ""
-                      }`}
-                    onSubmit={(event) => void changeState(event)}
-                  >
-                    <h4 ref={accountActionHeading} tabIndex={-1}>
-                      {accountActionLabel(
-                        selectedAccount.state,
-                        accountAction.nextState,
-                      )}{" "}
-                      {accountLabel(selectedAccount)}
-                    </h4>
-                    <p>
-                      Change this account from <strong>{selectedAccount.state}</strong>{" "}
-                      to <strong>{accountAction.nextState}</strong>. The reason is
-                      written to the privileged audit record.
-                    </p>
-                    {accountAction.nextState === "revoked" ? (
-                      <p role="alert">
-                        Revocation is permanent for this identity. It cannot be
-                        restored from this console.
-                      </p>
-                    ) : null}
-                    <label htmlFor="admin-account-action-reason">Reason</label>
-                    <textarea
-                      id="admin-account-action-reason"
-                      maxLength={500}
-                      minLength={5}
-                      onChange={(event) =>
-                        setAccountActionReason(event.target.value)
-                      }
-                      required
-                      rows={3}
-                      value={accountActionReason}
-                    />
-                    {accountAction.nextState === "revoked" ? (
-                      <>
-                        <label htmlFor="admin-account-action-confirmation">
-                          Enter REVOKE to confirm
-                        </label>
-                        <input
-                          autoComplete="off"
-                          id="admin-account-action-confirmation"
-                          onChange={(event) =>
-                            setAccountActionConfirmation(event.target.value)
-                          }
-                          required
-                          value={accountActionConfirmation}
-                        />
-                      </>
-                    ) : null}
-                    <div className="button-row">
-                      <button
-                        className="button button-primary"
-                        disabled={
-                          busy ||
-                          accountActionReason.trim().length < 5 ||
-                          (accountAction.nextState === "revoked" &&
-                            accountActionConfirmation !== "REVOKE")
-                        }
-                        type="submit"
-                      >
-                        Confirm{" "}
-                        {accountActionLabel(
-                          selectedAccount.state,
-                          accountAction.nextState,
-                        ).toLocaleLowerCase()}
-                      </button>
-                      <button
-                        className="button button-secondary"
-                        disabled={busy}
-                        onClick={cancelStateChange}
-                        type="button"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                ) : null}
-              </article>
-            ))}
-          </div>
-          <div className="admin-pagination" aria-label="Account result pages">
-            {accountAnnouncement ? (
-              <p
-                className="admin-pagination-status"
-                ref={accountPaginationStatus}
-                role={accountsStale ? "alert" : "status"}
-                tabIndex={-1}
-              >
-                {accountAnnouncement}
-              </p>
-            ) : accountPage.mode === "legacy" && !accountsLoading ? (
-              <p className="admin-pagination-status" role="status">
-                The current account service returned all matching accounts without
-                continuation metadata.
-              </p>
-            ) : !accountPage.hasMore && accounts.length > 0 && !accountsLoading ? (
-              <p className="admin-pagination-status">End of account results.</p>
-            ) : null}
-            <div className="button-row">
-              {accountPage.hasMore && accountPage.nextCursor ? (
-                <button
-                  className="button button-secondary"
-                  disabled={busy || accountsLoading}
-                  onClick={() => void loadMoreAccounts()}
-                  type="button"
-                >
-                  {accountsLoading ? "Loading more accounts…" : "Load more accounts"}
-                </button>
-              ) : null}
-              {accountsStale ? (
-                <button
-                  className="button button-secondary"
-                  disabled={busy}
-                  onClick={() => void load()}
-                  type="button"
-                >
-                  Reload accounts from start
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
-
-        <section className="profile-card" id="domains">
-          <h3>Approved email domains</h3>
-          <p>
-            Matching is exact and only applies when the identity provider marks the
-            primary email verified.
-          </p>
-          {!automaticDomainApprovalEnabled ? (
-            <p role="status">
-              Automatic approval remains locked until the deployment validates real
-              signed verified-email claims. You can safely stage disabled rules now.
-            </p>
-          ) : null}
-          <form className="domain-form" onSubmit={(event) => void createDomain(event)}>
-            <label htmlFor="approved-domain">Exact domain</label>
-            <input
-              id="approved-domain"
-              name="domain"
-              placeholder="example.com"
-              required
-            />
-            <label htmlFor="domain-reason">Reason</label>
-            <input
-              id="domain-reason"
-              minLength={5}
-              name="reason"
-              required
-            />
-            <button
-              className="button button-primary"
-              disabled={busy}
-              type="submit"
-            >
-              {automaticDomainApprovalEnabled ? "Add enabled rule" : "Stage disabled rule"}
-            </button>
-          </form>
-          <div className="domain-list">
-            {domains.map((rule) => (
-              <article key={rule.id}>
+                <strong aria-live="polite">
+                  {filteredAccounts.length} shown · {accounts.length} loaded
+                  {accountPage.hasMore ? " · more available" : ""}
+                </strong>
+              </div>
+              <div className="admin-account-filters">
                 <div>
-                  <strong>{rule.domain}</strong>
-                  <small>
-                    {rule.enabled ? "Auto-approval enabled" : "Disabled"} · policy v
-                    {rule.policyVersion}
-                  </small>
+                  <label htmlFor="admin-account-search">Search accounts</label>
+                  <input
+                    id="admin-account-search"
+                    onChange={(event) => setAccountSearch(event.target.value)}
+                    placeholder="Name or verified email"
+                    type="search"
+                    value={accountSearch}
+                  />
                 </div>
-                <div className="admin-actions">
-                  <button
-                    className="button button-secondary"
-                    disabled={
-                      busy || (!automaticDomainApprovalEnabled && !rule.enabled)
-                    }
-                    onClick={() =>
-                      beginDomainAction(rule, rule.enabled ? "disable" : "enable")
-                    }
-                    type="button"
+                <div>
+                  <label htmlFor="admin-account-state">Account state</label>
+                  <select
+                    disabled={busy || accountsLoading}
+                    id="admin-account-state"
+                    onChange={(event) => {
+                      setAccountStateFilter(event.target.value as AccountStateFilter);
+                      setAccounts([]);
+                      setAccountPage(legacyAdminPage(0));
+                      setAccountsLoading(true);
+                      setAccountsStale(false);
+                      setAccountAnnouncement("");
+                      cancelStateChange();
+                    }}
+                    value={accountStateFilter}
                   >
-                    {rule.enabled ? "Disable" : "Enable"}
-                  </button>
-                  <button
-                    className="button button-secondary"
-                    disabled={busy || rule.enabled}
-                    onClick={() => beginDomainAction(rule, "remove")}
-                    type="button"
-                  >
-                    Remove
-                  </button>
+                    {accountStateFilters.map((state) => (
+                      <option key={state} value={state}>
+                        {state === "all"
+                          ? "All accounts"
+                          : state.charAt(0).toUpperCase() + state.slice(1)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                {domainAction?.ruleId === rule.id && selectedDomain ? (
-                  <form
-                    className={`admin-account-action${domainAction.kind === "remove"
-                      ? " admin-account-action-danger"
-                      : ""
-                      }`}
-                    onSubmit={(event) => void submitDomainAction(event)}
-                  >
-                    <h4 ref={domainActionHeading} tabIndex={-1}>
-                      {domainAction.kind === "remove"
-                        ? "Remove"
-                        : domainAction.kind === "enable"
-                          ? "Enable"
-                          : "Disable"}{" "}
-                      {selectedDomain.domain}
-                    </h4>
-                    <p>
-                      {domainAction.kind === "remove"
-                        ? "Remove this disabled exact-domain rule. The rule must be recreated before it can be used again."
-                        : `${domainAction.kind === "enable" ? "Enable" : "Disable"} automatic approval for this exact verified-email domain.`}{" "}
-                      The reason is written to the privileged audit record.
-                    </p>
-                    <label htmlFor="admin-domain-action-reason">Reason</label>
-                    <textarea
-                      id="admin-domain-action-reason"
-                      maxLength={500}
-                      minLength={5}
-                      onChange={(event) =>
-                        setDomainActionReason(event.target.value)
-                      }
-                      required
-                      rows={3}
-                      value={domainActionReason}
-                    />
-                    <div className="button-row">
-                      <button
-                        className="button button-primary"
-                        disabled={busy || domainActionReason.trim().length < 5}
-                        type="submit"
-                      >
-                        Confirm {domainAction.kind}
-                      </button>
-                      <button
-                        className="button button-secondary"
-                        disabled={busy}
-                        onClick={cancelDomainAction}
-                        type="button"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+              </div>
+              <div className="admin-account-list">
+                {accountsLoading && accounts.length === 0 ? (
+                  <p className="admin-empty-state" role="status">
+                    Loading accounts…
+                  </p>
                 ) : null}
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="profile-card" id="deletions">
-          <div className="admin-account-heading">
-            <div>
-              <h3>Deletion requests</h3>
-            </div>
-            <strong aria-live="polite">
-              {deletionRequests.length} loaded
-              {deletionPage.hasMore ? " · more available" : ""}
-            </strong>
-          </div>
-          {deletionsLoading && deletionRequests.length === 0 ? (
-            <p role="status">Loading deletion requests…</p>
-          ) : null}
-          {!deletionsLoading && deletionRequests.length === 0 ? (
-            <p>No account deletion requests are waiting.</p>
-          ) : (
-            <div className="admin-account-list">
-              {deletionRequests.map((request) => {
-                const cancellationOpen =
-                  loadedAt < Date.parse(request.cancellationDeadline);
-                return (
-                  <article key={request.id}>
+                {!accountsLoading && filteredAccounts.length === 0 ? (
+                  <p className="admin-empty-state">
+                    {accounts.length === 0
+                      ? "No accounts were returned for this state."
+                      : "No accounts match this state and search."}
+                  </p>
+                ) : null}
+                {filteredAccounts.map((candidate) => (
+                  <article key={candidate.id}>
                     <div>
-                      <strong>
-                        {request.displayName ?? request.primaryEmail ?? request.userId}
-                      </strong>
+                      <strong>{accountLabel(candidate)}</strong>
+                      <small>{candidate.primaryEmail ?? "No verified email"}</small>
                       <small>
-                        Requested {new Date(request.requestedAt).toLocaleString()}
+                        {candidate.emailVerified ? "Verified email" : "Email not verified"} ·{" "}
+                        {candidate.roles.join(", ")}
                       </small>
                     </div>
-                    <span className="account-state">
-                      {cancellationOpen ? "cancellation open" : request.state}
+                    <span className={`account-state account-state-${candidate.state}`}>
+                      {candidate.state}
                     </span>
                     <div className="admin-actions">
                       <button
+                        aria-controls={`admin-account-detail-${candidate.id}`}
+                        aria-expanded={detailAccountId === candidate.id}
                         className="button button-secondary"
-                        disabled={busy || cancellationOpen}
-                        onClick={() => beginDeletionAction(request)}
+                        onClick={() =>
+                          setDetailAccountId((current) =>
+                            current === candidate.id ? null : candidate.id,
+                          )
+                        }
                         type="button"
                       >
-                        Complete deletion
+                        {detailAccountId === candidate.id
+                          ? "Hide request detail"
+                          : "View request detail"}
                       </button>
+                      {nextStates[candidate.state].map((next) => (
+                        <button
+                          className="button button-secondary"
+                          disabled={busy}
+                          key={next}
+                          onClick={() => beginStateChange(candidate, next)}
+                          type="button"
+                        >
+                          {accountActionLabel(candidate.state, next)}
+                        </button>
+                      ))}
                     </div>
-                    {deletionActionId === request.id &&
-                      selectedDeletionRequest ? (
-                      <form
-                        className="admin-account-action admin-account-action-danger"
-                        onSubmit={(event) => void completeDeletion(event)}
+                    {detailAccountId === candidate.id ? (
+                      <dl
+                        className="admin-account-detail"
+                        id={`admin-account-detail-${candidate.id}`}
                       >
-                        <h4 ref={deletionActionHeading} tabIndex={-1}>
-                          Permanently delete{" "}
-                          {selectedDeletionRequest.displayName ??
-                            selectedDeletionRequest.primaryEmail ??
-                            selectedDeletionRequest.userId}
+                        <div>
+                          <dt>Verified email</dt>
+                          <dd>
+                            {candidate.primaryEmail ?? "None recorded"}
+                            {candidate.primaryEmail
+                              ? candidate.emailVerified
+                                ? " · verified by the identity provider"
+                                : " · not verified"
+                              : ""}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Current state</dt>
+                          <dd>{candidate.state}</dd>
+                        </div>
+                        <div>
+                          <dt>Roles</dt>
+                          <dd>{candidate.roles.join(", ") || "None"}</dd>
+                        </div>
+                        <div>
+                          <dt>Requested</dt>
+                          <dd>{new Date(candidate.createdAt).toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Last updated</dt>
+                          <dd>{new Date(candidate.updatedAt).toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Account reference</dt>
+                          <dd>{candidate.id}</dd>
+                        </div>
+                      </dl>
+                    ) : null}
+                    {accountAction?.accountId === candidate.id &&
+                    selectedAccount ? (
+                      <form
+                        className={`admin-account-action${
+                          accountAction.nextState === "revoked"
+                            ? " admin-account-action-danger"
+                            : ""
+                        }`}
+                        onSubmit={(event) => void completeStateChange(event)}
+                      >
+                        <h4 ref={accountActionHeading} tabIndex={-1}>
+                          {accountActionModalTitle(
+                            selectedAccount,
+                            accountAction.nextState,
+                          )}
                         </h4>
-                        <p role="alert">
-                          This completes the approved deletion request and removes
-                          the account and learner data. The reason is written to the
-                          privileged audit record.
-                        </p>
-                        <label htmlFor="admin-deletion-action-reason">Reason</label>
+                        {accountAction.nextState === "revoked" ? (
+                          <p role="alert">
+                            Revoking this account disables sign-in and deletes its
+                            active session.
+                          </p>
+                        ) : null}
+                        <label htmlFor="admin-account-action-reason">Reason</label>
                         <textarea
-                          id="admin-deletion-action-reason"
+                          id="admin-account-action-reason"
                           maxLength={500}
                           minLength={5}
                           onChange={(event) =>
-                            setDeletionActionReason(event.target.value)
+                            setAccountActionReason(event.target.value)
                           }
                           required
                           rows={3}
-                          value={deletionActionReason}
+                          value={accountActionReason}
                         />
-                        <label htmlFor="admin-deletion-action-confirmation">
-                          Enter DELETE to confirm
-                        </label>
-                        <input
-                          autoComplete="off"
-                          id="admin-deletion-action-confirmation"
-                          onChange={(event) =>
-                            setDeletionActionConfirmation(event.target.value)
-                          }
-                          required
-                          value={deletionActionConfirmation}
-                        />
+                        {accountAction.nextState === "revoked" ? (
+                          <>
+                            <label htmlFor="admin-account-action-confirmation">
+                              Enter REVOKE to confirm
+                            </label>
+                            <input
+                              autoComplete="off"
+                              id="admin-account-action-confirmation"
+                              onChange={(event) =>
+                                setAccountActionConfirmation(event.target.value)
+                              }
+                              required
+                              value={accountActionConfirmation}
+                            />
+                          </>
+                        ) : null}
                         <div className="button-row">
                           <button
                             className="button button-primary"
                             disabled={
                               busy ||
-                              deletionActionReason.trim().length < 5 ||
-                              deletionActionConfirmation !== "DELETE"
+                              accountActionReason.trim().length < 5 ||
+                              (accountAction.nextState === "revoked" &&
+                                accountActionConfirmation !== "REVOKE")
                             }
                             type="submit"
                           >
-                            Confirm permanent deletion
+                            {accountAction.nextState === "approved"
+                              ? "Confirm approval"
+                              : accountAction.nextState === "rejected"
+                              ? "Confirm rejection"
+                              : accountAction.nextState === "suspended"
+                              ? "Confirm suspension"
+                              : "Confirm revocation"}
                           </button>
                           <button
                             className="button button-secondary"
                             disabled={busy}
-                            onClick={cancelDeletionAction}
+                            onClick={cancelStateChange}
                             type="button"
                           >
                             Cancel
@@ -3384,137 +3157,448 @@ export function OwnerAdministration() {
                       </form>
                     ) : null}
                   </article>
-                );
-              })}
-            </div>
-          )}
-          <div className="admin-pagination" aria-label="Deletion request pages">
-            {deletionAnnouncement ? (
-              <p
-                className="admin-pagination-status"
-                ref={deletionPaginationStatus}
-                role={deletionsStale ? "alert" : "status"}
-                tabIndex={-1}
-              >
-                {deletionAnnouncement}
-              </p>
-            ) : deletionPage.mode === "legacy" && !deletionsLoading ? (
-              <p className="admin-pagination-status" role="status">
-                The current account service returned all deletion requests
-                without continuation metadata.
-              </p>
-            ) : !deletionPage.hasMore &&
-              deletionRequests.length > 0 &&
-              !deletionsLoading ? (
-              <p className="admin-pagination-status">
-                End of deletion requests.
-              </p>
-            ) : null}
-            <div className="button-row">
-              {deletionPage.hasMore && deletionPage.nextCursor ? (
-                <button
-                  className="button button-secondary"
-                  disabled={busy || deletionsLoading}
-                  onClick={() => void loadMoreDeletionRequests()}
-                  type="button"
-                >
-                  {deletionsLoading
-                    ? "Loading more deletion requests…"
-                    : "Load more deletion requests"}
-                </button>
-              ) : null}
-              {deletionsStale ? (
-                <button
-                  className="button button-secondary"
-                  disabled={busy}
-                  onClick={() => void load()}
-                  type="button"
-                >
-                  Reload deletion requests from start
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
+                ))}
+              </div>
+              <div className="admin-pagination" aria-label="Account pages">
+                {accountAnnouncement ? (
+                  <p
+                    className="admin-pagination-status"
+                    ref={accountPaginationStatus}
+                    role={accountsStale ? "alert" : "status"}
+                    tabIndex={-1}
+                  >
+                    {accountAnnouncement}
+                  </p>
+                ) : null}
+                <div className="button-row">
+                  {accountPage.hasMore && accountPage.nextCursor ? (
+                    <button
+                      className="button button-secondary"
+                      disabled={busy || accountsLoading}
+                      onClick={() => void loadMoreAccounts()}
+                      type="button"
+                    >
+                      {accountsLoading ? "Loading more…" : "Load more accounts"}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </section>
 
-        <section className="profile-card" id="audit">
-          <div className="admin-account-heading">
-            <div>
-              <h3>Privileged audit events</h3>
+            <section className="profile-card" id="domains">
+              <h3>Approved email domains</h3>
               <p>
-                The newest request-correlated administrative and data-rights events
-                are shown first.
+                Matching is exact and only applies when the identity provider marks the
+                primary email verified.
               </p>
-            </div>
-            <strong aria-live="polite">
-              {auditEvents.length} loaded
-              {auditPage.hasMore ? " · more available" : ""}
-            </strong>
-          </div>
-          {auditLoading && auditEvents.length === 0 ? (
-            <p role="status">Loading privileged audit events…</p>
-          ) : null}
-          {!auditLoading && auditEvents.length === 0 ? (
-            <p>No privileged audit events are recorded.</p>
-          ) : (
-            <div className="audit-event-list">
-              {auditEvents.map((event) => (
-                <article key={event.id}>
-                  <div>
-                    <strong>{event.action}</strong>
-                    <small>{new Date(event.occurredAt).toLocaleString()}</small>
-                  </div>
-                  <span className="account-state">{event.outcome}</span>
-                  <p>{event.reason}</p>
-                  <small>Request {event.requestId}</small>
-                </article>
-              ))}
-            </div>
-          )}
-          <div className="admin-pagination" aria-label="Audit result pages">
-            {auditAnnouncement ? (
-              <p
-                className="admin-pagination-status"
-                ref={auditPaginationStatus}
-                role={auditStale ? "alert" : "status"}
-                tabIndex={-1}
+              {!automaticDomainApprovalEnabled ? (
+                <p>
+                  Automatic approval for exact-matched domains is not enabled on this
+                  deployment.
+                </p>
+              ) : null}
+              <form
+                className="admin-domain-form"
+                onSubmit={(event) => void addDomain(event)}
               >
-                {auditAnnouncement}
-              </p>
-            ) : auditPage.mode === "legacy" && !auditLoading ? (
-              <p className="admin-pagination-status" role="status">
-                The current account service returned all audit events without
-                continuation metadata.
-              </p>
-            ) : !auditPage.hasMore && auditEvents.length > 0 && !auditLoading ? (
-              <p className="admin-pagination-status">End of audit results.</p>
-            ) : null}
-            <div className="button-row">
-              {auditPage.hasMore && auditPage.nextCursor ? (
+                <div>
+                  <label htmlFor="admin-new-domain">Add approved domain</label>
+                  <input
+                    disabled={busy || !automaticDomainApprovalEnabled}
+                    id="admin-new-domain"
+                    onChange={(event) => setNewDomain(event.target.value)}
+                    placeholder="example.edu"
+                    required
+                    type="text"
+                    value={newDomain}
+                  />
+                </div>
+                <button
+                  className="button button-primary"
+                  disabled={busy || !automaticDomainApprovalEnabled}
+                  type="submit"
+                >
+                  Add domain
+                </button>
+              </form>
+              <div className="admin-domain-list">
+                {domainsLoading && domains.length === 0 ? (
+                  <p className="admin-empty-state" role="status">
+                    Loading domain rules…
+                  </p>
+                ) : null}
+                {!domainsLoading && domains.length === 0 ? (
+                  <p className="admin-empty-state">
+                    No approved domain rules are configured.
+                  </p>
+                ) : null}
+                {domains.map((rule) => (
+                  <article key={rule.domain}>
+                    <div>
+                      <strong>@{rule.domain}</strong>
+                      <small>
+                        Added {new Date(rule.createdAt).toLocaleString()} by{" "}
+                        {rule.addedByUserId}
+                      </small>
+                      <small>{rule.state === "active" ? "Active" : "Disabled"}</small>
+                    </div>
+                    <div className="admin-actions">
+                      <button
+                        className="button button-secondary"
+                        disabled={busy || !automaticDomainApprovalEnabled}
+                        onClick={() =>
+                          void toggleDomainState(
+                            rule.domain,
+                            rule.state === "active" ? "disabled" : "active",
+                          )
+                        }
+                        type="button"
+                      >
+                        {rule.state === "active" ? "Disable" : "Enable"}
+                      </button>
+                      <button
+                        className="button button-secondary"
+                        disabled={busy || !automaticDomainApprovalEnabled}
+                        onClick={() => void removeDomain(rule.domain)}
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="profile-card" id="deletions">
+              <div className="admin-account-heading">
+                <div>
+                  <h3>Deletion requests</h3>
+                </div>
+                <strong aria-live="polite">
+                  {deletionRequests.length} loaded
+                  {deletionPage.hasMore ? " · more available" : ""}
+                </strong>
+              </div>
+              {deletionsLoading && deletionRequests.length === 0 ? (
+                <p role="status">Loading deletion requests…</p>
+              ) : null}
+              {!deletionsLoading && deletionRequests.length === 0 ? (
+                <p>No deletion requests are currently pending.</p>
+              ) : (
+                <div className="admin-deletion-list">
+                  {deletionRequests.map((request) => {
+                    const cancellationOpen = deletionCancellationOpen(request);
+                    return (
+                      <article key={request.id}>
+                        <div>
+                          <strong>
+                            {request.displayName ?? request.primaryEmail ?? request.userId}
+                          </strong>
+                          <small>
+                            Requested {new Date(request.requestedAt).toLocaleString()}
+                          </small>
+                        </div>
+                        <span className="account-state">
+                          {cancellationOpen ? "cancellation open" : request.state}
+                        </span>
+                        <div className="admin-actions">
+                          <button
+                            className="button button-secondary"
+                            disabled={busy || cancellationOpen}
+                            onClick={() => beginDeletionAction(request)}
+                            type="button"
+                          >
+                            Complete deletion
+                          </button>
+                        </div>
+                        {deletionActionId === request.id &&
+                        selectedDeletionRequest ? (
+                          <form
+                            className="admin-account-action admin-account-action-danger"
+                            onSubmit={(event) => void completeDeletion(event)}
+                          >
+                            <h4 ref={deletionActionHeading} tabIndex={-1}>
+                              Permanently delete{" "}
+                              {selectedDeletionRequest.displayName ??
+                                selectedDeletionRequest.primaryEmail ??
+                                selectedDeletionRequest.userId}
+                            </h4>
+                            <p role="alert">
+                              This completes the approved deletion request and removes
+                              the account and learner data. The reason is written to the
+                              privileged audit record.
+                            </p>
+                            <label htmlFor="admin-deletion-action-reason">Reason</label>
+                            <textarea
+                              id="admin-deletion-action-reason"
+                              maxLength={500}
+                              minLength={5}
+                              onChange={(event) =>
+                                setDeletionActionReason(event.target.value)
+                              }
+                              required
+                              rows={3}
+                              value={deletionActionReason}
+                            />
+                            <label htmlFor="admin-deletion-action-confirmation">
+                              Enter DELETE to confirm
+                            </label>
+                            <input
+                              autoComplete="off"
+                              id="admin-deletion-action-confirmation"
+                              onChange={(event) =>
+                                setDeletionActionConfirmation(event.target.value)
+                              }
+                              required
+                              value={deletionActionConfirmation}
+                            />
+                            <div className="button-row">
+                              <button
+                                className="button button-primary"
+                                disabled={
+                                  busy ||
+                                  deletionActionReason.trim().length < 5 ||
+                                  deletionActionConfirmation !== "DELETE"
+                                }
+                                type="submit"
+                              >
+                                Confirm permanent deletion
+                              </button>
+                              <button
+                                className="button button-secondary"
+                                disabled={busy}
+                                onClick={cancelDeletionAction}
+                                type="button"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="admin-pagination" aria-label="Deletion request pages">
+                {deletionAnnouncement ? (
+                  <p
+                    className="admin-pagination-status"
+                    ref={deletionPaginationStatus}
+                    role={deletionsStale ? "alert" : "status"}
+                    tabIndex={-1}
+                  >
+                    {deletionAnnouncement}
+                  </p>
+                ) : null}
+                <div className="button-row">
+                  {deletionPage.hasMore && deletionPage.nextCursor ? (
+                    <button
+                      className="button button-secondary"
+                      disabled={busy || deletionsLoading}
+                      onClick={() => void loadMoreDeletionRequests()}
+                      type="button"
+                    >
+                      {deletionsLoading
+                        ? "Loading more deletion requests…"
+                        : "Load more deletion requests"}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {view === "logs" && (
+          <section className="profile-card" id="audit">
+            <div className="admin-account-heading">
+              <div>
+                <h3>Privileged audit events</h3>
+                <p>
+                  The newest request-correlated administrative and data-rights events
+                  are shown first.
+                </p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <strong aria-live="polite">
+                  {filteredAuditEvents.length} shown · {auditEvents.length} loaded
+                </strong>
                 <button
                   className="button button-secondary"
-                  disabled={busy || auditLoading}
-                  onClick={() => void loadMoreAuditEvents()}
+                  onClick={downloadAuditLogsJson}
                   type="button"
+                  style={{ fontSize: "12.5px", padding: "4px 10px" }}
                 >
-                  {auditLoading
-                    ? "Loading more audit events…"
-                    : "Load more audit events"}
+                  Export JSON
                 </button>
-              ) : null}
-              {auditStale ? (
-                <button
-                  className="button button-secondary"
-                  disabled={busy}
-                  onClick={() => void load()}
-                  type="button"
-                >
-                  Reload audit from start
-                </button>
-              ) : null}
+              </div>
             </div>
-          </div>
-        </section>
+
+            <div className="admin-account-filters" style={{ marginBottom: "16px" }}>
+              <div>
+                <label htmlFor="audit-search">Search audit events</label>
+                <input
+                  id="audit-search"
+                  onChange={(e) => setAuditSearch(e.target.value)}
+                  placeholder="Filter by action, reason, or request ID"
+                  type="search"
+                  value={auditSearch}
+                />
+              </div>
+              <div>
+                <label htmlFor="audit-filter-action">Action type</label>
+                <select
+                  id="audit-filter-action"
+                  onChange={(e) => setAuditFilterAction(e.target.value)}
+                  value={auditFilterAction}
+                >
+                  <option value="all">All actions</option>
+                  <option value="account_approved">account_approved</option>
+                  <option value="account_rejected">account_rejected</option>
+                  <option value="domain_rule_added">domain_rule_added</option>
+                  <option value="deletion_completed">deletion_completed</option>
+                </select>
+              </div>
+            </div>
+
+            {auditLoading && auditEvents.length === 0 ? (
+              <p role="status">Loading privileged audit events…</p>
+            ) : null}
+            {!auditLoading && filteredAuditEvents.length === 0 ? (
+              <p>No privileged audit events match this filter.</p>
+            ) : (
+              <div className="audit-event-list">
+                {filteredAuditEvents.map((event) => (
+                  <article key={event.id}>
+                    <div>
+                      <strong>{event.action}</strong>
+                      <small>{new Date(event.occurredAt).toLocaleString()}</small>
+                    </div>
+                    <span className="account-state">{event.outcome}</span>
+                    <p>{event.reason}</p>
+                    <small>Request {event.requestId}</small>
+                  </article>
+                ))}
+              </div>
+            )}
+            <div className="admin-pagination" aria-label="Audit result pages">
+              <div className="button-row">
+                {auditPage.hasMore && auditPage.nextCursor ? (
+                  <button
+                    className="button button-secondary"
+                    disabled={busy || auditLoading}
+                    onClick={() => void loadMoreAuditEvents()}
+                    type="button"
+                  >
+                    {auditLoading ? "Loading more audit events…" : "Load more audit events"}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {view === "settings" && (
+          <section className="profile-card" id="settings">
+            <div className="admin-account-heading">
+              <div>
+                <h3>Console themes and customization</h3>
+                <p>
+                  Switch the active platform theme across the 7 default system palettes or customize layout presets.
+                </p>
+              </div>
+              <a
+                className="button button-secondary"
+                href="https://github.com/project42dev/project42-gallery"
+                rel="noopener noreferrer"
+                target="_blank"
+                style={{ fontSize: "12.5px", padding: "4px 10px", textDecoration: "none" }}
+              >
+                Theme Gallery &amp; Studio →
+              </a>
+            </div>
+
+            <div style={{ marginBottom: "28px" }}>
+              <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>Platform Theme Palettes (7 Built-in)</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
+                {themes.map((theme) => {
+                  const isActive = selectedTheme === theme.id;
+                  return (
+                    <div
+                      key={theme.id}
+                      onClick={() => setSelectedTheme(theme.id)}
+                      style={{
+                        padding: "14px",
+                        borderRadius: "8px",
+                        border: `1.5px solid ${isActive ? "#38bdf8" : "rgba(255, 255, 255, 0.1)"}`,
+                        background: isActive ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.02)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <strong style={{ fontSize: "14px", color: isActive ? "#38bdf8" : "inherit" }}>{theme.name}</strong>
+                        {isActive && <span style={{ fontSize: "11px", fontWeight: 700, color: "#38bdf8" }}>Active</span>}
+                      </div>
+                      <small style={{ display: "block", color: "#94a3b8", lineHeight: "1.4" }}>{theme.desc}</small>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "28px" }}>
+              <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>UI Layout Presets (3 Available)</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
+                {layouts.map((layout) => {
+                  const isActive = selectedLayout === layout.id;
+                  return (
+                    <div
+                      key={layout.id}
+                      onClick={() => setSelectedLayout(layout.id)}
+                      style={{
+                        padding: "14px",
+                        borderRadius: "8px",
+                        border: `1.5px solid ${isActive ? "#38bdf8" : "rgba(255, 255, 255, 0.1)"}`,
+                        background: isActive ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.02)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <strong style={{ fontSize: "14px", color: isActive ? "#38bdf8" : "inherit" }}>{layout.name}</strong>
+                        {isActive && <span style={{ fontSize: "11px", fontWeight: 700, color: "#38bdf8" }}>Active</span>}
+                      </div>
+                      <small style={{ display: "block", color: "#94a3b8", lineHeight: "1.4" }}>{layout.desc}</small>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>Registration &amp; Tenant Policy</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <label className="account-checkbox" style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  <input defaultChecked type="checkbox" />
+                  <span>
+                    <strong>Require Verified Email for Account Activation</strong>
+                    <small style={{ display: "block", color: "#94a3b8" }}>Only allow approved access after email confirmation via OIDC provider.</small>
+                  </span>
+                </label>
+                <label className="account-checkbox" style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  <input defaultChecked type="checkbox" />
+                  <span>
+                    <strong>7-Day Persistent Browser Sessions</strong>
+                    <small style={{ display: "block", color: "#94a3b8" }}>Keep learner and admin sessions authenticated across portal transitions for 7 days.</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
     </section>
   );

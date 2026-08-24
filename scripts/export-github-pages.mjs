@@ -80,6 +80,8 @@ function outputPathForRoute(route) {
 const RETIRED_ROUTES = new Map([
   ["/account", "https://account.project-42.dev/account/"],
   ["/admin", "https://admin.project-42.dev/admin/"],
+  ["/admin/logs", "https://admin.project-42.dev/admin/logs/"],
+  ["/admin/settings", "https://admin.project-42.dev/admin/settings/"],
 ]);
 
 function redirectDocument(route, target) {

@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BrandMark } from "../../components/BrandMark";
 import { ProfileMenu } from "../../components/ProfileMenu";
 import { useAuth } from "../../components/AuthProvider";
 import { clientCrossDomainHref } from "../../lib/subdomainLinks";
 
 export function AdminHeader() {
+  const pathname = usePathname();
   const { status, signIn } = useAuth();
   const signedIn = status === "signed-in";
+
+  const isAccounts = pathname === "/admin" || pathname === "/admin/";
+  const isLogs = pathname?.startsWith("/admin/logs");
+  const isSettings = pathname?.startsWith("/admin/settings");
 
   return (
     <header className="site-header">
@@ -39,9 +45,33 @@ export function AdminHeader() {
         </div>
 
         <nav aria-label="Admin navigation">
-          <Link href="/admin">Accounts &amp; Registrations</Link>
-          <a href="https://guide.project-42.dev">Field Guide</a>
-          <a href="https://learn.project-42.dev/diagrams">Visual guides</a>
+          <Link
+            href="/admin"
+            style={{
+              fontWeight: isAccounts ? 700 : 500,
+              color: isAccounts ? "var(--accent, #0284c7)" : undefined,
+            }}
+          >
+            Accounts
+          </Link>
+          <Link
+            href="/admin/logs"
+            style={{
+              fontWeight: isLogs ? 700 : 500,
+              color: isLogs ? "var(--accent, #0284c7)" : undefined,
+            }}
+          >
+            Audit Logs
+          </Link>
+          <Link
+            href="/admin/settings"
+            style={{
+              fontWeight: isSettings ? 700 : 500,
+              color: isSettings ? "var(--accent, #0284c7)" : undefined,
+            }}
+          >
+            Settings &amp; Themes
+          </Link>
         </nav>
 
         <div className="header-actions">
