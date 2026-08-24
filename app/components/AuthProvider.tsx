@@ -212,12 +212,62 @@ function readGithubLinkFlow(): StoredGithubLinkFlow | null {
   }
 }
 
+const authCacheKey = "project42.auth-cache.v1";
+
+interface CachedAuth {
+  account: Project42Account;
+  session: BrowserSession | null;
+  savedAt: number;
+}
+
+function readCachedAuth(): CachedAuth | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(authCacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedAuth;
+    if (parsed && parsed.account && parsed.account.id) {
+      // 7-day persistence matching session cookie
+      if (Date.now() - parsed.savedAt < 7 * 86400 * 1000) {
+        return parsed;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAuth(
+  account: Project42Account | null,
+  session: BrowserSession | null,
+) {
+  if (typeof window === "undefined") return;
+  try {
+    if (account) {
+      localStorage.setItem(
+        authCacheKey,
+        JSON.stringify({ account, session, savedAt: Date.now() }),
+      );
+    } else {
+      localStorage.removeItem(authCacheKey);
+    }
+  } catch {
+    // Best-effort storage
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [cached] = useState(() => readCachedAuth());
   const [status, setStatus] = useState<AuthStatus>(
-    configured ? "loading" : "unavailable",
+    cached ? "signed-in" : configured ? "loading" : "unavailable",
   );
-  const [account, setAccount] = useState<Project42Account | null>(null);
-  const [session, setSession] = useState<BrowserSession | null>(null);
+  const [account, setAccount] = useState<Project42Account | null>(
+    cached ? cached.account : null,
+  );
+  const [session, setSession] = useState<BrowserSession | null>(
+    cached ? cached.session : null,
+  );
   const [registration, setRegistration] =
     useState<RegistrationExperience>(emptyRegistration);
   const [error, setError] = useState<string | null>(null);
@@ -306,6 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error?: { message?: string };
       };
       if (response.status === 401) {
+        writeCachedAuth(null, null);
         setAccount(null);
         setSession(null);
         await loadRegistration(
@@ -319,17 +370,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok || !body.account) {
         throw new Error(body.error?.message ?? "The account could not be loaded.");
       }
+      writeCachedAuth(body.account, body.session ?? null);
       setAccount(body.account);
       setSession(body.session ?? null);
       setRegistration(emptyRegistration);
       setError(null);
       setStatus("signed-in");
     } catch (caught) {
-      setAccount(null);
-      setSession(null);
-      setRegistration(emptyRegistration);
+      if (!cached) {
+        setAccount(null);
+        setSession(null);
+        setRegistration(emptyRegistration);
+      }
       setError(accountServiceErrorMessage(caught));
-      setStatus("error");
+      setStatus(cached ? "signed-in" : "error");
     }
   }, [apiFetch, loadRegistration]);
 
@@ -616,6 +670,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status !== 401 && (!response.ok || !body.signedOut)) {
         throw new Error(body.error?.message ?? "Sign-out could not be completed.");
       }
+      writeCachedAuth(null, null);
       sessionStorage.removeItem(githubLinkFlowKey);
       setAccount(null);
       setSession(null);
