@@ -2856,10 +2856,17 @@ export function OwnerAdministration({
     }
   }
 
-  const [selectedTheme, setSelectedTheme] = useState("04-field-signal");
-  const [selectedLayout, setSelectedLayout] = useState("standard");
+  interface ThemeItem {
+    id: string;
+    number?: string;
+    name: string;
+    desc: string;
+    colors: string[];
+    isCustom?: boolean;
+    tokens?: Record<string, string>;
+  }
 
-  const themes = [
+  const builtInThemes: ThemeItem[] = [
     {
       id: "01-cosmic-answer",
       number: "01",
@@ -2904,10 +2911,144 @@ export function OwnerAdministration({
     },
   ];
 
+  const [customThemes, setCustomThemes] = useState<ThemeItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem("project42.custom-themes.v1");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const themes = [...builtInThemes, ...customThemes];
+
+  const [selectedTheme, setSelectedTheme] = useState(() => {
+    if (typeof window === "undefined") return "04-field-signal";
+    return localStorage.getItem("project42.theme.v1") || "04-field-signal";
+  });
+
+  const [selectedLayout, setSelectedLayout] = useState(() => {
+    if (typeof window === "undefined") return "standard";
+    return localStorage.getItem("project42.layout.v1") || "standard";
+  });
+
+  const [themeApplyMessage, setThemeApplyMessage] = useState<string | null>(null);
+  const [importThemeUrl, setImportThemeUrl] = useState("");
+  const [importThemeJson, setImportThemeJson] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+
+  const applyThemeAndLayout = (
+    themeIdToApply = selectedTheme,
+    layoutIdToApply = selectedLayout,
+  ) => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem("project42.theme.v1", themeIdToApply);
+      localStorage.setItem("project42.layout.v1", layoutIdToApply);
+      document.documentElement.setAttribute("data-theme", themeIdToApply);
+      document.documentElement.setAttribute("data-layout", layoutIdToApply);
+
+      const themeObj = themes.find((t) => t.id === themeIdToApply);
+      if (themeObj?.tokens) {
+        for (const [key, val] of Object.entries(themeObj.tokens)) {
+          document.documentElement.style.setProperty(key, val);
+        }
+      }
+      setThemeApplyMessage(
+        `Theme "${themeObj?.name || themeIdToApply}" and Layout "${layoutIdToApply}" applied successfully.`,
+      );
+    } catch {
+      setThemeApplyMessage("Failed to save theme settings to local storage.");
+    }
+  };
+
+  const handleImportThemeJson = (rawJson: string) => {
+    setImportError(null);
+    setImportSuccess(null);
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (!parsed.id || !parsed.name) {
+        throw new Error("Theme JSON must contain at least 'id' and 'name'.");
+      }
+      const newTheme: ThemeItem = {
+        id: parsed.id,
+        name: parsed.name,
+        desc: parsed.description || parsed.tagline || "Custom imported theme.",
+        colors: parsed.tokens
+          ? [
+              parsed.tokens["--p42-bg"] || "#080c14",
+              parsed.tokens["--p42-primary"] || "#38bdf8",
+              parsed.tokens["--p42-accent"] || "#818cf8",
+              parsed.tokens["--p42-text-title"] || "#ffffff",
+            ]
+          : ["#080c14", "#38bdf8", "#818cf8", "#ffffff"],
+        isCustom: true,
+        tokens: parsed.tokens || {},
+      };
+      const updated = [
+        ...customThemes.filter((t) => t.id !== newTheme.id),
+        newTheme,
+      ];
+      setCustomThemes(updated);
+      localStorage.setItem(
+        "project42.custom-themes.v1",
+        JSON.stringify(updated),
+      );
+      setSelectedTheme(newTheme.id);
+      applyThemeAndLayout(newTheme.id, selectedLayout);
+      setImportSuccess(
+        `Custom theme "${newTheme.name}" (${newTheme.id}) imported and applied!`,
+      );
+      setImportThemeJson("");
+    } catch (caught) {
+      setImportError(
+        caught instanceof Error ? caught.message : "Invalid Theme JSON package.",
+      );
+    }
+  };
+
+  const handlePullThemeUrl = async () => {
+    if (!importThemeUrl.trim()) return;
+    setImportBusy(true);
+    setImportError(null);
+    setImportSuccess(null);
+    try {
+      const res = await fetch(importThemeUrl.trim());
+      if (!res.ok)
+        throw new Error(`HTTP error ${res.status} fetching theme package.`);
+      const data = await res.json();
+      handleImportThemeJson(JSON.stringify(data));
+      setImportThemeUrl("");
+    } catch (caught) {
+      setImportError(
+        caught instanceof Error
+          ? caught.message
+          : "Failed to fetch theme from URL.",
+      );
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   const layouts = [
-    { id: "standard", name: "Standard Shell", desc: "Default constrained container with centered reading line lengths." },
-    { id: "wide", name: "Wide Canvas", desc: "Expanded container width for high-density administrative dashboards." },
-    { id: "compact", name: "Compact Minimal", desc: "Tightened vertical spacing and smaller typography for dense data." },
+    {
+      id: "standard",
+      name: "Standard Shell",
+      desc: "Default constrained container with centered reading line lengths.",
+    },
+    {
+      id: "wide",
+      name: "Wide Canvas",
+      desc: "Expanded container width for high-density administrative dashboards.",
+    },
+    {
+      id: "compact",
+      name: "Compact Minimal",
+      desc: "Tightened vertical spacing and smaller typography for dense data.",
+    },
   ];
 
   return (
@@ -3591,14 +3732,14 @@ export function OwnerAdministration({
           <section className="profile-card" id="settings">
             <div className="admin-account-heading">
               <div>
-                <h3>Console themes and customization</h3>
+                <h3>Console Themes &amp; Appearance</h3>
                 <p>
-                  Switch the active platform theme across the 6 permanent built-in themes from the Project 42 Theme Studio or customize layout presets.
+                  Configure active visual themes, select dashboard layout presets, or import custom theme packages.
                 </p>
               </div>
               <a
                 className="button button-secondary"
-                href="https://github.com/project42dev/project42-gallery"
+                href="https://gallery.project-42.dev"
                 rel="noopener noreferrer"
                 target="_blank"
                 style={{ fontSize: "12.5px", padding: "4px 10px", textDecoration: "none" }}
@@ -3607,15 +3748,143 @@ export function OwnerAdministration({
               </a>
             </div>
 
-            <div style={{ marginBottom: "28px" }}>
-              <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>Built-In Permanent Themes (6 Packages)</h4>
+            {themeApplyMessage && (
+              <div
+                role="status"
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  background: "rgba(56, 189, 248, 0.12)",
+                  border: "1px solid rgba(56, 189, 248, 0.4)",
+                  color: "#38bdf8",
+                  fontSize: "13.5px",
+                  fontWeight: 600,
+                  marginBottom: "20px",
+                }}
+              >
+                ✓ {themeApplyMessage}
+              </div>
+            )}
+
+            {/* THEME & LAYOUT DROPDOWNS & APPLY CONTROLS */}
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "12px",
+                padding: "20px",
+                marginBottom: "28px",
+              }}
+            >
+              <h4 style={{ margin: "0 0 16px 0", fontSize: "16px" }}>Theme &amp; Layout Controls</h4>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                  gap: "16px",
+                  marginBottom: "18px",
+                }}
+              >
+                <div>
+                  <label htmlFor="theme-dropdown-select" style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: 700 }}>
+                    Active Visual Theme
+                  </label>
+                  <select
+                    id="theme-dropdown-select"
+                    onChange={(e) => setSelectedTheme(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      background: "rgba(11, 18, 37, 0.9)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                    }}
+                    value={selectedTheme}
+                  >
+                    <optgroup label="Built-in Themes">
+                      {builtInThemes.map((theme) => (
+                        <option key={theme.id} value={theme.id}>
+                          {theme.number ? `${theme.number} · ` : ""}{theme.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                    {customThemes.length > 0 && (
+                      <optgroup label="Custom / Imported Themes">
+                        {customThemes.map((theme) => (
+                          <option key={theme.id} value={theme.id}>
+                            {theme.name} ({theme.id})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="layout-dropdown-select" style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: 700 }}>
+                    Dashboard Layout Preset
+                  </label>
+                  <select
+                    id="layout-dropdown-select"
+                    onChange={(e) => setSelectedLayout(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      background: "rgba(11, 18, 37, 0.9)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                    }}
+                    value={selectedLayout}
+                  >
+                    {layouts.map((layout) => (
+                      <option key={layout.id} value={layout.id}>
+                        {layout.name} — {layout.desc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  className="button button-primary"
+                  onClick={() => applyThemeAndLayout(selectedTheme, selectedLayout)}
+                  style={{ fontWeight: 800, padding: "10px 24px" }}
+                  type="button"
+                >
+                  Apply Theme &amp; Layout Now
+                </button>
+                <button
+                  className="button button-secondary"
+                  onClick={() => {
+                    setSelectedTheme("04-field-signal");
+                    setSelectedLayout("standard");
+                    applyThemeAndLayout("04-field-signal", "standard");
+                  }}
+                  type="button"
+                >
+                  Reset to Defaults
+                </button>
+              </div>
+            </div>
+
+            {/* VISUAL THEME PREVIEWS */}
+            <div style={{ marginBottom: "32px" }}>
+              <h4 style={{ margin: "0 0 14px 0", fontSize: "16px" }}>Available Theme Packages ({themes.length} Total)</h4>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
                 {themes.map((theme) => {
                   const isActive = selectedTheme === theme.id;
                   return (
                     <div
                       key={theme.id}
-                      onClick={() => setSelectedTheme(theme.id)}
+                      onClick={() => {
+                        setSelectedTheme(theme.id);
+                        applyThemeAndLayout(theme.id, selectedLayout);
+                      }}
                       style={{
                         padding: "16px",
                         borderRadius: "10px",
@@ -3631,7 +3900,7 @@ export function OwnerAdministration({
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
                           <span style={{ fontSize: "10.5px", fontWeight: 800, color: "#38bdf8", fontFamily: "monospace", letterSpacing: "0.08em" }}>
-                            {theme.number} · {theme.id.toUpperCase().replace(/^\d+-/, "")}
+                            {theme.number ? `${theme.number} · ` : "CUSTOM · "}{theme.id.toUpperCase().replace(/^\d+-/, "")}
                           </span>
                           <strong style={{ display: "block", fontSize: "15px", color: isActive ? "#38bdf8" : "inherit", marginTop: "2px" }}>
                             {theme.name}
@@ -3666,35 +3935,99 @@ export function OwnerAdministration({
               </div>
             </div>
 
-            <div style={{ marginBottom: "28px" }}>
-              <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>UI Layout Presets (3 Available)</h4>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
-                {layouts.map((layout) => {
-                  const isActive = selectedLayout === layout.id;
-                  return (
-                    <div
-                      key={layout.id}
-                      onClick={() => setSelectedLayout(layout.id)}
-                      style={{
-                        padding: "14px",
-                        borderRadius: "8px",
-                        border: `1.5px solid ${isActive ? "#38bdf8" : "rgba(255, 255, 255, 0.1)"}`,
-                        background: isActive ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.02)",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
+            {/* IMPORT & PULL CUSTOM THEMES */}
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "12px",
+                padding: "20px",
+                marginBottom: "28px",
+              }}
+            >
+              <h4 style={{ margin: "0 0 8px 0", fontSize: "16px" }}>Import or Pull Custom Themes</h4>
+              <p style={{ fontSize: "13.5px", color: "#cbd5e1", margin: "0 0 16px 0" }}>
+                Import custom white-label themes directly from a URL or paste a schema-compliant <code>theme.json</code> package definition.
+              </p>
+
+              {importError && (
+                <div style={{ color: "#ef4444", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>
+                  ⚠ {importError}
+                </div>
+              )}
+              {importSuccess && (
+                <div style={{ color: "#10b981", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>
+                  ✓ {importSuccess}
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div>
+                  <label htmlFor="import-theme-url-input" style={{ display: "block", fontSize: "12.5px", fontWeight: 700, marginBottom: "4px" }}>
+                    Pull from Theme URL / Endpoint
+                  </label>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input
+                      id="import-theme-url-input"
+                      onChange={(e) => setImportThemeUrl(e.target.value)}
+                      placeholder="https://gallery.project-42.dev/themes/01-cosmic-answer/theme.json"
+                      style={{ flex: 1, padding: "8px 12px", borderRadius: "6px", background: "rgba(11, 18, 37, 0.9)", border: "1px solid rgba(255, 255, 255, 0.2)", color: "#fff" }}
+                      type="url"
+                      value={importThemeUrl}
+                    />
+                    <button
+                      className="button button-secondary"
+                      disabled={importBusy || !importThemeUrl.trim()}
+                      onClick={() => void handlePullThemeUrl()}
+                      type="button"
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                        <strong style={{ fontSize: "14px", color: isActive ? "#38bdf8" : "inherit" }}>{layout.name}</strong>
-                        {isActive && <span style={{ fontSize: "11px", fontWeight: 700, color: "#38bdf8" }}>Active</span>}
-                      </div>
-                      <small style={{ display: "block", color: "#94a3b8", lineHeight: "1.4" }}>{layout.desc}</small>
-                    </div>
-                  );
-                })}
+                      {importBusy ? "Pulling…" : "Pull Theme"}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="import-theme-json-input" style={{ display: "block", fontSize: "12.5px", fontWeight: 700, marginBottom: "4px" }}>
+                    Or Paste Raw theme.json Package
+                  </label>
+                  <textarea
+                    id="import-theme-json-input"
+                    onChange={(e) => setImportThemeJson(e.target.value)}
+                    placeholder='{ "id": "my-theme", "name": "My Custom Theme", "tokens": { "--p42-bg": "#0a0e1a", "--p42-primary": "#38bdf8" } }'
+                    rows={3}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", background: "rgba(11, 18, 37, 0.9)", border: "1px solid rgba(255, 255, 255, 0.2)", color: "#fff", fontFamily: "monospace", fontSize: "12.5px" }}
+                    value={importThemeJson}
+                  />
+                  <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+                    <button
+                      className="button button-secondary"
+                      disabled={!importThemeJson.trim()}
+                      onClick={() => handleImportThemeJson(importThemeJson)}
+                      type="button"
+                    >
+                      Import Theme JSON
+                    </button>
+                    {customThemes.length > 0 && (
+                      <button
+                        className="button button-secondary"
+                        onClick={() => {
+                          setCustomThemes([]);
+                          localStorage.removeItem("project42.custom-themes.v1");
+                          setSelectedTheme("04-field-signal");
+                          applyThemeAndLayout("04-field-signal", selectedLayout);
+                        }}
+                        style={{ color: "#ef4444" }}
+                        type="button"
+                      >
+                        Clear Custom Themes
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* TENANT POLICY */}
             <div>
               <h4 style={{ margin: "0 0 12px 0", fontSize: "16px" }}>Registration &amp; Tenant Policy</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>

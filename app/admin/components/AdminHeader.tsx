@@ -78,16 +78,6 @@ export function AdminHeader() {
         </nav>
 
         <div className="header-actions">
-          {!signedIn && (
-            <button
-              className="button button-primary"
-              onClick={() => void signIn("/admin")}
-              type="button"
-              style={{ fontSize: "0.85rem", padding: "0.35rem 0.9rem" }}
-            >
-              Sign in
-            </button>
-          )}
           <a
             className="header-action"
             href="https://project-42.dev"
