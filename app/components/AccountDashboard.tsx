@@ -2924,8 +2924,8 @@ export function OwnerAdministration({
   const themes = [...builtInThemes, ...customThemes];
 
   const [selectedTheme, setSelectedTheme] = useState(() => {
-    if (typeof window === "undefined") return "04-field-signal";
-    return localStorage.getItem("project42.theme.v1") || "04-field-signal";
+    if (typeof window === "undefined") return "06-galactic-guide";
+    return localStorage.getItem("project42.theme.v1") || "06-galactic-guide";
   });
 
   const [selectedLayout, setSelectedLayout] = useState(() => {
@@ -3908,9 +3908,9 @@ export function OwnerAdministration({
                 <button
                   className="button button-secondary"
                   onClick={() => {
-                    setSelectedTheme("04-field-signal");
+                    setSelectedTheme("06-galactic-guide");
                     setSelectedLayout("standard");
-                    applyThemeAndLayout("04-field-signal", "standard");
+                    applyThemeAndLayout("06-galactic-guide", "standard");
                   }}
                   type="button"
                 >

@@ -97,6 +97,15 @@ export function ProfilePreferencesProvider({
       setPreferences(browserDefaults());
       setReady(true);
     }, 0);
+
+    // Apply active design theme and layout preset
+    if (typeof window !== "undefined") {
+      const activeTheme = localStorage.getItem("project42.theme.v1") || "06-galactic-guide";
+      const activeLayout = localStorage.getItem("project42.layout.v1") || "standard";
+      document.documentElement.setAttribute("data-theme", activeTheme);
+      document.documentElement.setAttribute("data-layout", activeLayout);
+    }
+
     return () => window.clearTimeout(timer);
   }, []);
 
