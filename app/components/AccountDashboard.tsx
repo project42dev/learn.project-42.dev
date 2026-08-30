@@ -3849,7 +3849,54 @@ export function OwnerAdministration({
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+              {/* CURRENT SELECTION PREVIEW */}
+              {(() => {
+                const currentTheme = themes.find((t) => t.id === selectedTheme) || builtInThemes[0];
+                return (
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      padding: "14px 16px",
+                      borderRadius: "8px",
+                      background: "rgba(0, 0, 0, 0.25)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "#ffffff", marginBottom: "4px" }}>
+                        Selected: <span style={{ color: "#38bdf8" }}>{currentTheme.name}</span> {currentTheme.number ? `(${currentTheme.number})` : ""}
+                      </div>
+                      <div style={{ fontSize: "12.5px", color: "#94a3b8", lineHeight: "1.4" }}>
+                        {currentTheme.desc}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <span style={{ fontSize: "12px", color: "#94a3b8", marginRight: "4px" }}>Palette:</span>
+                      {currentTheme.colors.map((color, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            width: "18px",
+                            height: "18px",
+                            borderRadius: "50%",
+                            background: color,
+                            border: "1px solid rgba(255, 255, 255, 0.3)",
+                            display: "inline-block",
+                          }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", marginTop: "18px" }}>
                 <button
                   className="button button-primary"
                   onClick={() => applyThemeAndLayout(selectedTheme, selectedLayout)}
@@ -3869,69 +3916,6 @@ export function OwnerAdministration({
                 >
                   Reset to Defaults
                 </button>
-              </div>
-            </div>
-
-            {/* VISUAL THEME PREVIEWS */}
-            <div style={{ marginBottom: "32px" }}>
-              <h4 style={{ margin: "0 0 14px 0", fontSize: "16px" }}>Available Theme Packages ({themes.length} Total)</h4>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
-                {themes.map((theme) => {
-                  const isActive = selectedTheme === theme.id;
-                  return (
-                    <div
-                      key={theme.id}
-                      onClick={() => {
-                        setSelectedTheme(theme.id);
-                        applyThemeAndLayout(theme.id, selectedLayout);
-                      }}
-                      style={{
-                        padding: "16px",
-                        borderRadius: "10px",
-                        border: `1.5px solid ${isActive ? "#38bdf8" : "rgba(255, 255, 255, 0.1)"}`,
-                        background: isActive ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.02)",
-                        cursor: "pointer",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <span style={{ fontSize: "10.5px", fontWeight: 800, color: "#38bdf8", fontFamily: "monospace", letterSpacing: "0.08em" }}>
-                            {theme.number ? `${theme.number} · ` : "CUSTOM · "}{theme.id.toUpperCase().replace(/^\d+-/, "")}
-                          </span>
-                          <strong style={{ display: "block", fontSize: "15px", color: isActive ? "#38bdf8" : "inherit", marginTop: "2px" }}>
-                            {theme.name}
-                          </strong>
-                        </div>
-                        {isActive && (
-                          <span style={{ fontSize: "11px", fontWeight: 800, color: "#080d2a", background: "#38bdf8", padding: "2px 8px", borderRadius: "999px" }}>
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <small style={{ color: "#cbd5e1", lineHeight: "1.45" }}>{theme.desc}</small>
-                      <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "auto", paddingTop: "6px" }}>
-                        {theme.colors.map((color, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              width: "18px",
-                              height: "18px",
-                              borderRadius: "50%",
-                              background: color,
-                              border: "1px solid rgba(255, 255, 255, 0.25)",
-                              display: "inline-block",
-                            }}
-                            title={color}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
 
