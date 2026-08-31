@@ -719,7 +719,7 @@ a {
 }
 
 .snapshot-kicker {
-  color: #606979;
+  color: #94a3b8;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -822,7 +822,7 @@ a {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
-  opacity: 0.65;
+  opacity: 0.85;
   text-transform: uppercase;
 }
 
@@ -1257,7 +1257,7 @@ a {
 }
 
 .module-state {
-  color: #606979;
+  color: #94a3b8;
   font-size: 0.75rem;
   font-weight: 820;
 }

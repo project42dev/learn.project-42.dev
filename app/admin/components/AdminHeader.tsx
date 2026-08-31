@@ -4,13 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "../../components/BrandMark";
 import { ProfileMenu } from "../../components/ProfileMenu";
-import { useAuth } from "../../components/AuthProvider";
-import { clientCrossDomainHref } from "../../lib/subdomainLinks";
 
 export function AdminHeader() {
   const pathname = usePathname();
-  const { status, signIn } = useAuth();
-  const signedIn = status === "signed-in";
 
   const isAccounts = pathname === "/admin" || pathname === "/admin/";
   const isLogs = pathname?.startsWith("/admin/logs");
@@ -53,7 +49,7 @@ export function AdminHeader() {
               textDecoration: isAccounts ? "underline" : "none",
             }}
           >
-            Accounts
+            Accounts &amp; Registrations
           </Link>
           <Link
             aria-current={isLogs ? "page" : undefined}

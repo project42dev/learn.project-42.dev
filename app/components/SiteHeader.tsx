@@ -6,7 +6,6 @@ import { BrandMark } from "./BrandMark";
 import { HeaderMenu, MenuChevron } from "./HeaderMenu";
 import { ProfileMenu } from "./ProfileMenu";
 import { AdminHeader } from "../admin/components/AdminHeader";
-import { clientCrossDomainHref } from "../lib/subdomainLinks";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -26,7 +25,7 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav aria-label="Primary navigation">
-          <Link href="/learn">Learn</Link>
+          <Link href="/">Learn</Link>
           <Link href="/guide">Field Guide</Link>
           <Link href="/diagrams">Visual guides</Link>
           <HeaderMenu

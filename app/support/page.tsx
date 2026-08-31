@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteFacts } from "../lib/siteFacts";
 
 export const metadata: Metadata = {
   title: "Support & Content Requests — Project 42",
@@ -8,8 +7,6 @@ export const metadata: Metadata = {
 };
 
 export default function SupportPage() {
-  const repoUrl = siteFacts.repositories.site;
-
   return (
     <main className="page-shell shell" style={{ maxWidth: "1000px", padding: "40px 20px 80px" }}>
       <header style={{ marginBottom: "36px" }}>

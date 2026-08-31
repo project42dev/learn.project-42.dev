@@ -13,7 +13,7 @@ test("keeps legal, privacy, and account expectations visible without dark patter
     page.getByRole("link", { name: "Legal & Transparency" }).first(),
   ).toHaveAttribute(
     "href",
-    "https://project-42.dev/legal-transparency",
+    "/legal-transparency",
   );
   await expect(page.locator('input[type="checkbox"]:checked')).toHaveCount(0);
 

@@ -906,7 +906,7 @@ export function DeletionStatusLookup() {
   );
 }
 
-function LinkedIdentityEditor() {
+export function LinkedIdentityEditor() {
   const { apiFetch, startGithubLink } = useAuth();
   const [identities, setIdentities] = useState<LinkedIdentity[]>([]);
   const [message, setMessage] = useState("Loading linked accounts…");
@@ -2968,13 +2968,7 @@ export function OwnerAdministration({
       localStorage.setItem("project42.layout.v1", layoutIdToApply);
       document.documentElement.setAttribute("data-theme", themeIdToApply);
       document.documentElement.setAttribute("data-layout", layoutIdToApply);
-
-      const isDev =
-        window.location.hostname === "localhost" ||
-        window.location.hostname.endsWith(".localhost");
-      const domainAttr = isDev ? "" : "; domain=.project-42.dev";
-      document.cookie = `project42.theme.v1=${encodeURIComponent(themeIdToApply)}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`;
-      document.cookie = `project42.layout.v1=${encodeURIComponent(layoutIdToApply)}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`;
+      saveThemeCookies(themeIdToApply, layoutIdToApply);
 
       const themeObj = themes.find((t) => t.id === themeIdToApply);
       if (themeObj?.tokens) {
@@ -4053,4 +4047,15 @@ export function OwnerAdministration({
       </div>
     </section>
   );
+}
+
+function saveThemeCookies(themeId: string, layoutId: string) {
+  if (typeof window === "undefined") return;
+  const isDev =
+    window.location.hostname === "localhost" ||
+    window.location.hostname.endsWith(".localhost");
+  const domainAttr = isDev ? "" : "; domain=.project-42.dev";
+  const doc = window.document;
+  doc.cookie = `project42.theme.v1=${encodeURIComponent(themeId)}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`;
+  doc.cookie = `project42.layout.v1=${encodeURIComponent(layoutId)}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`;
 }

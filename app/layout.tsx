@@ -86,7 +86,7 @@ import config from "../project42.config.json";
 
 export const viewport: Viewport = {
   colorScheme: "dark light",
-  themeColor: "#090d16",
+  themeColor: "#0b1225",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

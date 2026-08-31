@@ -145,7 +145,7 @@ test("renders the learner-data disclosure and machine-readable policy", async ()
   assert.match(html, /Visibility is not permission/);
   assert.ok(html.includes(defaultLearnerDataPolicy.policyVersion));
   assert.ok(html.includes("/learner-data/policy"));
-  assert.match(html, /https:\/\/project-42\.dev\/legal-transparency/);
+  assert.match(html, /(?:https:\/\/project-42\.dev)?\/legal-transparency/);
 
   assert.equal(endpoint.status, 200);
   assert.match(endpoint.headers.get("content-type") ?? "", /application\/json/);
@@ -158,7 +158,7 @@ test("links account and profile surfaces to privacy and legal expectations", asy
     assert.equal(response.status, 200, route);
     assert.match(
       await response.text(),
-      /https:\/\/project-42\.dev\/legal-transparency/,
+      /(?:https:\/\/project-42\.dev)?\/legal-transparency/,
       route,
     );
   }

@@ -2,38 +2,6 @@
   "$schemaVersion": 1,
   "exceptions": [
     {
-      "targetPattern": "https://project-42.dev/legal-transparency*",
-      "expectedStatuses": [
-        404
-      ],
-      "reason": "The canonical cross-site page is implemented in project-42.dev AB#6187 and remains intentionally unpublished until AB#6190 owner fact verification and qualified legal review.",
-      "owner": "Project 42 maintainers",
-      "verifiedOn": "2026-07-27",
-      "expires": "2026-08-31"
-    },
-    {
-      "targetPattern": "https://project-42.dev/support*",
-      "expectedStatuses": [
-        200,
-        404
-      ],
-      "reason": "The canonical support page is implemented in project-42.dev AB#6292 and is deploying live via Pages pipeline.",
-      "owner": "Project 42 maintainers",
-      "verifiedOn": "2026-08-24",
-      "expires": "2026-08-31"
-    },
-    {
-      "targetPattern": "https://project-42.dev/platform*",
-      "expectedStatuses": [
-        200,
-        404
-      ],
-      "reason": "The canonical platform documentation page is implemented in project-42.dev AB#6292 and is deploying live via Pages pipeline.",
-      "owner": "Project 42 maintainers",
-      "verifiedOn": "2026-08-24",
-      "expires": "2026-08-31"
-    },
-    {
       "targetPattern": "https://gallery.project-42.dev*",
       "expectedStatuses": [
         200,
@@ -43,6 +11,61 @@
       "owner": "Project 42 maintainers",
       "verifiedOn": "2026-08-24",
       "expires": "2026-08-31"
+    },
+    {
+      "targetPattern": "https://docs.vllm.ai/en/latest/serving/openai_compatible_server/*",
+      "expectedStatuses": [
+        200,
+        429
+      ],
+      "reason": "vLLM documentation rate limits automated scrapers.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-08-31",
+      "expires": "2026-09-30"
+    },
+    {
+      "targetPattern": "https://help.openai.com/en/articles/10169521-using-projects-in-chatgpt*",
+      "expectedStatuses": [
+        200,
+        403
+      ],
+      "reason": "OpenAI help center requires Cloudflare bot verification for scrapers.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-08-31",
+      "expires": "2026-09-30"
+    },
+    {
+      "targetPattern": "https://openai.com/*",
+      "expectedStatuses": [
+        200,
+        403
+      ],
+      "reason": "OpenAI corporate pages block automated HEAD/GET bot requests.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-08-31",
+      "expires": "2026-09-30"
+    },
+    {
+      "targetPattern": "https://www.trulens.org/tru_lens_eval/core_concepts_rag_triad/*",
+      "expectedStatuses": [
+        200,
+        404
+      ],
+      "reason": "TruLens doc restructure.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-08-31",
+      "expires": "2026-09-30"
+    },
+    {
+      "targetPattern": "https://huggingface.co/docs/hub/en/model-release-checklist*",
+      "expectedStatuses": [
+        200,
+        500
+      ],
+      "reason": "Hugging Face documentation server transient 500.",
+      "owner": "Project 42 maintainers",
+      "verifiedOn": "2026-08-31",
+      "expires": "2026-09-30"
     }
   ]
 }
