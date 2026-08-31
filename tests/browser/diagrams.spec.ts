@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import diagramConfig from "../../node_modules/@project42/platform/content/diagrams/catalogue.json" with { type: "json" };
 
 test("discovers and reads accessible source-first visual guides", async ({
   page,
@@ -11,7 +12,7 @@ test("discovers and reads accessible source-first visual guides", async ({
   await expect(
     page.getByRole("heading", { name: "See the system, not just the steps." }),
   ).toBeVisible();
-  await expect(page.locator(".diagram-card")).toHaveCount(8);
+  await expect(page.locator(".diagram-card")).toHaveCount(diagramConfig.diagrams.length);
 
   await page
     .getByRole("link", { name: "Explore this visual" })
