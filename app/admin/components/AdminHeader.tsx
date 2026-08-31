@@ -20,12 +20,12 @@ export function AdminHeader() {
     <header className="site-header">
       <div className="shell header-inner">
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <a className="brand" href="https://project-42.dev" aria-label="Project 42 home">
+          <Link className="brand" href="/" aria-label="Project 42 home">
             <BrandMark />
             <span>
               Project <strong>42</strong>
             </span>
-          </a>
+          </Link>
           <span
             aria-label="Project 42 Administration"
             style={{
@@ -78,17 +78,17 @@ export function AdminHeader() {
         </nav>
 
         <div className="header-actions">
-          <a
+          <Link
             className="header-action"
-            href="https://project-42.dev"
+            href="/"
             style={{ textDecoration: "none" }}
           >
             ← Exit Console
-          </a>
+          </Link>
           <ProfileMenu
-            accountHref={clientCrossDomainHref("/account")}
-            learnerDataHref={clientCrossDomainHref("/learner-data")}
-            profileHref={clientCrossDomainHref("/profile")}
+            accountHref="/account"
+            learnerDataHref="/learner-data"
+            profileHref="/profile"
           />
         </div>
       </div>

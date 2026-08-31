@@ -25,12 +25,12 @@ export default function AccountPage() {
           <Link className="text-link" href="/learner-data">
             Learner data and controls
           </Link>
-          <a
+          <Link
             className="text-link"
-            href="https://project-42.dev/legal-transparency"
+            href="/legal-transparency"
           >
             Legal &amp; Transparency
-          </a>
+          </Link>
         </div>
       </header>
       <AccountDashboard />

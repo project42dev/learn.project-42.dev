@@ -29,12 +29,12 @@ export default function LearnerDataPage() {
           continue across browsers and devices. This page explains the controls and
           protections around those records.
         </p>
-        <a
+        <Link
           className="text-link"
-          href="https://project-42.dev/legal-transparency"
+          href="/legal-transparency"
         >
           Service, licensing, and AI transparency →
-        </a>
+        </Link>
       </header>
 
       <section className="policy-status" aria-labelledby="policy-status-title">

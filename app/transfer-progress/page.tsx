@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Progress transfer retired",
@@ -19,7 +20,7 @@ export default function TransferProgressPage() {
       </header>
       <section className="profile-card">
         <p>
-          <a href="https://learn.project-42.dev/account">Sign in to Project 42 Learn</a>{" "}
+          <Link href="/account">Sign in to Project 42 Learn</Link>{" "}
           to start or continue an account-backed learning record.
         </p>
       </section>

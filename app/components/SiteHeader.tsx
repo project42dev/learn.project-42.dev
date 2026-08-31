@@ -19,14 +19,14 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="shell header-inner">
-        <a className="brand" href="https://project-42.dev" aria-label="Project 42 home">
+        <Link className="brand" href="/" aria-label="Project 42 home">
           <BrandMark />
           <span>
             Project <strong>42</strong>
           </span>
-        </a>
+        </Link>
         <nav aria-label="Primary navigation">
-          <Link href="/">Learn</Link>
+          <Link href="/learn">Learn</Link>
           <Link href="/guide">Field Guide</Link>
           <Link href="/diagrams">Visual guides</Link>
           <HeaderMenu
@@ -65,7 +65,7 @@ export function SiteHeader() {
           </HeaderMenu>
         </nav>
         <div className="header-actions">
-          <Link className="header-action" href="/">
+          <Link className="header-action" href="/learn">
             Start learning
           </Link>
           <ProfileMenu

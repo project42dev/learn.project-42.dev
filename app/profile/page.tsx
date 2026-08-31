@@ -21,12 +21,12 @@ export default function ProfilePage() {
           <Link className="text-link" href="/learner-data">
             How Project 42 protects learner data
           </Link>
-          <a
+          <Link
             className="text-link"
-            href="https://project-42.dev/legal-transparency"
+            href="/legal-transparency"
           >
             Service and legal expectations
-          </a>
+          </Link>
         </div>
       </header>
       <ProfileDashboard />

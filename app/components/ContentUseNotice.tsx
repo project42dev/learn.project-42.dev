@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type ContentUseNoticeProps = {
   artifact: "resource" | "visual guide";
 };
@@ -22,9 +24,9 @@ export function ContentUseNotice({ artifact }: ContentUseNoticeProps) {
         learning material is reusable under CC BY 4.0; third-party material keeps
         its owners&apos; terms.
       </p>
-      <a href="https://project-42.dev/legal-transparency">
+      <Link href="/legal-transparency">
         Legal, licensing, and AI transparency →
-      </a>
+      </Link>
     </aside>
   );
 }

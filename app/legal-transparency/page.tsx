@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { siteFacts } from "../lib/siteFacts";
 
 const legalVersion = "0.1-review-draft";
@@ -306,14 +307,14 @@ export default function LegalTransparencyPage() {
           </p>
         </div>
         <div className="legal-destination-grid">
-          <a href="https://learn.project-42.dev/learner-data">
+          <Link href="/learner-data">
             <strong>Learner data</strong>
             <span>Storage, retention, consent, export, deletion, and recovery</span>
-          </a>
-          <a href="https://learn.project-42.dev/account">
+          </Link>
+          <Link href="/account">
             <strong>Account controls</strong>
             <span>Sign-in status, consent history, export, and deletion requests</span>
-          </a>
+          </Link>
           <a href="https://github.com/project42dev/project42-platform/security/policy">
             <strong>Security reporting</strong>
             <span>Report a vulnerability through the private security process</span>

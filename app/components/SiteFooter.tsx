@@ -18,17 +18,17 @@ export function SiteFooter() {
         <div>
           <strong>Explore</strong>
           <Link href="/learn">Learning paths</Link>
-          <a href="https://guide.project-42.dev">Field Guide</a>
+          <Link href="/guide">Field Guide</Link>
           <Link href="/diagrams">Visual guides</Link>
           <Link href="/profile">Your transcript</Link>
           <Link href="/learner-data">Learner data</Link>
         </div>
         <div>
           <strong>Project</strong>
-          <a href="https://project-42.dev/about">About</a>
-          <a href="https://project-42.dev/legal-transparency">
+          <Link href="/about">About</Link>
+          <Link href="/legal-transparency">
             Legal &amp; Transparency
-          </a>
+          </Link>
           <a href={siteFacts.repositories.roadmap}>Public roadmap and issues</a>
           <a href={siteFacts.repositories.platform}>Open-source platform</a>
           <a href={siteFacts.repositories.site}>Learn site source</a>
@@ -40,9 +40,9 @@ export function SiteFooter() {
           {siteFacts.contentVersion}
         </span>
         <span>
-          <a href="https://project-42.dev/legal-transparency">
+          <Link href="/legal-transparency">
             Legal &amp; Transparency
-          </a>
+          </Link>
           {" · "}
           <a href={siteFacts.licenses.software.url}>Code {siteFacts.licenses.software.spdx}</a>
           {" · "}

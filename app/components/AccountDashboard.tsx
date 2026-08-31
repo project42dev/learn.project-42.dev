@@ -260,9 +260,9 @@ function AccountExpectationLinks() {
         learner data, consent, retention, and recovery
       </Link>{" "}
       and the{" "}
-      <a href="https://project-42.dev/legal-transparency">
+      <Link href="/legal-transparency">
         Legal &amp; Transparency page
-      </a>{" "}
+      </Link>{" "}
       before continuing. Hosted identity or record services may sometimes be
       unavailable.
     </p>
@@ -599,9 +599,9 @@ export function AccountDashboard() {
           <p>
             Review <Link href="/learner-data">learner-data and recovery controls</Link>
             {" "}and the{" "}
-            <a href="https://project-42.dev/legal-transparency">
+            <Link href="/legal-transparency">
               Legal &amp; Transparency page
-            </a>
+            </Link>
             . Hosted sign-in and records may be temporarily unavailable even after
             configuration.
           </p>
@@ -673,9 +673,9 @@ export function AccountDashboard() {
             No account progress was changed. See{" "}
             <Link href="/learner-data">learner-data and recovery expectations</Link>
             {" "}or{" "}
-            <a href="https://project-42.dev/legal-transparency#service-title">
+            <Link href="/legal-transparency#service-title">
               service limitations
-            </a>
+            </Link>
             .
           </p>
           <div className="button-row">
@@ -1940,9 +1940,9 @@ function LearnerDataControls() {
         These controls follow the current{" "}
         <Link href="/learner-data">learner-data policy</Link>. Optional consents
         are separate from the{" "}
-        <a href="https://project-42.dev/legal-transparency">
+        <Link href="/legal-transparency">
           Legal &amp; Transparency page
-        </a>
+        </Link>
         ; neither is preselected.
       </p>
       <div className="admin-grid">
