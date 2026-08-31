@@ -90,7 +90,7 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const configuredTheme = config?.theme || "06-galactic-guide";
+  const configuredTheme = config?.theme || "01-cosmic-answer";
   return (
     <html lang="en" data-theme={configuredTheme} data-layout="standard" suppressHydrationWarning>
       <head>

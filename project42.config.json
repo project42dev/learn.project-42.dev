@@ -1,5 +1,6 @@
 {
-  "theme": "06-galactic-guide",
+  "$schema": "./docs/theme-schema.json",
+  "theme": "01-cosmic-answer",
   "availableThemes": [
     "01-cosmic-answer",
     "02-learning-portal",

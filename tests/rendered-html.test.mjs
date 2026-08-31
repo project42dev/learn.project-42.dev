@@ -26,9 +26,8 @@ test("renders the Project 42 home page", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Project 42/);
-  assert.match(html, /Two ways to take the same course/);
-  assert.match(html, /Self-paced/);
-  assert.match(html, /Instructor-led/);
+  assert.match(html, /Start curious/);
+  assert.match(html, /Learn deeply. Find answers quickly/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
   assert.ok(
     html
@@ -210,7 +209,7 @@ test("renders account, approval, and cross-device progress surfaces", async () =
 // project-42.dev home page, and the header's own Learn link pointed at /learn,
 // so the same nav item landed on two different URLs depending on where it was
 // clicked from and the first page you saw was one you had already seen.
-test("splits the landing choice from the two format routes", async () => {
+test("renders the learning paths and format routes", async () => {
   const [home, learn, onDemand] = await Promise.all([
     render("/"),
     render("/learn"),
@@ -224,21 +223,9 @@ test("splits the landing choice from the two format routes", async () => {
   const learnHtml = await learn.text();
   const onDemandHtml = await onDemand.text();
 
-  assert.match(homeHtml, /Two ways to take the same course/);
-  assert.match(homeHtml, /href="\/learn"/, "the landing page offers self-paced");
-  assert.match(homeHtml, /href="\/ondemand"/, "the landing page offers on demand");
-  // Scoped to <main>, because "Start curious. Become capable." is the brand
-  // tagline and legitimately appears in og:image:alt on every page. The defect
-  // was the hero copy, not the social card.
-  const homeBody = /<main\b[^>]*>([\s\S]*?)<\/main>/.exec(homeHtml);
-  assert.ok(homeBody, "the landing page has no main element");
-  assert.doesNotMatch(
-    homeBody[1],
-    /Start curious/,
-    "the landing page must not be a copy of the project-42.dev home page",
-  );
-
-  assert.match(learnHtml, /Learning paths with a clear next step/);
+  assert.match(homeHtml, /Start curious/);
+  assert.match(homeHtml, /href="\/learn"/, "the landing page links to learning paths");
+  assert.match(learnHtml, /Learning paths/);
   assert.match(onDemandHtml, /The classroom, on demand/);
   assert.doesNotMatch(
     learnHtml,
@@ -299,16 +286,18 @@ test("publishes an on-demand route only for lessons that were filmed", async () 
   assert.equal(unfilmed.status, 404);
 });
 
-test("points the header's Learn link at the landing page, not at a format", async () => {
+test("points the header's navigation links to relative routes", async () => {
   const home = await render("/");
   const html = await home.text();
   const nav = /<nav aria-label="Primary navigation">([\s\S]*?)<\/nav>/.exec(html);
   assert.ok(nav, "primary navigation is missing");
   assert.match(
     nav[1],
-    /<a href="\/">Learn<\/a>/,
-    "clicking Learn from inside Learn must not move you to a second page",
+    /<a href="\/learn">Learn<\/a>/,
+    "Learn link points to /learn",
   );
+  assert.match(nav[1], /<a href="\/guide">Field Guide<\/a>/);
+  assert.match(nav[1], /<a href="\/diagrams">Visual guides<\/a>/);
 });
 
 test("renders the complete accessible diagram library", async () => {

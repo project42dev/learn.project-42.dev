@@ -25,7 +25,7 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav aria-label="Primary navigation">
-          <Link href="/">Learn</Link>
+          <Link href="/learn">Learn</Link>
           <Link href="/guide">Field Guide</Link>
           <Link href="/diagrams">Visual guides</Link>
           <HeaderMenu

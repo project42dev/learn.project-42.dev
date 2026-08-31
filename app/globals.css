@@ -1,43 +1,6 @@
 @import "tailwindcss";
 
 :root,
-html[data-theme="06-galactic-guide"] {
-  --ink: #fef3c7;
-  --ink-soft: #cbd5e1;
-  --navy: #090d16;
-  --navy-2: #0f172a;
-  --paper: #090d16;
-  --paper-strong: #0f172a;
-  --line: rgba(245, 158, 11, 0.3);
-  --lime: #10b981;
-  --cyan: #38bdf8;
-  --orange: #f59e0b;
-  --violet: #818cf8;
-  --danger: #ef4444;
-  --shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
-  --radius: 24px;
-  --radius-small: 14px;
-  --shell: min(1180px, calc(100vw - 40px));
-}
-
-html[data-theme="00-classic"],
-html[data-theme="classic"],
-html[data-theme="light"] {
-  --ink: #111827;
-  --ink-soft: #455066;
-  --navy: #0b1225;
-  --navy-2: #111d38;
-  --paper: #f6f3eb;
-  --paper-strong: #fffdf7;
-  --line: #d9d5ca;
-  --lime: #c9f25f;
-  --cyan: #63d7e4;
-  --orange: #ff8c5a;
-  --violet: #a99df7;
-  --danger: #b83b3b;
-  --shadow: 0 24px 70px rgba(20, 27, 42, 0.12);
-}
-
 html[data-theme="01-cosmic-answer"] {
   --ink: #ffffff;
   --ink-soft: #cbd5e1;
@@ -52,6 +15,46 @@ html[data-theme="01-cosmic-answer"] {
   --violet: #754cff;
   --danger: #ef4444;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  --radius: 24px;
+  --radius-small: 14px;
+  --shell: min(1180px, calc(100vw - 40px));
+}
+
+html[data-theme="06-galactic-guide"] {
+  --ink: #fef3c7;
+  --ink-soft: #cbd5e1;
+  --navy: #090d16;
+  --navy-2: #0f172a;
+  --paper: #090d16;
+  --paper-strong: #0f172a;
+  --line: rgba(245, 158, 11, 0.3);
+  --lime: #10b981;
+  --cyan: #38bdf8;
+  --orange: #f59e0b;
+  --violet: #818cf8;
+  --danger: #ef4444;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+
+/* Dedicated Admin Portal Control Theme (Independent from Public Learner Themes) */
+.admin-portal-root,
+html[data-theme="admin-control"],
+[data-theme="admin-control"] {
+  --ink: #f8fafc;
+  --ink-soft: #94a3b8;
+  --navy: #090d16;
+  --navy-2: #0f172a;
+  --paper: #090d16;
+  --paper-strong: #1e293b;
+  --surface: #0f172a;
+  --surface-soft: #1e293b;
+  --line: rgba(148, 163, 184, 0.2);
+  --lime: #10b981;
+  --cyan: #38bdf8;
+  --orange: #f59e0b;
+  --violet: #818cf8;
+  --danger: #ef4444;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
 }
 
 html[data-theme="02-learning-portal"] {
