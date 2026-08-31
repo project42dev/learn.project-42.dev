@@ -52,7 +52,7 @@ export default function DiagramIndexPage() {
               </div>
               <h2>{diagram.title}</h2>
               <p>{diagram.summary}</p>
-              <Link href={`/diagrams/${diagram.id}`}>Explore this visual →</Link>
+              <Link href={`/guide/diagrams/${diagram.id}`}>Explore this visual →</Link>
             </article>
           ))}
         </div>

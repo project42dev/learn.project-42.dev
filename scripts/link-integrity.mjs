@@ -4,6 +4,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starterCatalog } from "@project42/platform";
 import diagramConfig from "../node_modules/@project42/platform/content/diagrams/catalogue.json" with { type: "json" };
+import diagramOverrides from "../config/diagram-catalog-overrides.json" with { type: "json" };
 import instructorRenderingConfig from "../config/instructor-renderings.json" with { type: "json" };
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -48,9 +49,13 @@ function sourceLabel(reference) {
   return `${reference.sourceRoute} -> ${reference.target}`;
 }
 
+const mergedDiagrams = [...new Map(
+  [...diagramConfig.diagrams, ...diagramOverrides.diagrams].map((diagram) => [diagram.id, diagram]),
+).values()];
+
 export function buildRouteInventory(
   catalog = starterCatalog,
-  diagrams = diagramConfig.diagrams,
+  diagrams = mergedDiagrams,
   instructorRenderings = instructorRenderingConfig.renderings,
 ) {
   const htmlRoutes = new Set([
@@ -63,11 +68,19 @@ export function buildRouteInventory(
     "/admin/settings",
     "/auth/callback",
     "/diagrams",
+    "/guide",
+    "/guide/diagrams",
     "/import-progress",
     "/learn",
     "/learner-data",
+    "/legal-transparency",
     "/ondemand",
+    "/platform",
     "/profile",
+    "/releases",
+    "/roadmap",
+    "/support",
+    "/transfer-progress",
   ]);
   for (const learningPath of catalog.paths) {
     htmlRoutes.add(`/learn/${learningPath.id}`);
@@ -77,6 +90,11 @@ export function buildRouteInventory(
   }
   for (const diagram of diagrams) {
     htmlRoutes.add(`/diagrams/${diagram.id}`);
+    htmlRoutes.add(`/guide/diagrams/${diagram.id}`);
+  }
+  for (const resource of catalog.resources) {
+    htmlRoutes.add(`/guide/resources/${resource.id}`);
+    htmlRoutes.add(`/resources/${resource.id}`);
   }
   // Only lessons that have been rendered get a route, which is the same rule
   // generateStaticParams applies. Deriving these from the class scripts instead
@@ -96,6 +114,10 @@ export function buildRouteInventory(
 }
 
 export function extractDocumentLinks(html, sourceRoute, baseUrl = defaultBaseUrl) {
+  const internalOrigins = new Set([
+    new URL(baseUrl).origin,
+    "https://project-42.dev",
+  ]);
   const ids = new Set();
   const references = [];
 
@@ -141,7 +163,7 @@ export function extractDocumentLinks(html, sourceRoute, baseUrl = defaultBaseUrl
 
     references.push({
       kind:
-        url.origin === new URL(baseUrl).origin
+        internalOrigins.has(url.origin)
           ? "internal"
           : url.protocol === "http:" || url.protocol === "https:"
             ? "external"

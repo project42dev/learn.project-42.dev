@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultLearnerDataPolicy, starterCatalog } from "@project42/platform";
 import diagramConfig from "../node_modules/@project42/platform/content/diagrams/catalogue.json" with { type: "json" };
+import diagramOverrides from "../config/diagram-catalog-overrides.json" with { type: "json" };
 import releaseFacts from "../public/release-facts.json" with { type: "json" };
 
 const hostedIdentityConfigured = Boolean(
@@ -167,15 +168,12 @@ test("links account and profile surfaces to privacy and legal expectations", asy
   assert.match(accountHtml, /Learner data and controls/);
 });
 
-test("renders the one-time legacy progress migration experience", async () => {
-  // /import-progress requires authentication (RequireAuth guard).
-  // The route must exist and return 200, but server-side rendering
-  // without a session will not produce the gated page content.
+test("renders the retired progress migration compatibility page", async () => {
   const response = await render("/import-progress");
   assert.equal(response.status, 200);
   const html = await response.text();
-  // The page title (in <head>) is still rendered even when the body is gated.
-  assert.match(html, /Import previous progress/);
+  assert.match(html, /Progress migration complete/);
+  assert.match(html, /separate-site progress transfer is no longer needed/);
 });
 
 test("renders account, approval, and cross-device progress surfaces", async () => {
@@ -297,16 +295,19 @@ test("points the header's navigation links to relative routes", async () => {
     "Learn link points to /learn",
   );
   assert.match(nav[1], /<a href="\/guide">Field Guide<\/a>/);
-  assert.match(nav[1], /<a href="\/diagrams">Visual guides<\/a>/);
+  assert.match(nav[1], /<a href="\/guide\/diagrams">Visual guides<\/a>/);
 });
 
 test("renders the complete accessible diagram library", async () => {
-  const diagramCatalog = diagramConfig.diagrams;
+  const diagramCatalog = [...new Map(
+    [...diagramConfig.diagrams, ...diagramOverrides.diagrams].map((diagram) => [diagram.id, diagram]),
+  ).values()];
   const index = await render("/diagrams");
   const indexHtml = await index.text();
   assert.equal(index.status, 200);
-  assert.equal(diagramCatalog.length, diagramConfig.diagrams.length);
-  assert.equal((indexHtml.match(/class="diagram-card"/g) ?? []).length, diagramConfig.diagrams.length);
+  assert.ok(diagramCatalog.length >= 11);
+  assert.equal((indexHtml.match(/class="diagram-card"/g) ?? []).length, diagramCatalog.length);
+  assert.match(indexHtml, /orchard-lifecycle/);
   assert.match(indexHtml, /See the system, not just the steps/);
 
   for (const diagram of diagramCatalog) {
@@ -314,7 +315,7 @@ test("renders the complete accessible diagram library", async () => {
     const html = await response.text();
     assert.equal(response.status, 200, `${diagram.id} should render`);
     assert.ok(html.includes(diagram.title));
-    assert.ok(html.includes(diagram.altText));
+    assert.ok(html.includes(diagram.altText), `missing alt text for ${diagram.id}`);
     assert.ok(html.includes(diagram.caption));
     assert.ok(html.includes(`/diagrams/${diagram.source}`));
     assert.match(html, /What this shows/);
@@ -536,13 +537,13 @@ test("publishes accessible document landmarks and discovery metadata", async () 
   assert.match(html, /href="\/favicon\.ico"/);
   assert.match(html, /href="\/apple-touch-icon\.png"/);
   assert.match(html, /href="\/manifest\.webmanifest"/);
-  assert.match(html, /name="theme-color" content="#0b1225"/);
+  assert.match(html, /name="theme-color" content="#090d16"/);
   assert.equal(sitemap.status, 200);
   assert.equal(robots.status, 200);
   assert.equal(manifest.status, 200);
   const webManifest = await manifest.json();
-  assert.equal(webManifest.short_name, "Project 42 Learn");
-  assert.equal(webManifest.theme_color, "#0b1225");
+  assert.equal(webManifest.short_name, "Project 42");
+  assert.equal(webManifest.theme_color, "#090d16");
   assert.deepEqual(
     webManifest.icons.map(({ src, sizes, purpose }) => ({
       src,

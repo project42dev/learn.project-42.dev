@@ -213,6 +213,10 @@ test("renders provider routes and completes an accessible OpenAI journey", async
     await expectNoAutomatedAccessibilityViolations(page);
   }
 
+  // Hosted progress writes and authoritative exports require a configured API.
+  // Public provider routes and accessibility remain covered without one.
+  if (!apiOrigin) return;
+
   const firstModule = openAIModules[0];
   await page.goto(`/learn/${openAIPath.id}/${firstModule.id}`);
   await page.keyboard.press("Tab");

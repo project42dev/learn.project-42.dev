@@ -4,16 +4,22 @@ import { diagramCatalog } from "./lib/diagrams";
 import { instructorRenderings } from "./lib/instructorMedia";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://learn.project-42.dev";
+  const base = "https://project-42.dev";
   return [
     "",
     "/learn",
     "/ondemand",
-    "/diagrams",
+    "/guide",
+    "/guide/diagrams",
     "/import-progress",
     "/profile",
     "/learner-data",
     "/about",
+    "/roadmap",
+    "/releases",
+    "/platform",
+    "/support",
+    "/legal-transparency",
     ...starterCatalog.paths.map((path) => `/learn/${path.id}`),
     ...starterCatalog.paths.flatMap((path) =>
       path.moduleIds.map((moduleId) => `/learn/${path.id}/${moduleId}`),
@@ -21,7 +27,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...instructorRenderings.map(
       (rendering) => `/ondemand/${rendering.pathId}/${rendering.moduleId}`,
     ),
-    ...diagramCatalog.map((diagram) => `/diagrams/${diagram.id}`),
+    ...starterCatalog.resources.map(
+      (resource) => `/guide/resources/${resource.id}`,
+    ),
+    ...diagramCatalog.map((diagram) => `/guide/diagrams/${diagram.id}`),
   ].map((path) => ({
     url: `${base}${path}`,
     lastModified: new Date("2026-07-25"),

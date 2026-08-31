@@ -16,12 +16,12 @@ export function AdminHeader() {
     <header className="site-header">
       <div className="shell header-inner">
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Link className="brand" href="/" aria-label="Project 42 home">
+          <a className="brand" href="https://project-42.dev/" aria-label="Project 42 home">
             <BrandMark />
             <span>
               Project <strong>42</strong>
             </span>
-          </Link>
+          </a>
           <span
             aria-label="Project 42 Administration"
             style={{
@@ -69,22 +69,22 @@ export function AdminHeader() {
               textDecoration: isSettings ? "underline" : "none",
             }}
           >
-            Settings &amp; Themes
+            Security settings
           </Link>
         </nav>
 
         <div className="header-actions">
-          <Link
+          <a
             className="header-action"
-            href="/"
+            href="https://project-42.dev/"
             style={{ textDecoration: "none" }}
           >
             ← Exit Console
-          </Link>
+          </a>
           <ProfileMenu
-            accountHref="/account"
-            learnerDataHref="/learner-data"
-            profileHref="/profile"
+            accountHref="https://project-42.dev/account"
+            learnerDataHref="https://project-42.dev/learner-data"
+            profileHref="https://project-42.dev/profile"
           />
         </div>
       </div>

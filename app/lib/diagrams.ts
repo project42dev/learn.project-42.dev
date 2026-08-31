@@ -1,4 +1,5 @@
 import diagramConfig from "@project42/platform/content/diagrams/catalogue.json";
+import overrides from "../../config/diagram-catalog-overrides.json";
 
 export interface Project42Diagram {
   id: string;
@@ -12,9 +13,12 @@ export interface Project42Diagram {
   source: string;
 }
 
-export const diagramCatalog = Object.freeze(
-  diagramConfig.diagrams as Project42Diagram[],
-);
+const diagramsById = new Map<string, Project42Diagram>();
+for (const diagram of [...diagramConfig.diagrams, ...overrides.diagrams] as Project42Diagram[]) {
+  diagramsById.set(diagram.id, diagram);
+}
+
+export const diagramCatalog = Object.freeze([...diagramsById.values()]);
 
 export function getDiagram(id: string) {
   return diagramCatalog.find((diagram) => diagram.id === id);

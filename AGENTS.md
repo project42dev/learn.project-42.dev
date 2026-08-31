@@ -2,8 +2,9 @@
 
 ## Purpose
 
-This repository is the branded public Project 42 Learn experience published at
-`learn.project-42.dev`.
+This repository preserves the legacy Learn deployment during migration to the unified
+public portal at `project-42.dev`. Its public routes and configuration must remain
+compatible with the canonical portal until the legacy host is fully retired.
 
 ## Stack
 
@@ -28,4 +29,4 @@ npm test
 4. No secrets, private PMO material, or production learner data.
 5. New interaction types require keyboard and reduced-motion review.
 6. Build, lint, and rendered-route tests must pass before release.
-7. Field Guide resources belong in `guide.project-42.dev`.
+7. Learning and Field Guide links target relative canonical routes on `project-42.dev`.

@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DiagramViewer } from "../../components/DiagramViewer";
+import { InteractiveDiagramClient } from "../../components/InteractiveDiagramClient";
+import { OrchardLifecycleDiagramClient } from "../../components/OrchardLifecycleDiagramClient";
 import { diagramCatalog, getDiagram } from "../../lib/diagrams";
+import { getDiagramSteps } from "../../lib/diagramSteps";
+
+const REACT_DIAGRAM_IDS = new Set(["orchard-lifecycle"]);
 
 interface DiagramPageProps {
   params: Promise<{ diagramId: string }>;
@@ -26,11 +30,12 @@ export default async function DiagramPage({ params }: DiagramPageProps) {
   const { diagramId } = await params;
   const diagram = getDiagram(diagramId);
   if (!diagram) notFound();
+  const steps = getDiagramSteps(diagramId);
 
   return (
     <main className="diagram-detail shell">
       <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link href="/diagrams">Visual guides</Link>
+        <Link href="/guide/diagrams">Visual guides</Link>
         <span>/</span>
         <span aria-current="page">{diagram.title}</span>
       </nav>
@@ -59,13 +64,14 @@ export default async function DiagramPage({ params }: DiagramPageProps) {
 
       <figure className="diagram-figure">
         <div className="diagram-canvas">
-          <DiagramViewer
-            alt={diagram.altText}
-            height={900}
-            src={`/diagrams/${diagram.id}.svg`}
-            title={diagram.title}
-            width={1440}
-          />
+          {REACT_DIAGRAM_IDS.has(diagram.id) ? (
+            <>
+              <span className="visually-hidden">{diagram.altText}</span>
+              <OrchardLifecycleDiagramClient alt={diagram.altText} category={diagram.category} steps={steps} title={diagram.title} />
+            </>
+          ) : (
+            <InteractiveDiagramClient alt={diagram.altText} category={diagram.category} height={900} src={`/diagrams/${diagram.id}.svg`} steps={steps} title={diagram.title} width={1440} />
+          )}
         </div>
         <figcaption>{diagram.caption}</figcaption>
       </figure>
@@ -88,7 +94,7 @@ export default async function DiagramPage({ params }: DiagramPageProps) {
       </div>
 
       <nav className="diagram-next" aria-label="More visual guides">
-        <Link href="/diagrams">← Browse every visual guide</Link>
+        <Link href="/guide/diagrams">← Browse every visual guide</Link>
       </nav>
     </main>
   );

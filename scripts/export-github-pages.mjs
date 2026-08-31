@@ -131,12 +131,8 @@ async function main() {
   const { default: worker } = await import(workerUrl.href);
   const fetchRoute = (route) =>
     worker.fetch(
-      // The synthetic export request has no real "Host" header, but
-      // subdomainLinks.ts's crossDomainHref() reads headers().get("host") to
-      // decide whether an /account or /admin link should render relative or
-      // absolute. Set it explicitly so a filtered --domain export of a
-      // subdomain's own routes gets relative links, and the default full-site
-      // export keeps every route relative to learn.project-42.dev.
+      // Set the synthetic host explicitly so generated metadata and client
+      // bootstrap state reflect the artifact's deployment domain.
       new Request(`https://${canonicalDomain}${route}`, {
         headers: { host: canonicalDomain },
       }),

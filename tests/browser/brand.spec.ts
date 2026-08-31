@@ -44,7 +44,7 @@ test("publishes visible accessible branding and complete icon assets", async ({
   const manifestResponse = await request.get("/manifest.webmanifest");
   expect(manifestResponse.status()).toBe(200);
   const manifest = await manifestResponse.json();
-  expect(manifest.short_name).toBe("Project 42 Learn");
+  expect(manifest.short_name).toBe("Project 42");
   expect(manifest.icons).toHaveLength(3);
 
   const accessibility = await new AxeBuilder({ page })
