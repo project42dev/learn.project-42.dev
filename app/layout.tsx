@@ -89,7 +89,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="06-galactic-guide" data-layout="standard" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("project42.theme.v1")||"06-galactic-guide";var l=localStorage.getItem("project42.layout.v1")||"standard";document.documentElement.setAttribute("data-theme",t);document.documentElement.setAttribute("data-layout",l);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <a className="skip-link" href="#main-content">
           Skip to content
