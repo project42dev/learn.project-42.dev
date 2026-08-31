@@ -2928,6 +2928,14 @@ export function OwnerAdministration({
     return localStorage.getItem("project42.theme.v1") || "06-galactic-guide";
   });
 
+  const layouts = [
+    { id: "standard", name: "Standard", desc: "Balanced responsive layout (1180px)" },
+    { id: "wide", name: "Wide Canvas", desc: "Expansive widescreen layout (1560px)" },
+    { id: "compact", name: "Compact Focus", desc: "Distraction-free narrow reading width (960px)" },
+    { id: "sidebar", name: "Sidebar Layout", desc: "Navigation sidebar container view (1440px)" },
+    { id: "minimal", name: "Minimalist Mode", desc: "Streamlined single-column focus width (840px)" },
+  ];
+
   const [selectedLayout, setSelectedLayout] = useState(() => {
     if (typeof window === "undefined") return "standard";
     return localStorage.getItem("project42.layout.v1") || "standard";
@@ -2980,20 +2988,30 @@ export function OwnerAdministration({
       if (!parsed.id || !parsed.name) {
         throw new Error("Theme JSON must contain at least 'id' and 'name'.");
       }
+      const rawTokens = parsed.tokens || {};
+      const mappedTokens: Record<string, string> = {
+        "--paper": rawTokens["--paper"] || rawTokens["--p42-bg"] || "#080c14",
+        "--paper-strong": rawTokens["--paper-strong"] || rawTokens["--p42-surface"] || "#0f172a",
+        "--ink": rawTokens["--ink"] || rawTokens["--p42-text-title"] || "#ffffff",
+        "--ink-soft": rawTokens["--ink-soft"] || rawTokens["--p42-text-body"] || rawTokens["--p42-text-muted"] || "#cbd5e1",
+        "--line": rawTokens["--line"] || rawTokens["--p42-card-border"] || "rgba(255, 255, 255, 0.15)",
+        "--orange": rawTokens["--orange"] || rawTokens["--p42-primary"] || "#f59e0b",
+        "--lime": rawTokens["--lime"] || rawTokens["--p42-accent"] || "#10b981",
+        "--cyan": rawTokens["--cyan"] || rawTokens["--p42-accent"] || "#38bdf8",
+        ...rawTokens,
+      };
       const newTheme: ThemeItem = {
         id: parsed.id,
         name: parsed.name,
         desc: parsed.description || parsed.tagline || "Custom imported theme.",
-        colors: parsed.tokens
-          ? [
-              parsed.tokens["--p42-bg"] || "#080c14",
-              parsed.tokens["--p42-primary"] || "#38bdf8",
-              parsed.tokens["--p42-accent"] || "#818cf8",
-              parsed.tokens["--p42-text-title"] || "#ffffff",
-            ]
-          : ["#080c14", "#38bdf8", "#818cf8", "#ffffff"],
+        colors: [
+          mappedTokens["--paper"] || "#080c14",
+          mappedTokens["--orange"] || "#f59e0b",
+          mappedTokens["--lime"] || "#10b981",
+          mappedTokens["--ink"] || "#ffffff",
+        ],
         isCustom: true,
-        tokens: parsed.tokens || {},
+        tokens: mappedTokens,
       };
       const updated = [
         ...customThemes.filter((t) => t.id !== newTheme.id),
