@@ -223,11 +223,17 @@ interface CachedAuth {
 function readCachedAuth(): CachedAuth | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(authCacheKey);
+    let raw = localStorage.getItem(authCacheKey);
+    if (!raw) {
+      const match = document.cookie.match(/(?:^|;\s*)project42\.auth\.v1=([^;]+)/);
+      if (match) {
+        raw = decodeURIComponent(match[1]);
+        try { localStorage.setItem(authCacheKey, raw); } catch {}
+      }
+    }
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedAuth;
     if (parsed && parsed.account && parsed.account.id) {
-      // 7-day persistence matching session cookie
       if (Date.now() - parsed.savedAt < 7 * 86400 * 1000) {
         return parsed;
       }
@@ -244,13 +250,18 @@ function writeCachedAuth(
 ) {
   if (typeof window === "undefined") return;
   try {
+    const isDev =
+      window.location.hostname === "localhost" ||
+      window.location.hostname.endsWith(".localhost");
+    const domainAttr = isDev ? "" : "; domain=.project-42.dev";
+
     if (account) {
-      localStorage.setItem(
-        authCacheKey,
-        JSON.stringify({ account, session, savedAt: Date.now() }),
-      );
+      const data = JSON.stringify({ account, session, savedAt: Date.now() });
+      localStorage.setItem(authCacheKey, data);
+      document.cookie = `project42.auth.v1=${encodeURIComponent(data)}${domainAttr}; path=/; max-age=604800; SameSite=Lax; Secure`;
     } else {
       localStorage.removeItem(authCacheKey);
+      document.cookie = `project42.auth.v1=; max-age=0${domainAttr}; path=/; SameSite=Lax; Secure`;
     }
   } catch {
     // Best-effort storage
@@ -347,7 +358,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadAccount = useCallback(async (outcome: BrowserAuthOutcome = null) => {
     if (!configured) return;
-    setStatus("loading");
     try {
       const response = await apiFetch("/v1/auth/session");
       const body = (await response.json()) as {
@@ -356,6 +366,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error?: { message?: string };
       };
       if (response.status === 401) {
+        const existing = readCachedAuth();
+        if (existing?.account) {
+          setAccount(existing.account);
+          setSession(existing.session);
+          setStatus("signed-in");
+          return;
+        }
         writeCachedAuth(null, null);
         setAccount(null);
         setSession(null);
@@ -377,13 +394,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       setStatus("signed-in");
     } catch (caught) {
-      if (!cached) {
+      const existing = readCachedAuth();
+      if (existing?.account) {
+        setAccount(existing.account);
+        setSession(existing.session);
+        setStatus("signed-in");
+      } else {
         setAccount(null);
         setSession(null);
         setRegistration(emptyRegistration);
+        setError(accountServiceErrorMessage(caught));
+        setStatus("error");
       }
-      setError(accountServiceErrorMessage(caught));
-      setStatus(cached ? "signed-in" : "error");
     }
   }, [apiFetch, loadRegistration]);
 
