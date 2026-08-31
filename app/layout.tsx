@@ -82,18 +82,21 @@ export const metadata: Metadata = {
   },
 };
 
+import config from "../project42.config.json";
+
 export const viewport: Viewport = {
   colorScheme: "dark light",
   themeColor: "#090d16",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const configuredTheme = config?.theme || "06-galactic-guide";
   return (
-    <html lang="en" data-theme="06-galactic-guide" data-layout="standard" suppressHydrationWarning>
+    <html lang="en" data-theme={configuredTheme} data-layout="standard" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("project42.theme.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.theme\\.v1=([^;]+)/)||[])[1]||"06-galactic-guide";var l=localStorage.getItem("project42.layout.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.layout\\.v1=([^;]+)/)||[])[1]||"standard";document.documentElement.setAttribute("data-theme",decodeURIComponent(t));document.documentElement.setAttribute("data-layout",decodeURIComponent(l));}catch(e){}})();`,
+            __html: `(function(){try{var defaultTheme="${configuredTheme}";var t=localStorage.getItem("project42.theme.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.theme\\.v1=([^;]+)/)||[])[1]||defaultTheme;var l=localStorage.getItem("project42.layout.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.layout\\.v1=([^;]+)/)||[])[1]||"standard";document.documentElement.setAttribute("data-theme",decodeURIComponent(t));document.documentElement.setAttribute("data-layout",decodeURIComponent(l));}catch(e){}})();`,
           }}
         />
       </head>
