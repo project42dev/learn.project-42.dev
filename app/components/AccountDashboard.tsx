@@ -2929,11 +2929,21 @@ export function OwnerAdministration({
   });
 
   const layouts = [
-    { id: "standard", name: "Standard", desc: "Balanced responsive layout (1180px)" },
-    { id: "wide", name: "Wide Canvas", desc: "Expansive widescreen layout (1560px)" },
-    { id: "compact", name: "Compact Focus", desc: "Distraction-free narrow reading width (960px)" },
-    { id: "sidebar", name: "Sidebar Layout", desc: "Navigation sidebar container view (1440px)" },
-    { id: "minimal", name: "Minimalist Mode", desc: "Streamlined single-column focus width (840px)" },
+    {
+      id: "standard",
+      name: "Standard Shell",
+      desc: "Default constrained container with centered reading line lengths.",
+    },
+    {
+      id: "wide",
+      name: "Wide Canvas",
+      desc: "Expanded container width for high-density administrative dashboards.",
+    },
+    {
+      id: "compact",
+      name: "Compact Minimal",
+      desc: "Tightened vertical spacing and smaller typography for dense data.",
+    },
   ];
 
   const [selectedLayout, setSelectedLayout] = useState(() => {
