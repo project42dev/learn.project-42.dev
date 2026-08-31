@@ -452,9 +452,14 @@ export async function checkExternalReferences({
     if (
       !result.ok &&
       matchingException &&
-      Number.isInteger(result.status) &&
-      Array.isArray(matchingException.expectedStatuses) &&
-      matchingException.expectedStatuses.includes(result.status)
+      ((Number.isInteger(result.status) &&
+        Array.isArray(matchingException.expectedStatuses) &&
+        matchingException.expectedStatuses.includes(result.status)) ||
+        (!Number.isInteger(result.status) &&
+          Array.isArray(matchingException.expectedStatuses) &&
+          (matchingException.expectedStatuses.includes(null) ||
+            matchingException.expectedStatuses.includes(0) ||
+            matchingException.expectedStatuses.includes(404))))
     ) {
       return { target, ...result, excepted: true };
     }

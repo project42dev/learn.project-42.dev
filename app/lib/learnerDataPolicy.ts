@@ -20,5 +20,5 @@ export const learnerDataPolicy = defaultLearnerDataPolicy;
  * uses to decide the account experience is real.
  */
 export const accountServiceConfigured = Boolean(
-  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN ?? "https://api.project-42.dev",
+  process.env.NEXT_PUBLIC_PROJECT42_API_ORIGIN,
 );

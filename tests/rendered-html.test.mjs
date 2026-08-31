@@ -534,7 +534,7 @@ test("publishes accessible document landmarks and discovery metadata", async () 
   const html = await home.text();
 
   assert.equal(home.status, 200);
-  assert.match(html, /<html lang="en">/);
+  assert.match(html, /<html[^>]*lang="en"/);
   assert.match(html, /href="#main-content"/);
   assert.match(html, /id="main-content" tabindex="-1"/);
   assert.match(html, /<nav aria-label="Primary navigation">/);

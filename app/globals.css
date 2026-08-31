@@ -176,7 +176,7 @@ a {
 }
 
 .eyebrow {
-  color: #626b7b;
+  color: var(--ink-soft);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.16em;
