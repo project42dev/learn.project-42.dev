@@ -1,24 +1,6 @@
 @import "tailwindcss";
 
-:root {
-  --ink: #111827;
-  --ink-soft: #455066;
-  --navy: #0b1225;
-  --navy-2: #111d38;
-  --paper: #f6f3eb;
-  --paper-strong: #fffdf7;
-  --line: #d9d5ca;
-  --lime: #c9f25f;
-  --cyan: #63d7e4;
-  --orange: #ff8c5a;
-  --violet: #a99df7;
-  --danger: #b83b3b;
-  --shadow: 0 24px 70px rgba(20, 27, 42, 0.12);
-  --radius: 24px;
-  --radius-small: 14px;
-  --shell: min(1180px, calc(100vw - 40px));
-}
-
+:root,
 html[data-theme="06-galactic-guide"] {
   --ink: #fef3c7;
   --ink-soft: #cbd5e1;
@@ -33,6 +15,27 @@ html[data-theme="06-galactic-guide"] {
   --violet: #818cf8;
   --danger: #ef4444;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  --radius: 24px;
+  --radius-small: 14px;
+  --shell: min(1180px, calc(100vw - 40px));
+}
+
+html[data-theme="00-classic"],
+html[data-theme="classic"],
+html[data-theme="light"] {
+  --ink: #111827;
+  --ink-soft: #455066;
+  --navy: #0b1225;
+  --navy-2: #111d38;
+  --paper: #f6f3eb;
+  --paper-strong: #fffdf7;
+  --line: #d9d5ca;
+  --lime: #c9f25f;
+  --cyan: #63d7e4;
+  --orange: #ff8c5a;
+  --violet: #a99df7;
+  --danger: #b83b3b;
+  --shadow: 0 24px 70px rgba(20, 27, 42, 0.12);
 }
 
 html[data-theme="01-cosmic-answer"] {
