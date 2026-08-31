@@ -7,21 +7,21 @@
       "source": "learning-evidence-loop.mmd",
       "sourceSha256": "bb7320b9964e2fac205eb30ebda50d9078a9abdfda571e41c7775f9b7088c63c",
       "svg": "learning-evidence-loop.svg",
-      "svgSha256": "9ecc1ece44b5f1292547e8d69c0e16663396747019d0745acb8950cd833edc23"
+      "svgSha256": "db7a5fb7ff0805bdc0db7845deff9b5dd07b666a8c3420ce468d1f0295d694ab"
     },
     {
       "id": "grounded-answer-workflow",
       "source": "grounded-answer-workflow.mmd",
       "sourceSha256": "695373c14bff83c3868c7a5de4bf01ac7526fbf638add2cbc194e95913f7a65f",
       "svg": "grounded-answer-workflow.svg",
-      "svgSha256": "da4b88bf20938f42cee59e1725b2eb09d81af343855b8fb12e453255a04bd0b3"
+      "svgSha256": "43b0b9418af6c77763d98d1f07293a7b4912a489aa8bf78064b5b1a33a2c44a5"
     },
     {
       "id": "safe-agent-loop",
       "source": "safe-agent-loop.mmd",
       "sourceSha256": "3b1a5b83b184a9ff4ce362ef7d253f7f13bb7ee9fc3d668c686bac7e0fe6728d",
       "svg": "safe-agent-loop.svg",
-      "svgSha256": "497ce7d83d13e09fc1cb7f3797376c409834d03e68bd1764356b0e71365c063b"
+      "svgSha256": "5c5775b467bdaea1224ab4ecb5ff1890aa739505bcfc91891185d635e8add0a7"
     },
     {
       "id": "prompt-contract",
@@ -42,7 +42,7 @@
       "source": "tool-trust-boundaries.mmd",
       "sourceSha256": "a3401e369dcd11f479b6cc04f3580e3d44b0c08542fca9596f2858013c1887be",
       "svg": "tool-trust-boundaries.svg",
-      "svgSha256": "7c14502fc25bb106c6dbe5b1ce5295f29f7573d123789290ef3530fcff3bd004"
+      "svgSha256": "e36afbd47ce7290d5e8997250d8908c9570436bfd2188ff31581cc62fd12bedb"
     },
     {
       "id": "multi-agent-handoff",
@@ -71,6 +71,13 @@
       "sourceSha256": "a50cf355bd46f30b6d1f02d67c348f2e8272106f33a5c979e25fc61b80a84738",
       "svg": "cost-and-capacity-management.svg",
       "svgSha256": "94bb8b6a6fe3788ae9c9317921a492805c0a34341ab67e3cb61ff00748a8fc24"
+    },
+    {
+      "id": "orchard-lifecycle",
+      "source": "orchard-lifecycle.mmd",
+      "sourceSha256": "688ba9a6364d406e54fa25940f88535db30dc843f78f6603bacb5cb8c34e7906",
+      "svg": "orchard-lifecycle.svg",
+      "svgSha256": "8cf213829ff52732334a703b15c1c223fba31d0fd485b31b0dbaca623cead597"
     }
   ]
 }
