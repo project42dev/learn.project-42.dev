@@ -3058,24 +3058,6 @@ export function OwnerAdministration({
     }
   };
 
-  const layouts = [
-    {
-      id: "standard",
-      name: "Standard Shell",
-      desc: "Default constrained container with centered reading line lengths.",
-    },
-    {
-      id: "wide",
-      name: "Wide Canvas",
-      desc: "Expanded container width for high-density administrative dashboards.",
-    },
-    {
-      id: "compact",
-      name: "Compact Minimal",
-      desc: "Tightened vertical spacing and smaller typography for dense data.",
-    },
-  ];
-
   return (
     <section className="owner-console" aria-labelledby="owner-console-title">
       <div className="section-heading section-heading-inline">
