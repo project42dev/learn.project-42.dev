@@ -127,6 +127,7 @@ test("a learner can start, resume, complete, and export AI Foundations", async (
   page,
 }) => {
   test.setTimeout(180_000);
+  test.skip(!apiOrigin, "The API-backed learner journey requires account-API configuration.");
   await installJourneyApi(page);
   const firstModule = foundationModules[0];
   const expectedCompletedModules = foundationModules.length;
@@ -329,13 +330,17 @@ test("critical learner states pass automated accessibility checks", async ({
     "/learn/ai-foundations/ai-foundations-capstone",
     "/learn/reliable-agent-workflows",
     "/learn/reliable-agent-workflows/reliable-agent-capstone",
-    "/profile",
+    ...(apiOrigin ? ["/profile"] : []),
     "/learner-data",
   ]) {
     await page.goto(route);
     await expect(page.locator("main")).toBeVisible();
     await expectNoAutomatedAccessibilityViolations(page);
   }
+
+  // Scoring persistence below is an account-API state; public page states above
+  // remain fully scanned when no hosted API origin is configured.
+  if (!apiOrigin) return;
 
   const learningModule = foundationModules.find(
     (candidate) => candidate.id === "research-with-evidence",

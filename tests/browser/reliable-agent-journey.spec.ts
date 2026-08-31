@@ -133,6 +133,7 @@ test("completes, revises, badges, and exports the reliable-agent journey", async
   page,
 }) => {
   test.setTimeout(180_000);
+  test.skip(!apiOrigin, "The API-backed learner journey requires account-API configuration.");
   await installJourneyApi(page);
   expect(modules).toHaveLength(12);
   const capstoneModule = modules.at(-1);

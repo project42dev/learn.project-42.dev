@@ -1,8 +1,9 @@
 # Project 42 Learn
 
-The dedicated Project 42 learning experience at
-[learn.project-42.dev](https://learn.project-42.dev): free, provider-neutral AI
-learning paths, knowledge checks, progress, badges, and transcripts.
+The compatibility source for Project 42 learning routes. The canonical learner
+experience now lives at [project-42.dev/learn](https://project-42.dev/learn), on the
+same origin as Field Guide and profile routes. The legacy Learn host redirects to the
+canonical origin while this repository remains aligned for transition safety.
 
 ## Develop
 
@@ -91,16 +92,19 @@ drift.
 
 ## Repositories
 
-- `project-42.dev` — public landing experience and brand
-- `learn.project-42.dev` — this learning application
-- `guide.project-42.dev` — practical Field Guide
+- `project-42.dev` — canonical unified public portal
+- `learn.project-42.dev` — legacy compatibility host
+- `guide.project-42.dev` — legacy Field Guide redirect host
+- `gallery.project-42.dev` — public unauthenticated theme gallery
+- `admin.project-42.dev` — role-protected operational portal
 - `project42-platform` — reusable Apache-2.0 platform and CC BY 4.0 curriculum
 - `project42dev.github.io` — transitional public site
 
 ## Deployment
 
-The canonical public instance deploys from this repository to GitHub Pages and is
-served at <https://learn.project-42.dev>. Cloudflare manages DNS only.
+This repository's Pages artifact supports the legacy `learn.project-42.dev` host.
+Canonical browser navigation is redirected to <https://project-42.dev> with path,
+query, and fragment preserved. Cloudflare manages DNS only.
 
 `npm run pages:build` produces the complete static artifact in `dist/pages`. The
 GitHub Pages workflow validates the application and exported artifact before deploying

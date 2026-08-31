@@ -212,73 +212,23 @@ function readGithubLinkFlow(): StoredGithubLinkFlow | null {
   }
 }
 
-const authCacheKey = "project42.auth-cache.v1";
-
-interface CachedAuth {
-  account: Project42Account;
-  session: BrowserSession | null;
-  savedAt: number;
-}
-
-function readCachedAuth(): CachedAuth | null {
-  if (typeof window === "undefined") return null;
-  try {
-    let raw = localStorage.getItem(authCacheKey);
-    if (!raw) {
-      const match = document.cookie.match(/(?:^|;\s*)project42\.auth\.v1=([^;]+)/);
-      if (match) {
-        raw = decodeURIComponent(match[1]);
-        try { localStorage.setItem(authCacheKey, raw); } catch {}
-      }
-    }
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as CachedAuth;
-    if (parsed && parsed.account && parsed.account.id) {
-      if (Date.now() - parsed.savedAt < 7 * 86400 * 1000) {
-        return parsed;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function writeCachedAuth(
-  account: Project42Account | null,
-  session: BrowserSession | null,
-) {
+function clearRetiredAuthCache() {
   if (typeof window === "undefined") return;
   try {
-    const isDev =
-      window.location.hostname === "localhost" ||
-      window.location.hostname.endsWith(".localhost");
-    const domainAttr = isDev ? "" : "; domain=.project-42.dev";
-
-    if (account) {
-      const data = JSON.stringify({ account, session, savedAt: Date.now() });
-      localStorage.setItem(authCacheKey, data);
-      document.cookie = `project42.auth.v1=${encodeURIComponent(data)}${domainAttr}; path=/; max-age=604800; SameSite=Lax; Secure`;
-    } else {
-      localStorage.removeItem(authCacheKey);
-      document.cookie = `project42.auth.v1=; max-age=0${domainAttr}; path=/; SameSite=Lax; Secure`;
-    }
+    localStorage.removeItem("project42.auth-cache.v1");
+    document.cookie = "project42.auth.v1=; max-age=0; path=/; SameSite=Lax; Secure";
+    document.cookie = "project42.auth.v1=; max-age=0; domain=.project-42.dev; path=/; SameSite=Lax; Secure";
   } catch {
-    // Best-effort storage
+    // Best-effort cleanup of the retired cross-subdomain cache.
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [cached] = useState(() => readCachedAuth());
   const [status, setStatus] = useState<AuthStatus>(
-    cached ? "signed-in" : configured ? "loading" : "unavailable",
+    configured ? "loading" : "unavailable",
   );
-  const [account, setAccount] = useState<Project42Account | null>(
-    cached ? cached.account : null,
-  );
-  const [session, setSession] = useState<BrowserSession | null>(
-    cached ? cached.session : null,
-  );
+  const [account, setAccount] = useState<Project42Account | null>(null);
+  const [session, setSession] = useState<BrowserSession | null>(null);
   const [registration, setRegistration] =
     useState<RegistrationExperience>(emptyRegistration);
   const [error, setError] = useState<string | null>(null);
@@ -366,14 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error?: { message?: string };
       };
       if (response.status === 401) {
-        const existing = readCachedAuth();
-        if (existing?.account) {
-          setAccount(existing.account);
-          setSession(existing.session);
-          setStatus("signed-in");
-          return;
-        }
-        writeCachedAuth(null, null);
+        clearRetiredAuthCache();
         setAccount(null);
         setSession(null);
         await loadRegistration(
@@ -387,25 +330,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok || !body.account) {
         throw new Error(body.error?.message ?? "The account could not be loaded.");
       }
-      writeCachedAuth(body.account, body.session ?? null);
+      clearRetiredAuthCache();
       setAccount(body.account);
       setSession(body.session ?? null);
       setRegistration(emptyRegistration);
       setError(null);
       setStatus("signed-in");
     } catch (caught) {
-      const existing = readCachedAuth();
-      if (existing?.account) {
-        setAccount(existing.account);
-        setSession(existing.session);
-        setStatus("signed-in");
-      } else {
-        setAccount(null);
-        setSession(null);
-        setRegistration(emptyRegistration);
-        setError(accountServiceErrorMessage(caught));
-        setStatus("error");
-      }
+      clearRetiredAuthCache();
+      setAccount(null);
+      setSession(null);
+      setRegistration(emptyRegistration);
+      setError(accountServiceErrorMessage(caught));
+      setStatus("error");
     }
   }, [apiFetch, loadRegistration]);
 
@@ -692,7 +629,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status !== 401 && (!response.ok || !body.signedOut)) {
         throw new Error(body.error?.message ?? "Sign-out could not be completed.");
       }
-      writeCachedAuth(null, null);
+      clearRetiredAuthCache();
       sessionStorage.removeItem(githubLinkFlowKey);
       setAccount(null);
       setSession(null);

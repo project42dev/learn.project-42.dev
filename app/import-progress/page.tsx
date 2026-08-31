@@ -1,24 +1,31 @@
 import type { Metadata } from "next";
-import { ProgressMigration } from "../components/ProgressMigration";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Import previous progress",
+  title: "Progress migration complete",
   description:
-    "Move browser-only Project 42 learning progress from project-42.dev to Learn.",
+    "Continue learning from the unified Project 42 profile and account experience.",
+  robots: { index: false, follow: false },
 };
 
 export default function ImportProgressPage() {
   return (
     <main className="page-shell shell">
       <header className="page-hero">
-        <p className="eyebrow">Project 42 Learn</p>
-        <h1>Keep the progress you already earned.</h1>
+        <p className="eyebrow">Project 42 account update</p>
+        <h1>The separate-site progress transfer is no longer needed.</h1>
         <p>
-          Use this once after the Project 42 site split. You stay in control of
-          whether the previous browser record replaces progress stored here.
+          Learning and profile routes now share one Project 42 origin. Browser and
+          approved account progress are handled directly by the unified portal.
         </p>
       </header>
-      <ProgressMigration />
+      <section className="profile-card">
+        <p>
+          <Link href="/profile">Open your learner profile</Link> or{" "}
+          <Link href="/account">sign in</Link> to continue your account-backed
+          learning record.
+        </p>
+      </section>
     </main>
   );
 }

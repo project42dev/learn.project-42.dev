@@ -27,7 +27,7 @@ export function SiteHeader() {
         <nav aria-label="Primary navigation">
           <Link href="/learn">Learn</Link>
           <Link href="/guide">Field Guide</Link>
-          <Link href="/diagrams">Visual guides</Link>
+          <Link href="/guide/diagrams">Visual guides</Link>
           <HeaderMenu
             label={
               <>

@@ -55,12 +55,12 @@ test("renders the account state selected by public account-API configuration", a
     ).toBeVisible();
   } else {
     await expect(
-      page.getByRole("heading", { name: "Ready for hosted identity configuration" }),
+      page.getByRole("heading", { name: "Account sign-in needs attention" }),
     ).toBeVisible();
     await expect(
-      page.getByText(/account-backed learning is unavailable/i),
+      page.getByText(/account service could not be reached/i),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: /sign in/i })).toHaveCount(0);
+    await expect(page.locator("main").getByRole("button", { name: /sign in/i })).toHaveCount(0);
   }
 
   const accessibility = await new AxeBuilder({ page })
@@ -949,8 +949,9 @@ test("keeps protected owner administration keyboard-operable at a narrow viewpor
   await page.getByRole("button", { name: "Cancel" }).click();
   expect(accountStateChanges).toHaveLength(1);
 
+  await page.goto("/admin/logs");
   await expect(
-    page.getByRole("heading", { name: "Privileged audit events" }),
+    page.getByRole("heading", { level: 2, name: "Privileged audit events" }),
   ).toBeVisible();
   await expect(page.getByText("account.state.change")).toBeVisible();
   await expect(page.getByText("Request request-1")).toBeVisible();
@@ -979,6 +980,7 @@ test("keeps protected owner administration keyboard-operable at a narrow viewpor
       "The audit results changed. Reload from the first page before continuing.",
     ),
   ).toHaveCount(0);
+  await page.goto("/admin");
   await expect(
     page.getByText(/Automatic approval remains locked/i),
   ).toBeVisible();
@@ -1067,7 +1069,7 @@ test("keeps protected owner administration keyboard-operable at a narrow viewpor
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Privileged audit events" }),
+    page.getByRole("heading", { name: "Accounts and exact-domain approval" }),
   ).toBeVisible();
   const reducedMotionAccessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])

@@ -29,7 +29,7 @@ export default function Home() {
             <Link className="button button-secondary" href="/guide">
               Browse the field guide
             </Link>
-            <Link className="button button-secondary" href="/diagrams">
+            <Link className="button button-secondary" href="/guide/diagrams">
               See visual guides
             </Link>
           </div>
