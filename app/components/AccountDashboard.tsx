@@ -2868,6 +2868,13 @@ export function OwnerAdministration({
 
   const builtInThemes: ThemeItem[] = [
     {
+      id: "06-galactic-guide",
+      number: "06",
+      name: "The Galactic Guide (Default)",
+      desc: "Retro-futuristic golden pocket datapad aesthetic with friendly Don't Panic survival guidance.",
+      colors: ["#090d16", "#f59e0b", "#10b981", "#fef3c7"],
+    },
+    {
       id: "01-cosmic-answer",
       number: "01",
       name: "Cosmic Answer",
@@ -2901,13 +2908,6 @@ export function OwnerAdministration({
       name: "Open Orbit",
       desc: "Modern modular layout with open review velocity loops and bright cobalt/green accents.",
       colors: ["#f4f7ff", "#2054f6", "#65c943", "#f1258e"],
-    },
-    {
-      id: "06-galactic-guide",
-      number: "06",
-      name: "The Galactic Guide",
-      desc: "Retro-futuristic golden pocket datapad aesthetic with friendly Don't Panic survival guidance.",
-      colors: ["#090d16", "#f59e0b", "#10b981", "#fef3c7"],
     },
   ];
 

@@ -83,17 +83,17 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  colorScheme: "light",
-  themeColor: "#0b1225",
+  colorScheme: "dark light",
+  themeColor: "#090d16",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="06-galactic-guide" data-layout="standard" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("project42.theme.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.theme\\.v1=([^;]+)/)||[])[1];if(t){document.documentElement.setAttribute("data-theme",decodeURIComponent(t));}var l=localStorage.getItem("project42.layout.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.layout\\.v1=([^;]+)/)||[])[1];if(l){document.documentElement.setAttribute("data-layout",decodeURIComponent(l));}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("project42.theme.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.theme\\.v1=([^;]+)/)||[])[1]||"06-galactic-guide";var l=localStorage.getItem("project42.layout.v1")||(document.cookie.match(/(?:^|;\\s*)project42\\.layout\\.v1=([^;]+)/)||[])[1]||"standard";document.documentElement.setAttribute("data-theme",decodeURIComponent(t));document.documentElement.setAttribute("data-layout",decodeURIComponent(l));}catch(e){}})();`,
           }}
         />
       </head>
