@@ -2951,6 +2951,13 @@ export function OwnerAdministration({
       document.documentElement.setAttribute("data-theme", themeIdToApply);
       document.documentElement.setAttribute("data-layout", layoutIdToApply);
 
+      const isDev =
+        window.location.hostname === "localhost" ||
+        window.location.hostname.endsWith(".localhost");
+      const domainAttr = isDev ? "" : "; domain=.project-42.dev";
+      document.cookie = `project42.theme.v1=${encodeURIComponent(themeIdToApply)}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `project42.layout.v1=${encodeURIComponent(layoutIdToApply)}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`;
+
       const themeObj = themes.find((t) => t.id === themeIdToApply);
       if (themeObj?.tokens) {
         for (const [key, val] of Object.entries(themeObj.tokens)) {
