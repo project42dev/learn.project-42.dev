@@ -1,0 +1,63 @@
+{
+  "$schemaVersion": 1,
+  "note": "Direction, not commitments or dates. Items move only when something real ships. Detail and discussion live on the public issue tracker.",
+  "statuses": ["available", "in-progress", "next", "exploring"],
+  "items": [
+    {
+      "id": "self-paced-learning",
+      "title": "Self-paced learning paths",
+      "status": "available",
+      "summary": "Written modules in plain language with a knowledge check at the end of every one, and a source and verification date on every claim.",
+      "detail": "Available now across eight paths. Your record is device-local in this release."
+    },
+    {
+      "id": "field-guide",
+      "title": "The Field Guide",
+      "status": "available",
+      "summary": "Practical references, checklists, and provider comparisons you can use without working through a course.",
+      "detail": "Available now, with visible verification dates on every entry."
+    },
+    {
+      "id": "visual-guides",
+      "title": "Source-first visual guides",
+      "status": "available",
+      "summary": "Diagrams published with their source, so the picture and the material it explains cannot drift apart.",
+      "detail": "Available now. Every diagram ships its own .mmd source and a full-size SVG."
+    },
+    {
+      "id": "instructor-led",
+      "title": "Instructor-led lessons on demand",
+      "status": "in-progress",
+      "summary": "The same modules taught on video by a virtual instructor, with captions and a full transcript.",
+      "detail": "One lesson is filmed and playable today, out of forty written for the classroom. It is a second rendering of the same module rather than a second course, so both carry the same knowledge check and land in the same record."
+    },
+    {
+      "id": "hosted-record",
+      "title": "Hosted accounts and a portable record",
+      "status": "in-progress",
+      "summary": "An optional account so your progress follows you between devices, with an export you own.",
+      "detail": "Progress is device-local today. Import and export already exist, so nothing is trapped while the hosted path is finished."
+    },
+    {
+      "id": "content-currency",
+      "title": "Automated currency checks that propose, never publish",
+      "status": "next",
+      "summary": "Scheduled checks that watch cited sources and raise a proposal when something they depend on changes.",
+      "detail": "Automation proposes and a human approves. Nothing reaches a learner without review, by design rather than by policy."
+    },
+    {
+      "id": "open-source-1-0",
+      "title": "Open-source 1.0",
+      "status": "next",
+      "summary": "A first supported release of the platform and starter curriculum that another team can run themselves.",
+      "detail": "The platform and curriculum are already public. The work left is the install path and the contracts that make a self-hosted deployment reproducible."
+    },
+    {
+      "id": "more-lessons",
+      "title": "Filming the rest of the classroom",
+      "status": "exploring",
+      "summary": "Producing the remaining instructor-led lessons once the presenter and production questions are settled.",
+      "detail": "Held deliberately. Rendering at scale is not worth starting until the presenter choice is settled, because every lesson would have to be produced again."
+    }
+  ]
+}

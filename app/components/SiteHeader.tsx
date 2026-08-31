@@ -27,7 +27,7 @@ export function SiteHeader() {
         </a>
         <nav aria-label="Primary navigation">
           <Link href="/">Learn</Link>
-          <a href="https://guide.project-42.dev">Field Guide</a>
+          <Link href="/guide">Field Guide</Link>
           <Link href="/diagrams">Visual guides</Link>
           <HeaderMenu
             label={
@@ -39,27 +39,27 @@ export function SiteHeader() {
           >
             <ul className="header-menu-list">
               <li>
-                <a href="https://project-42.dev/about">About Project 42</a>
+                <Link href="/about">About Project 42</Link>
               </li>
               <li>
-                <a href="https://project-42.dev/platform">Open-source platform &amp; docs</a>
+                <Link href="/platform">Open-source platform &amp; docs</Link>
               </li>
               <li>
                 <a href="https://gallery.project-42.dev" target="_blank" rel="noopener noreferrer">Theme Gallery &amp; Studio</a>
               </li>
               <li>
-                <a href="https://project-42.dev/releases">Release notes</a>
+                <Link href="/releases">Release notes</Link>
               </li>
               <li>
-                <a href="https://project-42.dev/roadmap">Roadmap</a>
+                <Link href="/roadmap">Roadmap</Link>
               </li>
               <li>
-                <a href="https://project-42.dev/support">Support &amp; Content Requests</a>
+                <Link href="/support">Support &amp; Content Requests</Link>
               </li>
               <li>
-                <a href="https://project-42.dev/legal-transparency">
+                <Link href="/legal-transparency">
                   Legal and transparency
-                </a>
+                </Link>
               </li>
             </ul>
           </HeaderMenu>
@@ -69,9 +69,9 @@ export function SiteHeader() {
             Start learning
           </Link>
           <ProfileMenu
-            accountHref={clientCrossDomainHref("/account")}
-            learnerDataHref={clientCrossDomainHref("/learner-data")}
-            profileHref={clientCrossDomainHref("/profile")}
+            accountHref="/account"
+            learnerDataHref="/learner-data"
+            profileHref="/profile"
           />
         </div>
       </div>
