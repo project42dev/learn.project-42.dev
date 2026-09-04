@@ -1,3 +1,18 @@
+> **This repository is retired and archived.**
+>
+> Project 42 is now a single site: **https://project-42.dev**. What lived here
+> is served from that one portal at `/learn`, `/learn/paths`, `/ondemand`
+> and the routes beneath them, and `learn.project-42.dev` no longer resolves.
+>
+> Nothing was ported from this repository. Its stylesheet was deliberately left
+> behind: it predated the Gallery theme bundles and hardcoded its own colours,
+> which is precisely what the unified portal exists to stop. Content and routes
+> already live in [project-42.dev](https://github.com/project42dev/project-42.dev),
+> and appearance is owned by
+> [project42-gallery](https://github.com/project42dev/project42-gallery).
+>
+> History is preserved here, read-only, for reference.
+
 # Project 42 Learn
 
 The compatibility source for Project 42 learning routes. The canonical learner
